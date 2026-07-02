@@ -278,7 +278,7 @@ def csv_para_pdf(entrada, saida):
 def ppt_para_pdf(entrada, saida):
     if MOTOR == "office":
         _office_ppt_para_pdf(entrada, saida)
-    elif MOTOR == "libreoffice":
+    elif MOTOR == "libreoffice" or MOTOR == "csv":
         _soffice_convert(entrada, saida, "pdf")
     else:
         raise RuntimeError("Nenhum motor disponível para esta conversão.")
