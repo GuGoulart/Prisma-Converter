@@ -1,31 +1,16 @@
-from flask import Flask, render_template, request, send_file, session, after_this_request
-from converter import obter_conversoes, converter_arquivo, obter_motor
+from flask import (Flask, render_template, request, send_file,
+                   session, after_this_request, abort, Response)
+from converter import obter_conversoes, converter_arquivo, obter_motor, detectar_encoding
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from collections import defaultdict
 from threading import Lock
 from dotenv import load_dotenv
 
-import os
-import re
-import secrets
-import shutil
-import time
-import uuid
-import logging
-import threading
-import traceback
+import os, re, secrets, shutil, time, uuid, logging, threading, traceback
 import pandas as pd
 
-# ─────────────────────────────────────────
-# Carrega variáveis do .env
-# ─────────────────────────────────────────
-
 load_dotenv()
-
-# ─────────────────────────────────────────
-# App
-# ─────────────────────────────────────────
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fallback-local-key")
@@ -34,6 +19,7 @@ UPLOAD_FOLDER   = "uploads"
 DOWNLOAD_FOLDER = "downloads"
 MAX_MB          = 50
 TIMEOUT_CONV    = 120
+TIMEOUT_PREVIEW = 40
 
 app.config["UPLOAD_FOLDER"]      = UPLOAD_FOLDER
 app.config["DOWNLOAD_FOLDER"]    = DOWNLOAD_FOLDER
@@ -44,411 +30,453 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 contador_conversoes = 0
 
-# ─────────────────────────────────────────
-# Logging estruturado em arquivo
-# ─────────────────────────────────────────
-
 logging.basicConfig(
-    filename="prisma.log",
-    level=logging.INFO,
+    filename="prisma.log", level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 log = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────
-# Cabeçalhos de segurança HTTP
-# ─────────────────────────────────────────
+
+# ── Segurança ─────────────────────────────────────────────────
 
 @app.after_request
 def cabecalhos_seguranca(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"]         = "DENY"
+    response.headers["X-Frame-Options"]         = "SAMEORIGIN"
     response.headers["X-XSS-Protection"]        = "1; mode=block"
     response.headers["Referrer-Policy"]          = "no-referrer"
     return response
 
-# ─────────────────────────────────────────
-# Rate limiting
-# ─────────────────────────────────────────
 
 _contagem_ip = defaultdict(list)
 _lock_rate   = Lock()
-RATE_LIMITE  = 10
-RATE_JANELA  = 60  # segundos
 
-
-def verificar_rate_limit(ip: str) -> bool:
+def verificar_rate_limit(ip):
     agora = time.time()
     with _lock_rate:
-        _contagem_ip[ip] = [t for t in _contagem_ip[ip] if agora - t < RATE_JANELA]
-        if len(_contagem_ip[ip]) >= RATE_LIMITE:
-            return False
+        _contagem_ip[ip] = [t for t in _contagem_ip[ip] if agora - t < 60]
+        if len(_contagem_ip[ip]) >= 10: return False
         _contagem_ip[ip].append(agora)
         return True
 
-# ─────────────────────────────────────────
-# Limite de conversões paralelas
-# ─────────────────────────────────────────
 
 _conversoes_ativas = 0
 _lock_conv         = Lock()
 MAX_PARALELAS      = 3
 
-# ─────────────────────────────────────────
-# CSRF
-# ─────────────────────────────────────────
 
-def gerar_csrf() -> str:
+def gerar_csrf():
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(32)
     return session["csrf_token"]
 
+def validar_csrf(tok):
+    return bool(tok and tok == session.get("csrf_token"))
 
-def validar_csrf(token_form: str) -> bool:
-    return bool(token_form and token_form == session.get("csrf_token"))
-
-# ─────────────────────────────────────────
-# Limite de tamanho por tipo de arquivo
-# ─────────────────────────────────────────
 
 LIMITES_POR_TIPO = {
-    "csv":   5 * 1024 * 1024,
-    "xlsx": 20 * 1024 * 1024,
-    "xls":  20 * 1024 * 1024,
-    "pdf":  50 * 1024 * 1024,
-    "docx": 20 * 1024 * 1024,
-    "doc":  20 * 1024 * 1024,
-    "ppt":  50 * 1024 * 1024,
-    "pptx": 50 * 1024 * 1024,
-    "png":  10 * 1024 * 1024,
-    "jpg":  10 * 1024 * 1024,
-    "jpeg": 10 * 1024 * 1024,
+    "csv":5*1024*1024,  "xlsx":20*1024*1024, "xls":20*1024*1024,
+    "pdf":50*1024*1024, "docx":20*1024*1024, "doc":20*1024*1024,
+    "ppt":50*1024*1024, "pptx":50*1024*1024,
+    "png":10*1024*1024, "jpg":10*1024*1024,  "jpeg":10*1024*1024,
 }
+NOMES_LIMITES = {k: f"{v//(1024*1024)} MB" for k, v in LIMITES_POR_TIPO.items()}
 
-NOMES_LIMITES = {k: f"{v // (1024 * 1024)} MB" for k, v in LIMITES_POR_TIPO.items()}
-
-# ─────────────────────────────────────────
-# Validação de extensões duplas perigosas
-# ─────────────────────────────────────────
-
-_EXTENSOES_PERIGOSAS = {
-    "exe", "bat", "cmd", "com", "php", "sh",
-    "ps1", "vbs", "js",  "jar", "py",  "rb",
-    "pl",  "asp", "jsp", "cgi", "msi", "dll",
+_EXT_PERIGOSAS = {
+    "exe","bat","cmd","com","php","sh","ps1","vbs","js",
+    "jar","py","rb","pl","asp","jsp","cgi","msi","dll"
 }
-
-
-def validar_nome_arquivo(nome: str) -> bool:
-    partes = nome.split(".")
-    if len(partes) <= 2:
-        return True
-    for parte in partes[1:-1]:
-        if parte.lower() in _EXTENSOES_PERIGOSAS:
-            return False
-    return True
-
-# ─────────────────────────────────────────
-# Validação de magic bytes
-# ─────────────────────────────────────────
 
 _MAGIC = {
     "pdf":  [b"%PDF"],
-    "docx": [b"PK\x03\x04"],
-    "xlsx": [b"PK\x03\x04"],
-    "pptx": [b"PK\x03\x04"],
-    "ppt":  [b"\xd0\xcf\x11\xe0"],
-    "doc":  [b"\xd0\xcf\x11\xe0"],
-    "xls":  [b"\xd0\xcf\x11\xe0"],
+    "docx": [b"PK\x03\x04"], "xlsx": [b"PK\x03\x04"], "pptx": [b"PK\x03\x04"],
+    "ppt":  [b"\xd0\xcf\x11\xe0"], "doc": [b"\xd0\xcf\x11\xe0"], "xls": [b"\xd0\xcf\x11\xe0"],
     "png":  [b"\x89PNG"],
-    "jpg":  [b"\xff\xd8\xff"],
-    "jpeg": [b"\xff\xd8\xff"],
+    "jpg":  [b"\xff\xd8\xff"], "jpeg": [b"\xff\xd8\xff"],
     "csv":  None,
 }
 
+def validar_nome(nome):
+    p = nome.split(".")
+    return len(p) <= 2 or not any(x.lower() in _EXT_PERIGOSAS for x in p[1:-1])
 
-def validar_magic_bytes(caminho: str, extensao: str) -> bool:
-    magics = _MAGIC.get(extensao)
-    if magics is None:
-        return True
+def validar_magic(caminho, ext):
+    m = _MAGIC.get(ext)
+    if m is None: return True
     try:
-        with open(caminho, "rb") as f:
-            header = f.read(8)
-        return any(header.startswith(m) for m in magics)
-    except Exception:
-        return False
-
-# ─────────────────────────────────────────
-# Isolamento por pasta de sessão
-# ─────────────────────────────────────────
-
-def criar_pasta_sessao() -> str:
-    pasta_uuid = uuid.uuid4().hex
-    pasta      = os.path.join(UPLOAD_FOLDER, pasta_uuid)
-    os.makedirs(pasta, exist_ok=True)
-    return pasta_uuid
+        with open(caminho, "rb") as f: h = f.read(8)
+        return any(h.startswith(x) for x in m)
+    except: return False
 
 
-def pasta_sessao_path(pasta_uuid: str) -> str:
-    return os.path.join(UPLOAD_FOLDER, pasta_uuid)
+def criar_pasta():
+    uid = uuid.uuid4().hex
+    os.makedirs(os.path.join(UPLOAD_FOLDER, uid), exist_ok=True)
+    return uid
 
-# ─────────────────────────────────────────
-# Limpeza residual em background
-# ─────────────────────────────────────────
+def pasta_path(uid):
+    return os.path.join(UPLOAD_FOLDER, uid)
+
+
+# ── Preview de tabela ─────────────────────────────────────────
+
+def gerar_preview_tabela(caminho: str, extensao: str, limite: int = None):
+    """
+    Gera HTML de tabela para CSV/XLSX.
+    limite=None → sem limite de linhas (CSV completo).
+    limite=N    → máx N linhas.
+    """
+    try:
+        if extensao == "csv":
+            enc = detectar_encoding(caminho)
+            df  = pd.read_csv(
+                caminho,
+                nrows=limite,
+                sep=None, engine="python",
+                encoding=enc,
+                encoding_errors="replace",
+                on_bad_lines="skip",
+            )
+        elif extensao in ("xlsx", "xls"):
+            df = pd.read_excel(caminho, nrows=limite or 50, engine="openpyxl")
+        else:
+            return None
+
+        df.columns = [str(c).strip() for c in df.columns]
+        df = df.fillna("")
+
+        # Trunca colunas (máx 10)
+        if len(df.columns) > 10:
+            df = df.iloc[:, :10]
+
+        # Trunca texto longo por célula (pandas 3.0+: .map em vez de .applymap)
+        df = df.map(lambda v: (str(v)[:60] + "…") if len(str(v)) > 60 else str(v))
+
+        return df.to_html(classes="tabela-preview", border=0, index=False, na_rep="")
+
+    except Exception as e:
+        log.warning(f"Preview tabela ({extensao}): {e}")
+        return None
+
+
+# ── Limpeza automática ────────────────────────────────────────
 
 def _limpar_residuos():
     limite = 15 * 60
     while True:
         time.sleep(900)
         agora = time.time()
-        for item in os.listdir(UPLOAD_FOLDER):
-            caminho = os.path.join(UPLOAD_FOLDER, item)
-            try:
-                if agora - os.path.getmtime(caminho) > limite:
-                    if os.path.isdir(caminho):
-                        shutil.rmtree(caminho, ignore_errors=True)
-                    elif os.path.isfile(caminho):
-                        os.remove(caminho)
-            except Exception:
-                pass
-        for item in os.listdir(DOWNLOAD_FOLDER):
-            caminho = os.path.join(DOWNLOAD_FOLDER, item)
-            try:
-                if os.path.isfile(caminho):
-                    if agora - os.path.getmtime(caminho) > limite:
-                        os.remove(caminho)
-            except Exception:
-                pass
-
+        for pasta in [UPLOAD_FOLDER, DOWNLOAD_FOLDER]:
+            for item in os.listdir(pasta):
+                c = os.path.join(pasta, item)
+                try:
+                    if agora - os.path.getmtime(c) > limite:
+                        if os.path.isdir(c): shutil.rmtree(c, ignore_errors=True)
+                        else: os.remove(c)
+                except: pass
 
 threading.Thread(target=_limpar_residuos, daemon=True).start()
 
-# ─────────────────────────────────────────
-# Context processor
-# ─────────────────────────────────────────
+
+# ── Context processor ─────────────────────────────────────────
 
 @app.context_processor
 def inject_globals():
-    return {
-        "contador":   contador_conversoes,
-        "historico":  session.get("historico", []),
-        "motor":      obter_motor(),
-        "csrf_token": gerar_csrf(),
-    }
-
-# ─────────────────────────────────────────
-# Erros HTTP
-# ─────────────────────────────────────────
+    return dict(
+        contador=contador_conversoes,
+        historico=session.get("historico", []),
+        motor=obter_motor(),
+        csrf_token=gerar_csrf(),
+    )
 
 @app.errorhandler(413)
 def arquivo_grande(e):
-    log.warning("Arquivo rejeitado: tamanho excedeu MAX_CONTENT_LENGTH")
-    return render_template("index.html", erro=f"Arquivo muito grande. Limite geral: {MAX_MB} MB."), 413
+    return render_template("index.html",
+                           erro=f"Arquivo muito grande. Limite: {MAX_MB} MB."), 413
 
-# ─────────────────────────────────────────
-# Preview de tabela
-# ─────────────────────────────────────────
 
-def gerar_preview(caminho: str, extensao: str):
-    try:
-        if extensao == "csv":
-            df = pd.read_csv(caminho, nrows=5, sep=None, engine="python")
-        elif extensao in ("xlsx", "xls"):
-            df = pd.read_excel(caminho, nrows=5, engine="openpyxl")
-        else:
-            return None
-        if len(df.columns) > 8:
-            df = df.iloc[:, :8]
-        return df.to_html(classes="tabela-preview", border=0, index=False)
-    except Exception:
-        return None
-
-# ─────────────────────────────────────────
-# Rota principal
-# ─────────────────────────────────────────
+# ── Rotas ─────────────────────────────────────────────────────
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# ─────────────────────────────────────────
-# Upload
-# ─────────────────────────────────────────
+
+@app.route("/preview/<pasta_uuid>/<preview_file>")
+def preview_arquivo(pasta_uuid, preview_file):
+    if session.get("pasta_upload") != pasta_uuid:
+        abort(403)
+    if not re.match(r'^[a-zA-Z0-9_]+\.[a-zA-Z0-9]{1,10}$', preview_file):
+        abort(400)
+    c = os.path.join(UPLOAD_FOLDER, pasta_uuid, preview_file)
+    if not os.path.exists(c):
+        abort(404)
+    return send_file(c)
+
+
+@app.route("/preview-convert/<pasta_uuid>/<destino>")
+def preview_convert(pasta_uuid, destino):
+    if session.get("pasta_upload") != pasta_uuid:
+        abort(403)
+    if destino not in {"pdf","png","jpg","csv","xlsx","docx","pptx","ppt"}:
+        abort(400)
+
+    orientacao = request.args.get("orientacao", "retrato")
+    if orientacao not in ("retrato", "paisagem"):
+        orientacao = "retrato"
+
+    extensao     = session.get("arquivo_ext", "")
+    arquivo_nome = session.get("arquivo_nome", "")
+    pp           = pasta_path(pasta_uuid)
+    entrada      = os.path.join(pp, arquivo_nome)
+
+    if not os.path.exists(entrada):
+        abort(404)
+    if extensao == destino:
+        return send_file(entrada)
+
+    ori_key   = f"_{orientacao}" if destino == "pdf" else ""
+    prev_nome = f"prev_{destino}{ori_key}.{destino}"
+    prev_path = os.path.join(pp, prev_nome)
+
+    if not os.path.exists(prev_path):
+        err = [None]; done = threading.Event()
+        def _g():
+            try:
+                converter_arquivo(entrada, prev_path, extensao, destino,
+                                  orientacao=orientacao)
+            except Exception as e:
+                err[0] = e
+            finally:
+                done.set()
+        threading.Thread(target=_g, daemon=True).start()
+        done.wait(timeout=TIMEOUT_PREVIEW)
+        if not done.is_set():
+            abort(504)
+        if err[0] or not os.path.exists(prev_path):
+            abort(500, description=str(err[0]) if err[0] else "Erro ao gerar prévia")
+
+    return send_file(prev_path)
+
+
+@app.route("/preview-tabela/<pasta_uuid>/<destino>")
+def preview_tabela(pasta_uuid, destino):
+    if session.get("pasta_upload") != pasta_uuid:
+        abort(403)
+    if destino not in ("csv", "xlsx"):
+        abort(400)
+
+    extensao     = session.get("arquivo_ext", "")
+    arquivo_nome = session.get("arquivo_nome", "")
+    pp           = pasta_path(pasta_uuid)
+    entrada      = os.path.join(pp, arquivo_nome)
+
+    if not os.path.exists(entrada):
+        abort(404)
+
+    if extensao == destino:
+        alvo = entrada
+    else:
+        cache = os.path.join(pp, f"prev_{destino}.{destino}")
+        if not os.path.exists(cache):
+            try:
+                converter_arquivo(entrada, cache, extensao, destino)
+            except Exception as e:
+                return Response(
+                    f"<p class='prev-erro-msg'>Erro ao converter: {e}</p>",
+                    status=500
+                )
+        alvo = cache
+
+    # CSV: sem limite | XLSX: máx 50 linhas
+    limite = None if destino == "csv" else 50
+    tabela = gerar_preview_tabela(alvo, destino, limite=limite)
+
+    if tabela:
+        return Response(tabela, content_type="text/html")
+    return Response(
+        "<p class='prev-erro-msg'>Não foi possível gerar a tabela.</p>",
+        status=500
+    )
+
 
 @app.route("/upload", methods=["POST"])
 def upload():
+    global contador_conversoes
     ip = request.remote_addr
 
     if not verificar_rate_limit(ip):
-        log.warning(f"Rate limit atingido — IP: {ip}")
         return render_template("index.html", erro="Muitas requisições. Aguarde um momento.")
-
     if not validar_csrf(request.form.get("csrf_token", "")):
-        log.warning(f"CSRF inválido no upload — IP: {ip}")
-        return render_template("index.html", erro="Token de segurança inválido. Recarregue a página.")
+        return render_template("index.html", erro="Token inválido. Recarregue a página.")
 
     try:
         if "arquivo" not in request.files:
             return render_template("index.html", erro="Nenhum arquivo enviado.")
-
-        arquivo = request.files["arquivo"]
-
-        if not arquivo or arquivo.filename == "":
+        arq = request.files["arquivo"]
+        if not arq or arq.filename == "":
             return render_template("index.html", erro="Selecione um arquivo.")
 
-        nome_original = arquivo.filename.strip()
-
-        if not validar_nome_arquivo(nome_original):
-            log.warning(f"Extensão dupla bloqueada: {nome_original} — IP: {ip}")
-            return render_template("index.html", erro="Nome de arquivo suspeito. Verifique o arquivo.")
-
+        nome_original = arq.filename.strip()
+        if not validar_nome(nome_original):
+            return render_template("index.html", erro="Nome de arquivo suspeito.")
         if "." not in nome_original:
-            return render_template("index.html", erro="O arquivo não possui extensão reconhecida.")
+            return render_template("index.html", erro="Arquivo sem extensão reconhecida.")
 
-        extensao = nome_original.rsplit(".", 1)[1].lower()
-
-        conteudo = arquivo.read()
+        ext      = nome_original.rsplit(".", 1)[1].lower()
+        conteudo = arq.read()
         tamanho  = len(conteudo)
 
-        limite_tipo = LIMITES_POR_TIPO.get(extensao, MAX_MB * 1024 * 1024)
-        if tamanho > limite_tipo:
-            log.info(f"Arquivo muito grande para {extensao}: {tamanho} bytes — IP: {ip}")
-            return render_template(
-                "index.html",
-                erro=f"Arquivo muito grande para '{extensao.upper()}'. Limite: {NOMES_LIMITES.get(extensao, f'{MAX_MB} MB')}."
-            )
+        limite = LIMITES_POR_TIPO.get(ext, MAX_MB * 1024 * 1024)
+        if tamanho > limite:
+            return render_template("index.html",
+                erro=f"Arquivo muito grande para '{ext.upper()}'. Limite: {NOMES_LIMITES.get(ext, f'{MAX_MB} MB')}.")
 
-        pasta_uuid = criar_pasta_sessao()
-        pasta_path = pasta_sessao_path(pasta_uuid)
-        nome_interno = f"arquivo.{extensao}"
-        caminho = os.path.join(pasta_path, nome_interno)
+        uid    = criar_pasta()
+        pp     = pasta_path(uid)
+        nome_i = f"arquivo.{ext}"
+        cam    = os.path.join(pp, nome_i)
 
-        with open(caminho, "wb") as f:
+        with open(cam, "wb") as f:
             f.write(conteudo)
 
-        if not validar_magic_bytes(caminho, extensao):
-            shutil.rmtree(pasta_path, ignore_errors=True)
-            log.warning(f"Magic bytes inválidos: {nome_original} — IP: {ip}")
-            return render_template(
-                "index.html",
-                erro=f"O arquivo não parece ser um '{extensao.upper()}' válido. Pode estar corrompido."
-            )
+        if not validar_magic(cam, ext):
+            shutil.rmtree(pp, ignore_errors=True)
+            return render_template("index.html",
+                                   erro=f"Arquivo não parece ser '{ext.upper()}' válido.")
 
-        conversoes = obter_conversoes(extensao)
+        conversoes = obter_conversoes(ext)
         if not conversoes:
-            shutil.rmtree(pasta_path, ignore_errors=True)
-            return render_template("index.html", erro=f"Formato '.{extensao}' ainda não é suportado.")
+            shutil.rmtree(pp, ignore_errors=True)
+            return render_template("index.html",
+                                   erro=f"Formato '.{ext}' não suportado.")
 
-        session["pasta_upload"] = pasta_uuid
-        session["arquivo_nome"] = nome_interno
-        session["arquivo_ext"]  = extensao
+        session["pasta_upload"] = uid
+        session["arquivo_nome"] = nome_i
+        session["arquivo_ext"]  = ext
         session.modified = True
+        log.info(f"Upload OK: {nome_original} ({tamanho}b) — {ip}")
 
-        log.info(f"Upload OK: {nome_original} ({tamanho} bytes) — IP: {ip}")
+        # ── Preview inicial ──────────────────────────────────────
+        preview_url  = None
+        preview_tipo = None
+        tabela_html  = None
 
-        tabela_html = gerar_preview(caminho, extensao)
+        if ext == "pdf":
+            preview_url  = f"/preview/{uid}/{nome_i}"
+            preview_tipo = "pdf"
 
-        return render_template(
-            "index.html",
-            arquivo=nome_interno,
+        elif ext in ("png", "jpg", "jpeg"):
+            preview_url  = f"/preview/{uid}/{nome_i}"
+            preview_tipo = "imagem"
+
+        elif ext in ("csv", "xlsx", "xls"):
+            limite_prev = None if ext == "csv" else 50
+            tabela_html = gerar_preview_tabela(cam, ext, limite=limite_prev)
+
+        else:
+            # DOCX/PPT/PPTX: tenta gerar PDF de prévia em background
+            prev_p = os.path.join(pp, "preview_source.pdf")
+            err = [None]; done = threading.Event()
+            def _p():
+                try: converter_arquivo(cam, prev_p, ext, "pdf")
+                except Exception as e: err[0] = e
+                finally: done.set()
+            threading.Thread(target=_p, daemon=True).start()
+            done.wait(timeout=30)
+            if not err[0] and os.path.exists(prev_p):
+                preview_url  = f"/preview/{uid}/preview_source.pdf"
+                preview_tipo = "pdf"
+
+        return render_template("index.html",
+            arquivo=nome_i,
             nome_original=nome_original,
-            origem=extensao,
+            origem=ext,
             conversoes=conversoes,
+            preview_url=preview_url,
+            preview_tipo=preview_tipo,
             tabela_html=tabela_html,
         )
 
-    except Exception as erro:
-        log.error(f"Erro no upload — IP: {ip} — {traceback.format_exc()}")
-        return render_template("index.html", erro=str(erro))
+    except Exception as e:
+        log.error(f"Upload error — {ip} — {traceback.format_exc()}")
+        return render_template("index.html", erro=str(e))
 
-# ─────────────────────────────────────────
-# Conversão
-# ─────────────────────────────────────────
 
 @app.route("/converter", methods=["POST"])
 def converter():
     global _conversoes_ativas, contador_conversoes
-
     ip = request.remote_addr
 
     if not verificar_rate_limit(ip):
-        log.warning(f"Rate limit atingido na conversão — IP: {ip}")
-        return render_template("index.html", erro="Muitas requisições. Aguarde um momento.")
-
+        return render_template("index.html", erro="Muitas requisições.")
     if not validar_csrf(request.form.get("csrf_token", "")):
-        log.warning(f"CSRF inválido na conversão — IP: {ip}")
-        return render_template("index.html", erro="Token de segurança inválido. Recarregue a página.")
+        return render_template("index.html", erro="Token inválido.")
 
     with _lock_conv:
         if _conversoes_ativas >= MAX_PARALELAS:
-            return render_template("index.html", erro="Servidor ocupado. Aguarde alguns segundos e tente novamente.")
+            return render_template("index.html",
+                                   erro="Servidor ocupado. Tente em instantes.")
         _conversoes_ativas += 1
 
-    pasta_uuid    = session.get("pasta_upload", "")
-    arquivo_nome  = session.get("arquivo_nome", "")
-    origem        = request.form.get("origem", "")
-    destino       = request.form.get("destino", "")
-    nome_original = request.form.get("nome_original", "arquivo")
+    uid            = session.get("pasta_upload", "")
+    arquivo_nome   = session.get("arquivo_nome", "")
+    origem         = request.form.get("origem", "")
+    destino        = request.form.get("destino", "")
+    nome_original  = request.form.get("nome_original", "arquivo")
     download_token = request.form.get("downloadToken", "")
+    orientacao     = request.form.get("orientacao", "retrato")
+    if orientacao not in ("retrato", "paisagem"):
+        orientacao = "retrato"
 
-    if not re.match(r'^[a-f0-9]{32}$', pasta_uuid):
-        with _lock_conv:
-            _conversoes_ativas -= 1
-        return render_template("index.html", erro="Sessão inválida. Envie o arquivo novamente.")
+    if not re.match(r'^[a-f0-9]{32}$', uid):
+        with _lock_conv: _conversoes_ativas -= 1
+        return render_template("index.html", erro="Sessão inválida.")
 
-    pasta_path = pasta_sessao_path(pasta_uuid)
-    entrada    = os.path.join(pasta_path, arquivo_nome)
-
+    pp      = pasta_path(uid)
+    entrada = os.path.join(pp, arquivo_nome)
     if not os.path.exists(entrada):
-        with _lock_conv:
-            _conversoes_ativas -= 1
-        return render_template("index.html", erro="Arquivo expirou. Envie novamente.")
+        with _lock_conv: _conversoes_ativas -= 1
+        return render_template("index.html",
+                               erro="Arquivo expirou. Envie novamente.")
 
     saida = None
-
     try:
-        nome_base  = os.path.splitext(secure_filename(nome_original))[0]
-        nome_base  = re.sub(r'[^\w\-_. ]', '_', nome_base).strip() or "arquivo"
-        nome_saida = f"{nome_base}.{destino}"
+        base       = re.sub(r'[^\w\-_. ]', '_',
+                            os.path.splitext(secure_filename(nome_original))[0]).strip() or "arquivo"
+        nome_saida = f"{base}.{destino}"
         saida      = os.path.join(DOWNLOAD_FOLDER, f"{uuid.uuid4().hex}_{nome_saida}")
 
-        erro_conv = [None]
-        concluido = threading.Event()
-
-        def _converter():
+        err = [None]; done = threading.Event()
+        def _c():
             try:
-                converter_arquivo(entrada, saida, origem, destino)
+                converter_arquivo(entrada, saida, origem, destino,
+                                  orientacao=orientacao)
             except Exception as e:
-                erro_conv[0] = e
+                err[0] = e
             finally:
-                concluido.set()
+                done.set()
+        threading.Thread(target=_c, daemon=True).start()
+        done.wait(timeout=TIMEOUT_CONV)
 
-        t = threading.Thread(target=_converter, daemon=True)
-        t.start()
-        concluido.wait(timeout=TIMEOUT_CONV)
-
-        if not concluido.is_set():
-            log.error(f"Timeout na conversão {origem}→{destino} — IP: {ip}")
-            return render_template("index.html", erro="Tempo de conversão excedido. Tente um arquivo menor.")
-
-        if erro_conv[0]:
-            raise erro_conv[0]
+        if not done.is_set():
+            return render_template("index.html",
+                                   erro="Tempo excedido. Tente com um arquivo menor.")
+        if err[0]:
+            raise err[0]
 
         @after_this_request
-        def deletar(response):
+        def deletar(resp):
+            try: shutil.rmtree(pp, ignore_errors=True)
+            except: pass
             try:
-                shutil.rmtree(pasta_path, ignore_errors=True)
-            except Exception:
-                pass
-            try:
-                if saida and os.path.exists(saida):
-                    os.remove(saida)
-            except Exception:
-                pass
-            return response
+                if saida and os.path.exists(saida): os.remove(saida)
+            except: pass
+            return resp
 
         contador_conversoes += 1
-        log.info(f"Conversão OK: {nome_original} | {origem.upper()}→{destino.upper()} | IP: {ip}")
+        log.info(f"OK: {nome_original} | {origem.upper()}→{destino.upper()} | {ip}")
 
         if "historico" not in session:
             session["historico"] = []
@@ -462,25 +490,22 @@ def converter():
         session["pasta_upload"] = ""
         session.modified = True
 
-        response = send_file(saida, as_attachment=True, download_name=nome_saida)
-
+        resp = send_file(saida, as_attachment=True, download_name=nome_saida)
         if download_token:
-            response.set_cookie("downloadToken", download_token, max_age=60, samesite="Lax")
+            resp.set_cookie("downloadToken", download_token,
+                            max_age=60, samesite="Lax")
+        return resp
 
-        return response
-
-    except Exception as erro:
-        log.error(f"Erro na conversão {origem}→{destino} — IP: {ip} — {traceback.format_exc()}")
-        try:
-            shutil.rmtree(pasta_path, ignore_errors=True)
-        except Exception:
-            pass
-        return render_template("index.html", erro=str(erro))
-
+    except Exception as e:
+        log.error(f"Conversão error — {traceback.format_exc()}")
+        try: shutil.rmtree(pp, ignore_errors=True)
+        except: pass
+        return render_template("index.html", erro=str(e))
     finally:
         with _lock_conv:
             _conversoes_ativas -= 1
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host="0.0.0.0", port=port)
