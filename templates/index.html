@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma Converter — Conversor de Arquivos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="bg-grid"></div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <span class="toast-icone">✓</span>
+        <span class="toast-msg">Download concluído!</span>
+    </div>
+
+    <!-- Overlay do drawer mobile -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- Marquee -->
+    <div class="marquee-bar">
+        <div class="marquee-track">
+            <span>PDF</span><span class="sep">—</span>
+            <span>DOCX</span><span class="sep">—</span>
+            <span>XLSX</span><span class="sep">—</span>
+            <span>CSV</span><span class="sep">—</span>
+            <span>PPT</span><span class="sep">—</span>
+            <span>PPTX</span><span class="sep">—</span>
+            <span>PNG</span><span class="sep">—</span>
+            <span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span>
+            <span>DOCX</span><span class="sep">—</span>
+            <span>XLSX</span><span class="sep">—</span>
+            <span>CSV</span><span class="sep">—</span>
+            <span>PPT</span><span class="sep">—</span>
+            <span>PPTX</span><span class="sep">—</span>
+            <span>PNG</span><span class="sep">—</span>
+            <span>JPG</span><span class="sep">—</span>
+        </div>
+    </div>
+
+    <!-- Barra mobile -->
+    <div class="mobile-nav">
+        <span class="mobile-logo">PRISMA</span>
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Abrir menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+
+    <div class="layout">
+
+        <!-- ======================== SIDEBAR ======================== -->
+        <aside class="sidebar" id="sidebar">
+
+            <!-- Botão fechar (só mobile) -->
+            <button class="sidebar-fechar" id="btnFecharSidebar">✕</button>
+
+            <div class="sidebar-logo">
+                <span class="logo-mark">PRISMA</span>
+                <span class="logo-version">Converter · v2.1</span>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info">
+                <p class="sidebar-label">Sistema</p>
+                <p class="sidebar-valor">Flask + Python</p>
+            </div>
+
+            <div class="sidebar-info">
+                <p class="sidebar-label">Status</p>
+                <p class="sidebar-valor sidebar-online">
+                    <span class="dot-online"></span>Online
+                </p>
+            </div>
+
+            <div class="sidebar-info">
+                <p class="sidebar-label">Motor</p>
+                <p class="sidebar-valor sidebar-motor-{{ motor or 'none' }}">
+                    {% if motor == 'office' %}
+                        ⊞ MS Office
+                    {% elif motor == 'libreoffice' %}
+                        ◈ LibreOffice
+                    {% else %}
+                        <span style="color:var(--accent2)">⚠ Nenhum</span>
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="sidebar-info">
+                <p class="sidebar-label">Limite</p>
+                <p class="sidebar-valor">50 MB</p>
+            </div>
+
+            <div class="sidebar-info">
+                <p class="sidebar-label">Conversões feitas</p>
+                <p class="sidebar-valor sidebar-counter">{{ contador }}</p>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info">
+                <p class="sidebar-label">Rotas disponíveis</p>
+                <div class="sidebar-rotas">
+                    <span class="rota-item"><span class="rota-de csv">CSV</span>→<span class="rota-para xlsx">XLSX</span></span>
+                    <span class="rota-item"><span class="rota-de csv">CSV</span>→<span class="rota-para pdf">PDF</span></span>
+                    <span class="rota-item"><span class="rota-de xlsx">XLSX</span>→<span class="rota-para csv">CSV</span></span>
+                    <span class="rota-item"><span class="rota-de xlsx">XLSX</span>→<span class="rota-para pdf">PDF</span></span>
+                    <span class="rota-item"><span class="rota-de pdf">PDF</span>→<span class="rota-para docx">DOCX</span></span>
+                    <span class="rota-item"><span class="rota-de pdf">PDF</span>→<span class="rota-para png">PNG</span></span>
+                    <span class="rota-item"><span class="rota-de docx">DOCX</span>→<span class="rota-para pdf">PDF</span></span>
+                    <span class="rota-item"><span class="rota-de ppt">PPT</span>→<span class="rota-para pdf">PDF</span></span>
+                    <span class="rota-item"><span class="rota-de pptx">PPTX</span>→<span class="rota-para pdf">PDF</span></span>
+                    <span class="rota-item"><span class="rota-de png">PNG</span>→<span class="rota-para pdf">PDF</span></span>
+                    <span class="rota-item"><span class="rota-de jpg">JPG</span>→<span class="rota-para pdf">PDF</span></span>
+                </div>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-criador">
+                <p class="sidebar-label">Criador</p>
+                <p class="criador-nome">Gustavo Goulart Bretas</p>
+                <a href="https://github.com/GuGoulart" target="_blank"
+                   rel="noopener noreferrer" class="criador-github">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                    </svg>
+                    github.com/GuGoulart
+                </a>
+            </div>
+
+        </aside>
+
+        <!-- ======================== MAIN ======================== -->
+        <main class="main">
+
+            <header class="header-main">
+                <div class="header-num">001</div>
+                <h1 class="titulo-principal">Converta<br><em>qualquer arquivo</em></h1>
+                <p class="titulo-sub">Arraste, selecione o formato e baixe. Até 50 MB.</p>
+            </header>
+
+            <!-- Grid: steps (esq) + preview (dir) -->
+            <div class="content-wrapper {% if tabela_html %}com-preview{% endif %}">
+
+                <!-- COLUNA ESQUERDA -->
+                <div class="steps-col">
+
+                    <!-- Step 01 -->
+                    <section class="step">
+                        <div class="step-header">
+                            <span class="step-num">01</span>
+                            <span class="step-label">Selecione o arquivo</span>
+                        </div>
+
+                        <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                            <div class="upload-box" id="uploadBox">
+                                <div class="corner tl"></div>
+                                <div class="corner tr"></div>
+                                <div class="corner bl"></div>
+                                <div class="corner br"></div>
+                                <div class="upload-inner">
+                                    <div class="upload-icone" id="uploadIcone">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="1.5">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="17 8 12 3 7 8"/>
+                                            <line x1="12" y1="3" x2="12" y2="15"/>
+                                        </svg>
+                                    </div>
+                                    <p class="upload-titulo" id="uploadTitulo">Arraste o arquivo aqui</p>
+                                    <p class="upload-desc" id="uploadDesc">
+                                        PDF · DOCX · XLSX · CSV · PPT · PPTX · PNG · JPG
+                                    </p>
+                                </div>
+                                <input id="arquivo" type="file" name="arquivo" hidden required>
+                            </div>
+
+                            <button class="botao" type="submit" id="btnEnviar">
+                                <span>Enviar</span>
+                                <span class="botao-arr">↗</span>
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Step 02 -->
+                    {% if arquivo %}
+                    <section class="step step-destaque">
+                        <div class="step-header">
+                            <span class="step-num">02</span>
+                            <span class="step-label">Escolha o destino</span>
+                        </div>
+
+                        <div class="arquivo-row">
+                            <span class="arquivo-ext-badge badge-{{ origem }}">{{ origem.upper() }}</span>
+                            <span class="arquivo-nome-text">{{ nome_original }}</span>
+                        </div>
+
+                        <form action="/converter" method="POST" id="converterForm">
+                            <input type="hidden" name="csrf_token"    value="{{ csrf_token }}">
+                            <input type="hidden" name="arquivo"       value="{{ arquivo }}">
+                            <input type="hidden" name="origem"        value="{{ origem }}">
+                            <input type="hidden" name="nome_original" value="{{ nome_original }}">
+
+                            <div class="opcoes-grid">
+                                {% for c in conversoes %}
+                                <label class="opcao-card">
+                                    <input type="radio" name="destino" value="{{ c }}"
+                                        {% if loop.first %}checked{% endif %}>
+                                    <span class="opcao-ext badge-text-{{ c }}">{{ c.upper() }}</span>
+                                    <span class="opcao-check">✓</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+
+                            <div class="progress-wrap" id="progressWrap">
+                                <div class="progress-bar" id="progressBar"></div>
+                                <span class="progress-label" id="progressLabel"></span>
+                            </div>
+
+                            <button class="botao botao-conv" type="submit" id="btnConverter">
+                                <span>Converter e baixar</span>
+                                <span class="botao-arr">↓</span>
+                            </button>
+                        </form>
+
+                        <button class="botao botao-outro" id="btnOutro" style="display:none"
+                            onclick="window.location.href='/'">
+                            <span>Converter outro arquivo</span>
+                            <span class="botao-arr">↺</span>
+                        </button>
+                    </section>
+                    {% endif %}
+
+                    <!-- Erro -->
+                    {% if erro %}
+                    <div class="erro-box">
+                        <span class="erro-cod">ERR</span>
+                        <span class="erro-msg">{{ erro }}</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Histórico -->
+                    {% if historico %}
+                    <section class="historico-section">
+                        <div class="section-header-plain">
+                            <span class="section-label-plain">Histórico da sessão</span>
+                            <span class="section-sub-plain">{{ historico|length }} conversão(ões)</span>
+                        </div>
+                        <div class="historico-lista">
+                            {% for item in historico %}
+                            <div class="historico-item">
+                                <span class="hist-badge badge-{{ item.origem|lower }}">{{ item.origem }}</span>
+                                <span class="hist-seta">→</span>
+                                <span class="hist-badge badge-{{ item.destino|lower }}">{{ item.destino }}</span>
+                                <span class="hist-nome">{{ item.nome }}</span>
+                                <span class="hist-hora">{{ item.hora }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                    {% endif %}
+
+                </div>
+                <!-- /steps-col -->
+
+                <!-- COLUNA DIREITA — preview -->
+                {% if tabela_html %}
+                <div class="preview-col">
+                    <div class="preview-section">
+                        <div class="preview-header">
+                            <span class="preview-label">Prévia do arquivo</span>
+                            <span class="preview-sub">5 primeiras linhas</span>
+                        </div>
+                        <div class="preview-scroll">
+                            {{ tabela_html | safe }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+            <!-- /content-wrapper -->
+
+        </main>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="rodape">
+        <span class="rodape-marca">Prisma Converter © 2025</span>
+        <span class="rodape-sep">|</span>
+        <span class="rodape-autor">Gustavo Goulart Bretas</span>
+        <span class="rodape-sep">|</span>
+        <a href="https://github.com/GuGoulart" target="_blank"
+           rel="noopener noreferrer" class="rodape-link">
+            github.com/GuGoulart
+        </a>
+        <span class="rodape-sep">|</span>
+        <span id="relogio"></span>
+    </footer>
+
+    <script>
+        const origemArquivo = "{{ origem if origem else '' }}";
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

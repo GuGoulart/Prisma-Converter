@@ -1,0 +1,31 @@
+# Ambiente virtual
+venv/
+env/
+.venv/
+
+# Pastas temporárias do app
+uploads/
+downloads/
+
+# Logs
+prisma.log
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Variáveis de ambiente
+.env
+
+# IDEs
+.vscode/
+.idea/
+*.code-workspace
+
+# Windows
+Thumbs.db
+desktop.ini
