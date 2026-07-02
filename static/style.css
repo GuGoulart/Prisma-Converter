@@ -56,8 +56,6 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);overflow-x:h
 
 .mobile-nav{display:none}
 .sidebar-fechar{display:none}
-.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:150;backdrop-filter:blur(3px)}
-.drawer-overlay.ativo{display:block}
 
 .layout{position:relative;z-index:1;display:flex;min-height:100vh;padding-top:34px;padding-bottom:44px}
 
