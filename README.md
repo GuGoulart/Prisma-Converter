@@ -140,7 +140,7 @@ pip install pywin32
 pip install chardet
 ```
 
-Ou, se houver um `requirements.txt` no projeto:
+Ou, se quiser use o `requirements.txt` do projeto:
 
 ```bash
 pip install -r requirements.txt
