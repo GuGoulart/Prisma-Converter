@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.git/
+.gitignore
+uploads/*
+downloads/*
+!uploads/.gitkeep
+!downloads/.gitkeep
+README.md
