@@ -139,7 +139,7 @@ def gerar_preview_tabela(caminho: str, extensao: str, limite: int = None):
                 on_bad_lines="skip",
             )
         elif extensao in ("xlsx", "xls"):
-            df = pd.read_excel(caminho, nrows=limite or 50, engine="openpyxl")
+            df = pd.read_excel(caminho, nrows=limite, engine="openpyxl")
         else:
             return None
 
@@ -275,9 +275,13 @@ def preview_tabela(pasta_uuid, destino):
     if not os.path.exists(entrada):
         abort(404)
 
-    if extensao == destino:
-        alvo = entrada
+    # Sempre mostra os dados reais do arquivo original
+    # Se o arquivo já é CSV/XLSX, lê direto; senão converte
+    if extensao in ("csv", "xlsx", "xls"):
+        alvo     = entrada
+        alvo_ext = extensao
     else:
+        # Converte para o destino pedido e mostra
         cache = os.path.join(pp, f"prev_{destino}.{destino}")
         if not os.path.exists(cache):
             try:
@@ -287,11 +291,11 @@ def preview_tabela(pasta_uuid, destino):
                     f"<p class='prev-erro-msg'>Erro ao converter: {e}</p>",
                     status=500
                 )
-        alvo = cache
+        alvo     = cache
+        alvo_ext = destino
 
-    # CSV: sem limite | XLSX: máx 50 linhas
-    limite = None if destino == "csv" else 50
-    tabela = gerar_preview_tabela(alvo, destino, limite=limite)
+    # Sem limite de linhas — mostra tudo
+    tabela = gerar_preview_tabela(alvo, alvo_ext, limite=None)
 
     if tabela:
         return Response(tabela, content_type="text/html")
@@ -372,8 +376,7 @@ def upload():
             preview_tipo = "imagem"
 
         elif ext in ("csv", "xlsx", "xls"):
-            limite_prev = None if ext == "csv" else 50
-            tabela_html = gerar_preview_tabela(cam, ext, limite=limite_prev)
+            tabela_html = gerar_preview_tabela(cam, ext, limite=None)
 
         else:
             # DOCX/PPT/PPTX: tenta gerar PDF de prévia em background

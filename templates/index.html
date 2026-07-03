@@ -40,7 +40,7 @@
 <!-- Nav mobile -->
 <div class="mobile-nav">
     <span class="mobile-logo">PRISMA</span>
-    <button class="mobile-menu-btn" id="menuBtn" aria-label="Abrir menu">
+    <button class="mobile-menu-btn" id="menuBtn" aria-label="Menu">
         <span></span><span></span><span></span>
     </button>
 </div>
@@ -49,7 +49,6 @@
 
     <!-- ── SIDEBAR ───────────────────────────────────────── -->
     <aside class="sidebar" id="sidebar">
-        <button class="sidebar-fechar" id="btnFecharSidebar">✕</button>
 
         <div class="sidebar-logo">
             <span class="logo-mark">PRISMA</span>
@@ -66,34 +65,55 @@
             </p>
         </div>
         <div class="sidebar-info">
-            <p class="sidebar-label">Limite por arquivo</p>
+            <p class="sidebar-label">Limite</p>
             <p class="sidebar-valor">50 MB</p>
         </div>
 
         <div class="sidebar-linha"></div>
 
         <div class="sidebar-info">
-            <p class="sidebar-label">Rotas disponíveis</p>
-            <div class="sidebar-rotas">
-                <span class="rota-item"><span class="rota-de csv">CSV</span>→<span class="rota-para xlsx">XLSX</span></span>
-                <span class="rota-item"><span class="rota-de csv">CSV</span>→<span class="rota-para pdf">PDF</span></span>
-                <span class="rota-item"><span class="rota-de xlsx">XLSX</span>→<span class="rota-para csv">CSV</span></span>
-                <span class="rota-item"><span class="rota-de xlsx">XLSX</span>→<span class="rota-para pdf">PDF</span></span>
-                <span class="rota-item"><span class="rota-de xlsx">XLSX</span>→<span class="rota-para png">PNG</span></span>
-                <span class="rota-item"><span class="rota-de xlsx">XLSX</span>→<span class="rota-para jpg">JPG</span></span>
-                <span class="rota-item"><span class="rota-de pdf">PDF</span>→<span class="rota-para docx">DOCX</span></span>
-                <span class="rota-item"><span class="rota-de pdf">PDF</span>→<span class="rota-para pptx">PPTX</span></span>
-                <span class="rota-item"><span class="rota-de pdf">PDF</span>→<span class="rota-para ppt">PPT</span></span>
-                <span class="rota-item"><span class="rota-de pdf">PDF</span>→<span class="rota-para png">PNG</span></span>
-                <span class="rota-item"><span class="rota-de pdf">PDF</span>→<span class="rota-para xlsx">XLSX</span></span>
-                <span class="rota-item"><span class="rota-de pdf">PDF</span>→<span class="rota-para csv">CSV</span></span>
-                <span class="rota-item"><span class="rota-de docx">DOCX</span>→<span class="rota-para pdf">PDF</span></span>
-                <span class="rota-item"><span class="rota-de docx">DOCX</span>→<span class="rota-para png">PNG</span></span>
-                <span class="rota-item"><span class="rota-de docx">DOCX</span>→<span class="rota-para jpg">JPG</span></span>
-                <span class="rota-item"><span class="rota-de ppt">PPT</span>→<span class="rota-para pdf">PDF</span></span>
-                <span class="rota-item"><span class="rota-de pptx">PPTX</span>→<span class="rota-para pdf">PDF</span></span>
-                <span class="rota-item"><span class="rota-de png">PNG</span>→<span class="rota-para pdf">PDF</span></span>
-                <span class="rota-item"><span class="rota-de jpg">JPG</span>→<span class="rota-para pdf">PDF</span></span>
+            <p class="sidebar-label">Conversões</p>
+            <div class="sidebar-rotas-grid">
+                <div class="rota-grupo">
+                    <span class="rota-origem badge-csv">CSV</span>
+                    <span class="rota-seta">→</span>
+                    <span class="rota-destinos"><span class="rota-tag xlsx">XLSX</span><span class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span class="rota-tag pptx">PPTX</span></span>
+                </div>
+                <div class="rota-grupo">
+                    <span class="rota-origem badge-xlsx">XLSX</span>
+                    <span class="rota-seta">→</span>
+                    <span class="rota-destinos"><span class="rota-tag csv">CSV</span><span class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span class="rota-tag pptx">PPTX</span></span>
+                </div>
+                <div class="rota-grupo">
+                    <span class="rota-origem badge-pdf">PDF</span>
+                    <span class="rota-seta">→</span>
+                    <span class="rota-destinos"><span class="rota-tag docx">DOCX</span><span class="rota-tag pptx">PPTX</span><span class="rota-tag ppt">PPT</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span></span>
+                </div>
+                <div class="rota-grupo">
+                    <span class="rota-origem badge-docx">DOCX</span>
+                    <span class="rota-seta">→</span>
+                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span class="rota-tag pptx">PPTX</span></span>
+                </div>
+                <div class="rota-grupo">
+                    <span class="rota-origem badge-ppt">PPT</span>
+                    <span class="rota-seta">→</span>
+                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag pptx">PPTX</span></span>
+                </div>
+                <div class="rota-grupo">
+                    <span class="rota-origem badge-pptx">PPTX</span>
+                    <span class="rota-seta">→</span>
+                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag ppt">PPT</span></span>
+                </div>
+                <div class="rota-grupo">
+                    <span class="rota-origem badge-png">PNG</span>
+                    <span class="rota-seta">→</span>
+                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span class="rota-tag pptx">PPTX</span></span>
+                </div>
+                <div class="rota-grupo">
+                    <span class="rota-origem badge-jpg">JPG</span>
+                    <span class="rota-seta">→</span>
+                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span class="rota-tag pptx">PPTX</span></span>
+                </div>
             </div>
         </div>
 

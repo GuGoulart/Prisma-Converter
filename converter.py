@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import fitz
 import pandas as pd
-from pdf2docx import Converter
+from pdf2docx import Converter as PDF2DOCXConverter
 from PIL import Image
 
 try:
@@ -55,15 +55,15 @@ print(f"[Prisma] Motor: {MOTOR or 'NENHUM'} | pdfplumber: {_TEM_PDFPLUMBER}")
 # ─── Conversões disponíveis ───────────────────────────────────
 
 CONVERSOES = {
-    "csv":  ["xlsx", "pdf"],
-    "xlsx": ["csv",  "pdf", "png", "jpg"],
-    "pdf":  ["docx", "pptx", "ppt", "png", "xlsx", "csv"],
-    "docx": ["pdf",  "png", "jpg"],
-    "ppt":  ["pdf"],
-    "pptx": ["pdf"],
-    "png":  ["pdf"],
-    "jpg":  ["pdf"],
-    "jpeg": ["pdf"],
+    "csv":  ["xlsx", "pdf", "png", "jpg", "docx", "pptx"],
+    "xlsx": ["csv",  "pdf", "png", "jpg", "docx", "pptx"],
+    "pdf":  ["docx", "pptx", "ppt", "png", "jpg", "xlsx", "csv"],
+    "docx": ["pdf",  "png", "jpg", "xlsx", "csv", "pptx"],
+    "ppt":  ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "pptx"],
+    "pptx": ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "ppt"],
+    "png":  ["pdf",  "jpg", "docx", "xlsx", "csv", "pptx"],
+    "jpg":  ["pdf",  "png", "docx", "xlsx", "csv", "pptx"],
+    "jpeg": ["pdf",  "png", "docx", "xlsx", "csv", "pptx"],
 }
 
 def obter_conversoes(extensao): return CONVERSOES.get(extensao.lower(), [])
@@ -250,7 +250,7 @@ def _office_ppt_para_pdf(entrada, saida):
 # ─── PDF → DOCX ───────────────────────────────────────────────
 
 def pdf_para_docx(entrada, saida):
-    cv = Converter(entrada)
+    cv = PDF2DOCXConverter(entrada)
     try:    cv.convert(saida)
     finally: cv.close()
 
@@ -262,6 +262,18 @@ def pdf_para_png(entrada, saida):
     try:
         pix = doc[0].get_pixmap(matrix=fitz.Matrix(2, 2))
         pix.save(saida)
+    finally: doc.close()
+
+
+# ─── PDF → JPG ────────────────────────────────────────────────
+
+def pdf_para_jpg(entrada, saida):
+    doc = fitz.open(entrada)
+    try:
+        pix = doc[0].get_pixmap(matrix=fitz.Matrix(2, 2))
+        import io
+        img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
+        img.save(saida, "JPEG", quality=92)
     finally: doc.close()
 
 
@@ -498,6 +510,17 @@ def imagem_para_pdf(entrada, saida):
     img.save(saida, "PDF", resolution=150)
 
 
+# ─── PNG ↔ JPG ────────────────────────────────────────────────
+
+def png_para_jpg(entrada, saida):
+    img = Image.open(entrada).convert("RGB")
+    img.save(saida, "JPEG", quality=92)
+
+def jpg_para_png(entrada, saida):
+    img = Image.open(entrada).convert("RGBA")
+    img.save(saida, "PNG")
+
+
 # ─── DOCX/XLSX → Imagem (via PDF) ────────────────────────────
 
 def _pdf_para_imagem_completo(pdf_path: str, saida: str, fmt: str = "png"):
@@ -507,7 +530,11 @@ def _pdf_para_imagem_completo(pdf_path: str, saida: str, fmt: str = "png"):
     try:
         if doc.page_count == 1:
             pix = doc[0].get_pixmap(matrix=fitz.Matrix(2, 2))
-            pix.save(saida)
+            if fmt == "jpg":
+                img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
+                img.save(saida, "JPEG", quality=92)
+            else:
+                pix.save(saida)
         else:
             paginas_img = []
             for page in doc:
@@ -531,6 +558,9 @@ def _via_pdf_para_img(entrada: str, saida: str, origem_ext: str, fmt: str):
     try:
         if origem_ext in ("docx", "doc"):   docx_para_pdf(entrada, temp_pdf)
         elif origem_ext in ("xlsx", "xls"): xlsx_para_pdf(entrada, temp_pdf)
+        elif origem_ext in ("csv",):        csv_para_pdf(entrada, temp_pdf)
+        elif origem_ext in ("ppt",):        ppt_para_pdf(entrada, temp_pdf)
+        elif origem_ext in ("pptx",):       ppt_para_pdf(entrada, temp_pdf)
         else: raise ValueError(f"Origem '{origem_ext}' não suportada para imagem.")
         _pdf_para_imagem_completo(temp_pdf, saida, fmt=fmt)
     finally:
@@ -542,31 +572,158 @@ def docx_para_png(entrada, saida): _via_pdf_para_img(entrada, saida, "docx", "pn
 def docx_para_jpg(entrada, saida): _via_pdf_para_img(entrada, saida, "docx", "jpg")
 def xlsx_para_png(entrada, saida): _via_pdf_para_img(entrada, saida, "xlsx", "png")
 def xlsx_para_jpg(entrada, saida): _via_pdf_para_img(entrada, saida, "xlsx", "jpg")
+def csv_para_png(entrada, saida):  _via_pdf_para_img(entrada, saida, "csv", "png")
+def csv_para_jpg(entrada, saida):  _via_pdf_para_img(entrada, saida, "csv", "jpg")
+def ppt_para_png(entrada, saida):  _via_pdf_para_img(entrada, saida, "ppt", "png")
+def ppt_para_jpg(entrada, saida):  _via_pdf_para_img(entrada, saida, "ppt", "jpg")
+def pptx_para_png(entrada, saida): _via_pdf_para_img(entrada, saida, "pptx", "png")
+def pptx_para_jpg(entrada, saida): _via_pdf_para_img(entrada, saida, "pptx", "jpg")
+
+
+# ─── Conversão genérica via PDF intermediário ─────────────────
+
+def _via_pdf(entrada, saida, origem_ext, destino_ext):
+    """Converte qualquer formato para qualquer outro usando PDF como intermediário."""
+    saida_dir = os.path.dirname(saida) or "."
+    temp_pdf  = os.path.join(saida_dir, f"_tmp_{uuid.uuid4().hex}.pdf")
+    try:
+        # Passo 1: origem → PDF
+        funcao_para_pdf = _MAPA_PARA_PDF.get(origem_ext)
+        if not funcao_para_pdf:
+            raise ValueError(f"Não é possível converter '{origem_ext}' para PDF.")
+        funcao_para_pdf(entrada, temp_pdf)
+
+        # Passo 2: PDF → destino
+        funcao_de_pdf = _MAPA_DE_PDF.get(destino_ext)
+        if not funcao_de_pdf:
+            raise ValueError(f"Não é possível converter PDF para '{destino_ext}'.")
+        funcao_de_pdf(temp_pdf, saida)
+    finally:
+        if os.path.exists(temp_pdf):
+            try: os.remove(temp_pdf)
+            except: pass
+
+
+# Mapas auxiliares para conversão via PDF
+_MAPA_PARA_PDF = {
+    "csv":  lambda e, s: csv_para_pdf(e, s),
+    "xlsx": lambda e, s: xlsx_para_pdf(e, s),
+    "xls":  lambda e, s: xlsx_para_pdf(e, s),
+    "docx": lambda e, s: docx_para_pdf(e, s),
+    "doc":  lambda e, s: docx_para_pdf(e, s),
+    "ppt":  lambda e, s: ppt_para_pdf(e, s),
+    "pptx": lambda e, s: ppt_para_pdf(e, s),
+    "png":  imagem_para_pdf,
+    "jpg":  imagem_para_pdf,
+    "jpeg": imagem_para_pdf,
+}
+
+_MAPA_DE_PDF = {
+    "docx": pdf_para_docx,
+    "pptx": pdf_para_pptx,
+    "ppt":  pdf_para_ppt,
+    "xlsx": pdf_para_xlsx,
+    "csv":  pdf_para_csv,
+    "png":  pdf_para_png,
+    "jpg":  pdf_para_jpg,
+}
+
+# Funções wrapper para conversões via PDF
+def csv_para_docx(e, s):  _via_pdf(e, s, "csv",  "docx")
+def csv_para_pptx(e, s):  _via_pdf(e, s, "csv",  "pptx")
+def xlsx_para_docx(e, s): _via_pdf(e, s, "xlsx", "docx")
+def xlsx_para_pptx(e, s): _via_pdf(e, s, "xlsx", "pptx")
+def docx_para_xlsx(e, s): _via_pdf(e, s, "docx", "xlsx")
+def docx_para_csv(e, s):  _via_pdf(e, s, "docx", "csv")
+def docx_para_pptx(e, s): _via_pdf(e, s, "docx", "pptx")
+def ppt_para_docx(e, s):  _via_pdf(e, s, "ppt",  "docx")
+def ppt_para_xlsx(e, s):  _via_pdf(e, s, "ppt",  "xlsx")
+def ppt_para_csv(e, s):   _via_pdf(e, s, "ppt",  "csv")
+def ppt_para_pptx(e, s):  _via_pdf(e, s, "ppt",  "pptx")
+def pptx_para_docx(e, s): _via_pdf(e, s, "pptx", "docx")
+def pptx_para_xlsx(e, s): _via_pdf(e, s, "pptx", "xlsx")
+def pptx_para_csv(e, s):  _via_pdf(e, s, "pptx", "csv")
+def pptx_para_ppt(e, s):  _via_pdf(e, s, "pptx", "ppt")
+def png_para_docx(e, s):  _via_pdf(e, s, "png",  "docx")
+def png_para_xlsx(e, s):  _via_pdf(e, s, "png",  "xlsx")
+def png_para_csv(e, s):   _via_pdf(e, s, "png",  "csv")
+def png_para_pptx(e, s):  _via_pdf(e, s, "png",  "pptx")
+def jpg_para_docx(e, s):  _via_pdf(e, s, "jpg",  "docx")
+def jpg_para_xlsx(e, s):  _via_pdf(e, s, "jpg",  "xlsx")
+def jpg_para_csv(e, s):   _via_pdf(e, s, "jpg",  "csv")
+def jpg_para_pptx(e, s):  _via_pdf(e, s, "jpg",  "pptx")
+def jpg_para_png_img(e, s): jpg_para_png(e, s)
 
 
 # ─── Despacho central ─────────────────────────────────────────
 
 _MAPA = {
+    # CSV
     ("csv",  "xlsx"): csv_para_xlsx,
-    ("xlsx", "csv"):  xlsx_para_csv,
     ("csv",  "pdf"):  csv_para_pdf,
+    ("csv",  "png"):  csv_para_png,
+    ("csv",  "jpg"):  csv_para_jpg,
+    ("csv",  "docx"): csv_para_docx,
+    ("csv",  "pptx"): csv_para_pptx,
+    # XLSX
+    ("xlsx", "csv"):  xlsx_para_csv,
     ("xlsx", "pdf"):  xlsx_para_pdf,
     ("xlsx", "png"):  xlsx_para_png,
     ("xlsx", "jpg"):  xlsx_para_jpg,
+    ("xlsx", "docx"): xlsx_para_docx,
+    ("xlsx", "pptx"): xlsx_para_pptx,
+    # PDF
     ("pdf",  "docx"): pdf_para_docx,
     ("pdf",  "pptx"): pdf_para_pptx,
     ("pdf",  "ppt"):  pdf_para_ppt,
     ("pdf",  "png"):  pdf_para_png,
+    ("pdf",  "jpg"):  pdf_para_jpg,
     ("pdf",  "xlsx"): pdf_para_xlsx,
     ("pdf",  "csv"):  pdf_para_csv,
+    # DOCX
     ("docx", "pdf"):  docx_para_pdf,
     ("docx", "png"):  docx_para_png,
     ("docx", "jpg"):  docx_para_jpg,
+    ("docx", "xlsx"): docx_para_xlsx,
+    ("docx", "csv"):  docx_para_csv,
+    ("docx", "pptx"): docx_para_pptx,
+    # PPT
     ("ppt",  "pdf"):  ppt_para_pdf,
+    ("ppt",  "docx"): ppt_para_docx,
+    ("ppt",  "xlsx"): ppt_para_xlsx,
+    ("ppt",  "csv"):  ppt_para_csv,
+    ("ppt",  "png"):  ppt_para_png,
+    ("ppt",  "jpg"):  ppt_para_jpg,
+    ("ppt",  "pptx"): ppt_para_pptx,
+    # PPTX
     ("pptx", "pdf"):  ppt_para_pdf,
+    ("pptx", "docx"): pptx_para_docx,
+    ("pptx", "xlsx"): pptx_para_xlsx,
+    ("pptx", "csv"):  pptx_para_csv,
+    ("pptx", "png"):  pptx_para_png,
+    ("pptx", "jpg"):  pptx_para_jpg,
+    ("pptx", "ppt"):  pptx_para_ppt,
+    # PNG
     ("png",  "pdf"):  imagem_para_pdf,
+    ("png",  "jpg"):  png_para_jpg,
+    ("png",  "docx"): png_para_docx,
+    ("png",  "xlsx"): png_para_xlsx,
+    ("png",  "csv"):  png_para_csv,
+    ("png",  "pptx"): png_para_pptx,
+    # JPG
     ("jpg",  "pdf"):  imagem_para_pdf,
+    ("jpg",  "png"):  jpg_para_png,
+    ("jpg",  "docx"): jpg_para_docx,
+    ("jpg",  "xlsx"): jpg_para_xlsx,
+    ("jpg",  "csv"):  jpg_para_csv,
+    ("jpg",  "pptx"): jpg_para_pptx,
+    # JPEG (alias)
     ("jpeg", "pdf"):  imagem_para_pdf,
+    ("jpeg", "png"):  jpg_para_png,
+    ("jpeg", "docx"): jpg_para_docx,
+    ("jpeg", "xlsx"): jpg_para_xlsx,
+    ("jpeg", "csv"):  jpg_para_csv,
+    ("jpeg", "pptx"): jpg_para_pptx,
 }
 
 _ACEITA_ORIENTACAO = {("xlsx","pdf"), ("xls","pdf"), ("csv","pdf")}

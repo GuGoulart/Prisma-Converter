@@ -131,7 +131,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             } else if (destino === "png" || destino === "jpg") {
                 const url = `/preview-convert/${pastaUUID}/${destino}`;
-                // Aguarda carregamento completo da imagem antes de exibir
                 await new Promise((resolve, reject) => {
                     const img   = new Image();
                     img.onload  = resolve;
@@ -199,7 +198,6 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>`;
         if (subEl) subEl.textContent = subTexto;
 
-        // Remove overlay com fade após 1.5s (embed não dispara load confiável)
         setTimeout(() => {
             const overlay = document.getElementById("pdfLoaderOverlay");
             if (overlay) {
@@ -220,7 +218,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const progressLabel = document.getElementById("progressLabel");
         if (!btn) return;
 
-        // Token para detectar fim do download via cookie
         const token = Math.random().toString(36).slice(2) + Date.now();
         let ti = document.querySelector("input[name='downloadToken']");
         if (!ti) {
@@ -236,7 +233,6 @@ document.addEventListener("DOMContentLoaded", () => {
         progressWrap.classList.add("ativo");
         progressLabel.textContent = "0%";
 
-        // Progresso simulado por fases
         const fases = [
             { pct: 15, label: "Lendo arquivo...",  delay: 300   },
             { pct: 35, label: "Convertendo...",    delay: 1200  },
@@ -253,14 +249,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }, delay);
         });
 
-        // Poll de cookie para detectar download concluído
         const poll = setInterval(() => {
             const concluido = document.cookie
                 .split(";")
                 .some(c => c.trim() === `downloadToken=${token}`);
             if (concluido) {
                 clearInterval(poll);
-                // Remove cookie
                 document.cookie = `downloadToken=${token}; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
                 progressBar.style.width   = "100%";
                 progressLabel.textContent = "Concluído!";
@@ -275,7 +269,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }, 400);
 
-        // Timeout de segurança: 2 minutos
         setTimeout(() => {
             clearInterval(poll);
             if (btn.disabled) {
@@ -293,17 +286,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const tag     = document.activeElement?.tagName;
         const emInput = ["INPUT", "TEXTAREA", "SELECT"].includes(tag);
 
-        // K = abrir seletor de arquivo
         if (e.key.toLowerCase() === "k" && !e.ctrlKey && !e.metaKey && !emInput)
             inputFile?.click();
 
-        // Enter = converter
         if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && !emInput && tag !== "BUTTON") {
             const btn = document.getElementById("btnConverter");
             if (btn && !btn.disabled) btn.click();
         }
 
-        // Esc = fechar drawer mobile
         if (e.key === "Escape") fecharDrawer();
     });
 
@@ -320,27 +310,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    // ── Drawer mobile ─────────────────────────────────────────
+    // ── Drawer mobile (toggle com hambúrguer) ─────────────────
 
     const menuBtn   = document.getElementById("menuBtn");
     const sidebar   = document.getElementById("sidebar");
     const overlay   = document.getElementById("drawerOverlay");
-    const btnFechar = document.getElementById("btnFecharSidebar");
+
+    function toggleDrawer() {
+        const aberta = sidebar?.classList.contains("aberta");
+        if (aberta) {
+            fecharDrawer();
+        } else {
+            abrirDrawer();
+        }
+    }
 
     function abrirDrawer() {
         sidebar?.classList.add("aberta");
         overlay?.classList.add("ativo");
+        menuBtn?.classList.add("ativo");
         document.body.style.overflow = "hidden";
     }
+
     function fecharDrawer() {
         sidebar?.classList.remove("aberta");
         overlay?.classList.remove("ativo");
+        menuBtn?.classList.remove("ativo");
         document.body.style.overflow = "";
     }
 
-    menuBtn?.addEventListener("click",   abrirDrawer);
-    btnFechar?.addEventListener("click", fecharDrawer);
-    overlay?.addEventListener("click",   fecharDrawer);
+    menuBtn?.addEventListener("click", toggleDrawer);
+    overlay?.addEventListener("click", fecharDrawer);
 
 }); // fim DOMContentLoaded
 
