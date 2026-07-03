@@ -53,7 +53,7 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);overflow-x:h
 @keyframes scroll-left{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
 
 /* ── Drawer overlay (mobile) ── */
-.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:150;opacity:0;pointer-events:none;transition:opacity .3s ease}
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:150;opacity:0;pointer-events:none;transition:opacity .3s ease}
 .drawer-overlay.ativo{opacity:1;pointer-events:auto}
 
 .mobile-nav{display:none}
@@ -266,7 +266,8 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);overflow-x:h
 
 /* ── Mobile ── */
 @media(max-width:768px){
-    .mobile-nav{display:flex;position:fixed;top:34px;left:0;right:0;height:50px;background:var(--bg);border-bottom:1px solid var(--border);padding:0 20px;align-items:center;justify-content:space-between;z-index:90}
+    .marquee-bar{display:none}
+    .mobile-nav{display:flex;position:fixed;top:0;left:0;right:0;height:50px;background:rgba(10,10,10,0.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 20px;align-items:center;justify-content:space-between;z-index:90}
     .mobile-logo{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent);letter-spacing:.1em}
     .mobile-menu-btn{display:flex;flex-direction:column;gap:5px;background:none;border:1px solid var(--border2);padding:9px 11px;cursor:pointer;transition:all .2s}
     .mobile-menu-btn span{display:block;width:20px;height:2px;background:var(--text);transition:all .3s ease}
@@ -278,7 +279,7 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);overflow-x:h
     .sidebar-fechar{display:none !important}
     .sidebar{position:fixed;top:0;bottom:0;left:-270px;width:260px;height:100vh;z-index:200;border-right:1px solid var(--border2);background:rgba(10,10,10,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:left .3s cubic-bezier(.4,0,.2,1);padding:20px 24px 32px;overflow-y:auto}
     .sidebar.aberta{left:0}
-    .layout{padding-top:calc(34px + 50px);padding-bottom:52px}
+    .layout{padding-top:50px;padding-bottom:52px}
     .main{padding:20px 14px;gap:28px}
     .titulo-principal{font-size:28px;letter-spacing:-.8px}
     .header-num{display:none}
@@ -286,7 +287,7 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);overflow-x:h
     .upload-inner{padding:28px 14px}
     .botao{height:56px;font-size:15px}
     .opcao-card{min-width:64px;height:52px}
-    .marquee-bar{height:28px}
+
     .toast{left:12px;right:12px;bottom:58px;justify-content:center}
     .content-wrapper{grid-template-columns:1fr}
     .preview-col{position:static;height:380px}
