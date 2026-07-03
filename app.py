@@ -1,6 +1,7 @@
 from flask import (Flask, render_template, request, send_file,
                    session, after_this_request, abort, Response)
 from converter import obter_conversoes, converter_arquivo, obter_motor, detectar_encoding
+from pdf_tools import mesclar_pdfs, dividir_pdf, proteger_pdf, desproteger_pdf
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from collections import defaultdict
@@ -201,6 +202,105 @@ def arquivo_grande(e):
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route("/ferramentas-pdf")
+def pdf_tools_page():
+    return render_template("pdf_tools.html")
+
+@app.route("/api/pdf/mesclar", methods=["POST"])
+def api_mesclar():
+    arquivos = request.files.getlist("arquivos")
+    if not arquivos or len(arquivos) < 2:
+        return "Selecione pelo menos 2 arquivos", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    caminhos = []
+    
+    for f in arquivos:
+        nome_seguro = secure_filename(f.filename)
+        caminho = os.path.join(pp, nome_seguro)
+        f.save(caminho)
+        caminhos.append(caminho)
+        
+    saida = os.path.join(pp, "mesclado.pdf")
+    try:
+        mesclar_pdfs(caminhos, saida)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name="Prisma_Mesclado.pdf")
+    except Exception as e:
+        return render_template("pdf_tools.html", erro=str(e)), 400
+
+@app.route("/api/pdf/dividir", methods=["POST"])
+def api_dividir():
+    f = request.files.get("arquivo")
+    if not f: return "Selecione um arquivo", 400
+    
+    modo = request.form.get("modo", "individual")
+    parametro = request.form.get("parametro", "")
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    entrada = os.path.join(pp, secure_filename(f.filename))
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "dividido.zip")
+    try:
+        dividir_pdf(entrada, saida, modo, parametro)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name="Prisma_Dividido.zip")
+    except Exception as e:
+        return render_template("pdf_tools.html", erro=str(e)), 400
+
+@app.route("/api/pdf/proteger", methods=["POST"])
+def api_proteger():
+    f = request.files.get("arquivo")
+    senha = request.form.get("senha")
+    if not f or not senha: return "Arquivo e senha são obrigatórios", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    entrada = os.path.join(pp, secure_filename(f.filename))
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "protegido.pdf")
+    try:
+        proteger_pdf(entrada, senha, saida)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name="Prisma_Protegido.pdf")
+    except Exception as e:
+        return render_template("pdf_tools.html", erro=str(e)), 400
+
+@app.route("/api/pdf/desproteger", methods=["POST"])
+def api_desproteger():
+    f = request.files.get("arquivo")
+    senha = request.form.get("senha")
+    if not f or not senha: return "Arquivo e senha são obrigatórios", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    entrada = os.path.join(pp, secure_filename(f.filename))
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "desprotegido.pdf")
+    try:
+        desproteger_pdf(entrada, senha, saida)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name="Prisma_Desprotegido.pdf")
+    except Exception as e:
+        return render_template("pdf_tools.html", erro=str(e)), 400
 
 
 @app.route("/preview/<pasta_uuid>/<preview_file>")

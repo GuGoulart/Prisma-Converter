@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,357 +8,417 @@
     <meta name="description" content="Converta PDF, DOCX, XLSX, CSV, PPT, PNG e muito mais. Rápido, seguro e gratuito.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
-<div class="bg-grid"></div>
+    <div class="bg-grid"></div>
 
-<div class="toast" id="toast">
-    <span class="toast-icone">✓</span>
-    <span class="toast-msg">Download concluído!</span>
-</div>
-
-<div class="drawer-overlay" id="drawerOverlay"></div>
-
-<!-- Barra animada no topo -->
-<div class="marquee-bar">
-    <div class="marquee-track">
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+    <div class="toast" id="toast">
+        <span class="toast-icone">✓</span>
+        <span class="toast-msg">Download concluído!</span>
     </div>
-    <div class="marquee-track">
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- Barra animada no topo -->
+    <div class="marquee-bar">
+        <div class="marquee-track">
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        </div>
+        <div class="marquee-track">
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        </div>
     </div>
-</div>
 
-<!-- Nav mobile -->
-<div class="mobile-nav">
-    <span class="mobile-logo">PRISMA</span>
-    <button class="mobile-menu-btn" id="menuBtn" aria-label="Menu">
-        <span></span><span></span><span></span>
-    </button>
-</div>
+    <!-- Nav mobile -->
+    <div class="mobile-nav">
+        <span class="mobile-logo">PRISMA</span>
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
 
-<div class="layout">
+    <div class="layout">
 
-    <!-- ── SIDEBAR ───────────────────────────────────────── -->
-    <aside class="sidebar" id="sidebar">
+        <!-- ── SIDEBAR ───────────────────────────────────────── -->
+        <aside class="sidebar" id="sidebar">
 
-        <div class="sidebar-logo">
-            <span class="logo-mark">PRISMA</span>
-        </div>
+            <div class="sidebar-logo">
+                <span class="logo-mark">PRISMA</span>
+            </div>
 
-        <div class="sidebar-linha"></div>
+            <div class="sidebar-linha"></div>
 
-        <div class="sidebar-info">
-            <p class="sidebar-label">Limite</p>
-            <p class="sidebar-valor">50 MB</p>
-        </div>
+            <div class="sidebar-info" style="gap: 8px;">
+                <p class="sidebar-label">Menu</p>
+                <a href="/" class="nav-link nav-active">Conversor de arquivos</a>
+                <a href="/ferramentas-pdf" class="nav-link">Ferramentas PDF</a>
+            </div>
 
-        <div class="sidebar-linha"></div>
+            <div class="sidebar-linha"></div>
 
-        <div class="sidebar-info">
-            <p class="sidebar-label">Conversões</p>
-            <div class="sidebar-rotas-grid">
-                <div class="rota-grupo">
-                    <span class="rota-origem badge-csv">CSV</span>
-                    <span class="rota-seta">→</span>
-                    <span class="rota-destinos"><span class="rota-tag xlsx">XLSX</span><span class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span class="rota-tag pptx">PPTX</span></span>
-                </div>
-                <div class="rota-grupo">
-                    <span class="rota-origem badge-xlsx">XLSX</span>
-                    <span class="rota-seta">→</span>
-                    <span class="rota-destinos"><span class="rota-tag csv">CSV</span><span class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span class="rota-tag pptx">PPTX</span></span>
-                </div>
-                <div class="rota-grupo">
-                    <span class="rota-origem badge-pdf">PDF</span>
-                    <span class="rota-seta">→</span>
-                    <span class="rota-destinos"><span class="rota-tag docx">DOCX</span><span class="rota-tag pptx">PPTX</span><span class="rota-tag ppt">PPT</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span></span>
-                </div>
-                <div class="rota-grupo">
-                    <span class="rota-origem badge-docx">DOCX</span>
-                    <span class="rota-seta">→</span>
-                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span class="rota-tag pptx">PPTX</span></span>
-                </div>
-                <div class="rota-grupo">
-                    <span class="rota-origem badge-ppt">PPT</span>
-                    <span class="rota-seta">→</span>
-                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag pptx">PPTX</span></span>
-                </div>
-                <div class="rota-grupo">
-                    <span class="rota-origem badge-pptx">PPTX</span>
-                    <span class="rota-seta">→</span>
-                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span class="rota-tag ppt">PPT</span></span>
-                </div>
-                <div class="rota-grupo">
-                    <span class="rota-origem badge-png">PNG</span>
-                    <span class="rota-seta">→</span>
-                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span class="rota-tag pptx">PPTX</span></span>
-                </div>
-                <div class="rota-grupo">
-                    <span class="rota-origem badge-jpg">JPG</span>
-                    <span class="rota-seta">→</span>
-                    <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span class="rota-tag docx">DOCX</span><span class="rota-tag pptx">PPTX</span></span>
+            <div class="sidebar-info">
+                <p class="sidebar-label">Limite</p>
+                <p class="sidebar-valor">50 MB</p>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info">
+                <p class="sidebar-label">Conversões</p>
+                <div class="sidebar-rotas-grid">
+                    <div class="rota-grupo">
+                        <span class="rota-origem badge-csv">CSV</span>
+                        <span class="rota-seta">→</span>
+                        <span class="rota-destinos"><span class="rota-tag xlsx">XLSX</span><span
+                                class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span
+                                class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span
+                                class="rota-tag pptx">PPTX</span></span>
+                    </div>
+                    <div class="rota-grupo">
+                        <span class="rota-origem badge-xlsx">XLSX</span>
+                        <span class="rota-seta">→</span>
+                        <span class="rota-destinos"><span class="rota-tag csv">CSV</span><span
+                                class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span
+                                class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span
+                                class="rota-tag pptx">PPTX</span></span>
+                    </div>
+                    <div class="rota-grupo">
+                        <span class="rota-origem badge-pdf">PDF</span>
+                        <span class="rota-seta">→</span>
+                        <span class="rota-destinos"><span class="rota-tag docx">DOCX</span><span
+                                class="rota-tag pptx">PPTX</span><span class="rota-tag ppt">PPT</span><span
+                                class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span
+                                class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span></span>
+                    </div>
+                    <div class="rota-grupo">
+                        <span class="rota-origem badge-docx">DOCX</span>
+                        <span class="rota-seta">→</span>
+                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
+                                class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span
+                                class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span
+                                class="rota-tag pptx">PPTX</span></span>
+                    </div>
+                    <div class="rota-grupo">
+                        <span class="rota-origem badge-ppt">PPT</span>
+                        <span class="rota-seta">→</span>
+                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
+                                class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span
+                                class="rota-tag csv">CSV</span><span class="rota-tag png">PNG</span><span
+                                class="rota-tag jpg">JPG</span><span class="rota-tag pptx">PPTX</span></span>
+                    </div>
+                    <div class="rota-grupo">
+                        <span class="rota-origem badge-pptx">PPTX</span>
+                        <span class="rota-seta">→</span>
+                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
+                                class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span
+                                class="rota-tag csv">CSV</span><span class="rota-tag png">PNG</span><span
+                                class="rota-tag jpg">JPG</span><span class="rota-tag ppt">PPT</span></span>
+                    </div>
+                    <div class="rota-grupo">
+                        <span class="rota-origem badge-png">PNG</span>
+                        <span class="rota-seta">→</span>
+                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
+                                class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span
+                                class="rota-tag pptx">PPTX</span></span>
+                    </div>
+                    <div class="rota-grupo">
+                        <span class="rota-origem badge-jpg">JPG</span>
+                        <span class="rota-seta">→</span>
+                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
+                                class="rota-tag png">PNG</span><span class="rota-tag docx">DOCX</span><span
+                                class="rota-tag pptx">PPTX</span></span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="sidebar-linha"></div>
+            <div class="sidebar-linha"></div>
 
-        <div class="sidebar-criador">
-            <p class="sidebar-label">Criador</p>
-            <p class="criador-nome">Gustavo Goulart Bretas</p>
-            <a href="https://github.com/GuGoulart" target="_blank" rel="noopener noreferrer" class="criador-github">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-                </svg>
-                github.com/GuGoulart
-            </a>
-        </div>
+            <div class="sidebar-criador">
+                <p class="sidebar-label">Criador</p>
+                <p class="criador-nome">Gustavo Goulart Bretas</p>
+                <a href="https://github.com/GuGoulart" target="_blank" rel="noopener noreferrer" class="criador-github">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+                    </svg>
+                    github.com/GuGoulart
+                </a>
+            </div>
 
-        <div class="sidebar-linha" style="margin-top: auto;"></div>
+            <div class="sidebar-linha" style="margin-top: auto;"></div>
 
-        <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
-            <p class="sidebar-label" style="margin-bottom: 0;">Tema</p>
-            <button id="themeToggle" class="btn-tema-icon" aria-label="Alternar Tema">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                    <path d="M12 7 A 5 5 0 0 1 12 17 Z" fill="currentColor" />
-                    <path d="M12 7 A 5 5 0 0 0 12 17" />
-                    <line x1="12" y1="1" x2="12" y2="4" />
-                    <line x1="12" y1="20" x2="12" y2="23" />
-                    <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
-                    <line x1="4.22" y1="19.78" x2="6.34" y2="17.66" />
-                    <line x1="1" y1="12" x2="4" y2="12" />
-                </svg>
-            </button>
-        </div>
-    </aside>
+            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
+                <p class="sidebar-label" style="margin-bottom: 0;">Tema</p>
+                <button id="themeToggle" class="btn-tema-icon" aria-label="Alternar Tema">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round">
+                        <path d="M12 7 A 5 5 0 0 1 12 17 Z" fill="currentColor" />
+                        <path d="M12 7 A 5 5 0 0 0 12 17" />
+                        <line x1="12" y1="1" x2="12" y2="4" />
+                        <line x1="12" y1="20" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
+                        <line x1="4.22" y1="19.78" x2="6.34" y2="17.66" />
+                        <line x1="1" y1="12" x2="4" y2="12" />
+                    </svg>
+                </button>
+            </div>
+        </aside>
 
-    <!-- ── MAIN ───────────────────────────────────────────── -->
-    <main class="main">
+        <!-- ── MAIN ───────────────────────────────────────────── -->
+        <main class="main">
 
-        <header class="header-main">
-            <h1 class="titulo-principal">Você pensa<br><em>O Prisma faz</em></h1>
-            <p class="titulo-sub">De conversões a novas possibilidades. Tudo para seus arquivos, em um só lugar.</p>
-        </header>
+            <header class="header-main">
+                <h1 class="titulo-principal">Você pensa<br><em>O Prisma faz</em></h1>
+                <p class="titulo-sub">De conversões a novas possibilidades. Tudo para seus arquivos, em um só lugar.</p>
+            </header>
 
-        <div class="content-wrapper">
+            <div class="content-wrapper">
 
-            <!-- ── COLUNA ESQUERDA ──────────────────────── -->
-            <div class="steps-col">
+                <!-- ── COLUNA ESQUERDA ──────────────────────── -->
+                <div class="steps-col">
 
-                <!-- Step 1: Upload -->
-                <section class="step">
-                    <div class="step-header">
-                        <span class="step-num">01</span>
-                        <span class="step-label">Selecione o arquivo</span>
-                    </div>
-                    <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <div class="upload-box" id="uploadBox">
-                            <div class="corner tl"></div>
-                            <div class="corner tr"></div>
-                            <div class="corner bl"></div>
-                            <div class="corner br"></div>
-                            <div class="upload-inner">
-                                <div class="upload-icone" id="uploadIcone">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-                                         stroke="currentColor" stroke-width="1.5">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                        <polyline points="17 8 12 3 7 8"/>
-                                        <line x1="12" y1="3" x2="12" y2="15"/>
-                                    </svg>
-                                </div>
-                                <p class="upload-titulo" id="uploadTitulo">Arraste o arquivo aqui</p>
-                                <p class="upload-desc"  id="uploadDesc">
-                                    PDF · DOCX · XLSX · CSV · PPT · PPTX · PNG · JPG
-                                </p>
-                            </div>
-                            <input id="arquivo" type="file" name="arquivo" hidden required>
+                    <!-- Step 1: Upload -->
+                    <section class="step">
+                        <div class="step-header">
+                            <span class="step-num">01</span>
+                            <span class="step-label">Selecione o arquivo</span>
                         </div>
-                        <button class="botao" type="submit" id="btnEnviar">
-                            <span>Enviar</span><span class="botao-arr">↗</span>
+                        <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <div class="upload-box" id="uploadBox">
+                                <div class="corner tl"></div>
+                                <div class="corner tr"></div>
+                                <div class="corner bl"></div>
+                                <div class="corner br"></div>
+                                <div class="upload-inner">
+                                    <div class="upload-icone" id="uploadIcone">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="1.5">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                            <polyline points="17 8 12 3 7 8" />
+                                            <line x1="12" y1="3" x2="12" y2="15" />
+                                        </svg>
+                                    </div>
+                                    <p class="upload-titulo" id="uploadTitulo">Arraste o arquivo aqui</p>
+                                    <p class="upload-desc" id="uploadDesc">
+                                        PDF · DOCX · XLSX · CSV · PPT · PPTX · PNG · JPG
+                                    </p>
+                                </div>
+                                <input id="arquivo" type="file" name="arquivo" hidden required>
+                            </div>
+                            <button class="botao" type="submit" id="btnEnviar">
+                                <span>Enviar</span><span class="botao-arr">↗</span>
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Step 2: Destino (só aparece após upload) -->
+                    {% if arquivo %}
+                    <section class="step step-destaque">
+                        <div class="step-header">
+                            <span class="step-num">02</span>
+                            <span class="step-label">Escolha o destino</span>
+                        </div>
+
+                        <div class="arquivo-row">
+                            <span class="arquivo-ext-badge badge-{{ origem }}">{{ origem.upper() }}</span>
+                            <span class="arquivo-nome-text">{{ nome_original }}</span>
+                        </div>
+
+                        <form action="/converter" method="POST" id="converterForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="hidden" name="arquivo" value="{{ arquivo }}">
+                            <input type="hidden" name="origem" value="{{ origem }}">
+                            <input type="hidden" name="nome_original" value="{{ nome_original }}">
+                            <input type="hidden" name="orientacao" value="retrato" id="orientacaoHidden">
+
+                            <!-- Opções de destino -->
+                            <div class="opcoes-grid">
+                                {% for c in conversoes %}
+                                <label class="opcao-card">
+                                    <input type="radio" name="destino" value="{{ c }}" {% if loop.first %}checked{%
+                                        endif %}>
+                                    <span class="opcao-ext badge-text-{{ c }}">{{ c.upper() }}</span>
+                                    <span class="opcao-check">✓</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Orientação (só XLSX/CSV → PDF) -->
+                            {% if origem in ['xlsx','xls','csv'] %}
+                            <div class="orientacao-wrap" id="orientacaoWrap">
+                                <span class="orientacao-titulo">ORIENTAÇÃO DO PDF</span>
+                                <div class="orientacao-opcoes">
+                                    <label class="ori-card">
+                                        <input type="radio" name="_ori" value="retrato" checked>
+                                        <div class="ori-icone">
+                                            <div class="ori-papel ori-retrato"></div>
+                                        </div>
+                                        <span>Retrato</span>
+                                    </label>
+                                    <label class="ori-card">
+                                        <input type="radio" name="_ori" value="paisagem">
+                                        <div class="ori-icone">
+                                            <div class="ori-papel ori-paisagem"></div>
+                                        </div>
+                                        <span>Paisagem</span>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Barra de progresso -->
+                            <div class="progress-wrap" id="progressWrap">
+                                <div class="progress-bar" id="progressBar"></div>
+                                <span class="progress-label" id="progressLabel"></span>
+                            </div>
+
+                            <button class="botao botao-conv" type="submit" id="btnConverter">
+                                <span>Converter e baixar</span><span class="botao-arr">↓</span>
+                            </button>
+                        </form>
+
+                        <button class="botao botao-outro" id="btnOutro" style="display:none"
+                            onclick="window.location.href='/'">
+                            <span>Converter outro arquivo</span><span class="botao-arr">↺</span>
                         </button>
-                    </form>
-                </section>
+                    </section>
+                    {% endif %}
 
-                <!-- Step 2: Destino (só aparece após upload) -->
-                {% if arquivo %}
-                <section class="step step-destaque">
-                    <div class="step-header">
-                        <span class="step-num">02</span>
-                        <span class="step-label">Escolha o destino</span>
+                    <!-- Erro -->
+                    {% if erro %}
+                    <div class="erro-box">
+                        <span class="erro-cod">ERR</span>
+                        <span class="erro-msg">{{ erro }}</span>
                     </div>
+                    {% endif %}
 
-                    <div class="arquivo-row">
-                        <span class="arquivo-ext-badge badge-{{ origem }}">{{ origem.upper() }}</span>
-                        <span class="arquivo-nome-text">{{ nome_original }}</span>
-                    </div>
-
-                    <form action="/converter" method="POST" id="converterForm">
-                        <input type="hidden" name="csrf_token"    value="{{ csrf_token }}">
-                        <input type="hidden" name="arquivo"       value="{{ arquivo }}">
-                        <input type="hidden" name="origem"        value="{{ origem }}">
-                        <input type="hidden" name="nome_original" value="{{ nome_original }}">
-                        <input type="hidden" name="orientacao"    value="retrato" id="orientacaoHidden">
-
-                        <!-- Opções de destino -->
-                        <div class="opcoes-grid">
-                            {% for c in conversoes %}
-                            <label class="opcao-card">
-                                <input type="radio" name="destino" value="{{ c }}"
-                                       {% if loop.first %}checked{% endif %}>
-                                <span class="opcao-ext badge-text-{{ c }}">{{ c.upper() }}</span>
-                                <span class="opcao-check">✓</span>
-                            </label>
+                    <!-- Histórico -->
+                    {% if historico %}
+                    <section class="historico-section">
+                        <div class="section-header-plain">
+                            <span class="section-label-plain">Histórico da sessão</span>
+                            <span class="section-sub-plain">{{ historico|length }} conversão(ões)</span>
+                        </div>
+                        <div class="historico-lista">
+                            {% for item in historico %}
+                            <div class="historico-item">
+                                <span class="hist-badge badge-{{ item.origem|lower }}">{{ item.origem }}</span>
+                                <span class="hist-seta">→</span>
+                                <span class="hist-badge badge-{{ item.destino|lower }}">{{ item.destino }}</span>
+                                <span class="hist-nome">{{ item.nome }}</span>
+                                <span class="hist-hora">{{ item.hora }}</span>
+                            </div>
                             {% endfor %}
                         </div>
+                    </section>
+                    {% endif %}
 
-                        <!-- Orientação (só XLSX/CSV → PDF) -->
-                        {% if origem in ['xlsx','xls','csv'] %}
-                        <div class="orientacao-wrap" id="orientacaoWrap">
-                            <span class="orientacao-titulo">ORIENTAÇÃO DO PDF</span>
-                            <div class="orientacao-opcoes">
-                                <label class="ori-card">
-                                    <input type="radio" name="_ori" value="retrato" checked>
-                                    <div class="ori-icone">
-                                        <div class="ori-papel ori-retrato"></div>
-                                    </div>
-                                    <span>Retrato</span>
-                                </label>
-                                <label class="ori-card">
-                                    <input type="radio" name="_ori" value="paisagem">
-                                    <div class="ori-icone">
-                                        <div class="ori-papel ori-paisagem"></div>
-                                    </div>
-                                    <span>Paisagem</span>
-                                </label>
+                </div><!-- /steps-col -->
+
+                <!-- ── COLUNA DIREITA — Preview ─────────────── -->
+                <div class="preview-col">
+                    <div class="preview-section" id="previewSection">
+
+                        <div class="preview-header">
+                            <div class="preview-header-esq">
+                                {% if arquivo %}
+                                <span class="preview-badge badge-{{ origem }}">{{ origem.upper() }}</span>
+                                {% endif %}
+                                <span class="preview-label" id="previewLabel">
+                                    {% if arquivo %}Visualização{% else %}Prévia{% endif %}
+                                </span>
                             </div>
-                        </div>
-                        {% endif %}
-
-                        <!-- Barra de progresso -->
-                        <div class="progress-wrap" id="progressWrap">
-                            <div class="progress-bar" id="progressBar"></div>
-                            <span class="progress-label" id="progressLabel"></span>
-                        </div>
-
-                        <button class="botao botao-conv" type="submit" id="btnConverter">
-                            <span>Converter e baixar</span><span class="botao-arr">↓</span>
-                        </button>
-                    </form>
-
-                    <button class="botao botao-outro" id="btnOutro" style="display:none"
-                            onclick="window.location.href='/'">
-                        <span>Converter outro arquivo</span><span class="botao-arr">↺</span>
-                    </button>
-                </section>
-                {% endif %}
-
-                <!-- Erro -->
-                {% if erro %}
-                <div class="erro-box">
-                    <span class="erro-cod">ERR</span>
-                    <span class="erro-msg">{{ erro }}</span>
-                </div>
-                {% endif %}
-
-                <!-- Histórico -->
-                {% if historico %}
-                <section class="historico-section">
-                    <div class="section-header-plain">
-                        <span class="section-label-plain">Histórico da sessão</span>
-                        <span class="section-sub-plain">{{ historico|length }} conversão(ões)</span>
-                    </div>
-                    <div class="historico-lista">
-                        {% for item in historico %}
-                        <div class="historico-item">
-                            <span class="hist-badge badge-{{ item.origem|lower }}">{{ item.origem }}</span>
-                            <span class="hist-seta">→</span>
-                            <span class="hist-badge badge-{{ item.destino|lower }}">{{ item.destino }}</span>
-                            <span class="hist-nome">{{ item.nome }}</span>
-                            <span class="hist-hora">{{ item.hora }}</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </section>
-                {% endif %}
-
-            </div><!-- /steps-col -->
-
-            <!-- ── COLUNA DIREITA — Preview ─────────────── -->
-            <div class="preview-col">
-                <div class="preview-section" id="previewSection">
-
-                    <div class="preview-header">
-                        <div class="preview-header-esq">
-                            {% if arquivo %}
-                            <span class="preview-badge badge-{{ origem }}">{{ origem.upper() }}</span>
-                            {% endif %}
-                            <span class="preview-label" id="previewLabel">
-                                {% if arquivo %}Visualização{% else %}Prévia{% endif %}
+                            <span class="preview-sub" id="previewSub">
+                                {% if arquivo %}selecione um formato{% else %}envie um arquivo{% endif %}
                             </span>
                         </div>
-                        <span class="preview-sub" id="previewSub">
-                            {% if arquivo %}selecione um formato{% else %}envie um arquivo{% endif %}
-                        </span>
-                    </div>
 
-                    <div class="preview-viewer" id="previewViewer">
-                        {% if preview_url %}
+                        <div class="preview-viewer" id="previewViewer">
+                            {% if preview_url %}
                             {% if preview_tipo == 'pdf' %}
-                            <embed src="{{ preview_url }}#toolbar=0&navpanes=0&scrollbar=1"
-                                   type="application/pdf" class="pdf-embed">
+                            <embed src="{{ preview_url }}#toolbar=0&navpanes=0&scrollbar=1" type="application/pdf"
+                                class="pdf-embed">
                             {% else %}
                             <img src="{{ preview_url }}" class="img-preview-visual" alt="Prévia">
                             {% endif %}
-                        {% elif tabela_html %}
+                            {% elif tabela_html %}
                             <div class="preview-scroll">{{ tabela_html | safe }}</div>
-                        {% else %}
-                        <div class="preview-placeholder">
-                            <div class="placeholder-icone">
-                                <svg width="52" height="52" viewBox="0 0 24 24"
-                                     fill="none" stroke="currentColor" stroke-width="1">
-                                    <rect x="3" y="3" width="18" height="18"/>
-                                    <path d="M3 9h18M9 21V9"/>
-                                </svg>
+                            {% else %}
+                            <div class="preview-placeholder">
+                                <div class="placeholder-icone">
+                                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1">
+                                        <rect x="3" y="3" width="18" height="18" />
+                                        <path d="M3 9h18M9 21V9" />
+                                    </svg>
+                                </div>
+                                <p class="placeholder-texto">Nenhum arquivo enviado</p>
+                                <p class="placeholder-sub">
+                                    A prévia aparece aqui.<br>
+                                    Clique em um formato para ver como ficará.
+                                </p>
                             </div>
-                            <p class="placeholder-texto">Nenhum arquivo enviado</p>
-                            <p class="placeholder-sub">
-                                A prévia aparece aqui.<br>
-                                Clique em um formato para ver como ficará.
-                            </p>
+                            {% endif %}
                         </div>
-                        {% endif %}
+
                     </div>
+                </div><!-- /preview-col -->
 
-                </div>
-            </div><!-- /preview-col -->
+            </div><!-- /content-wrapper -->
+        </main>
+    </div><!-- /layout -->
 
-        </div><!-- /content-wrapper -->
-    </main>
-</div><!-- /layout -->
+    <footer class="rodape">
+        <span class="rodape-marca">Prisma © 2026</span>
+        <span class="rodape-sep">|</span>
+    </footer>
 
-<footer class="rodape">
-    <span class="rodape-marca">Prisma © 2026</span>
-    <span class="rodape-sep">|</span>
-</footer>
-
-<!-- Variáveis para o JS -->
-<script>
-    const origemArquivo  = "{{ origem if origem else '' }}";
-    const pastaUUID      = "{{ session.get('pasta_upload', '') }}";
-    const previewInicial = "{{ preview_url if preview_url else '' }}";
-    const previewTipo    = "{{ preview_tipo if preview_tipo else '' }}";
-    const tabelaInicial = "{{ 'true' if tabela_html else 'false' }}" === "true";
-</script>
-<script src="{{ url_for('static', filename='script.js') }}"></script>
+    <!-- Variáveis para o JS -->
+    <script>
+        const origemArquivo = "{{ origem if origem else '' }}";
+        const pastaUUID = "{{ session.get('pasta_upload', '') }}";
+        const previewInicial = "{{ preview_url if preview_url else '' }}";
+        const previewTipo = "{{ preview_tipo if preview_tipo else '' }}";
+        const tabelaInicial = "{{ 'true' if tabela_html else 'false' }}" === "true";
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
+
 </html>

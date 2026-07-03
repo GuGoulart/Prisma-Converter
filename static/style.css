@@ -287,10 +287,10 @@ body {
 
 /* ── Sidebar desktop: scrola com a página ── */
 .sidebar {
-    width: 210px;
+    width: 240px;
     flex-shrink: 0;
     border-right: 1px solid var(--border);
-    padding: 32px 24px;
+    padding: 32px 20px;
     display: flex;
     flex-direction: column;
     gap: 14px
@@ -346,6 +346,29 @@ body {
     display: flex;
     align-items: center;
     gap: 6px
+}
+
+.nav-link {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted2);
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.nav-link:hover {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.nav-active {
+    color: var(--accent) !important;
+    border: 1px solid var(--border2);
+    background: rgba(200, 255, 0, 0.03);
 }
 
 .sidebar-online {
