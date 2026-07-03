@@ -38,7 +38,7 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);overflow-x:h
 
 .bg-grid{position:fixed;inset:0;
     background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
-    background-size:48px 48px;opacity:.35;pointer-events:none;z-index:0}
+    background-size:48px 48px;opacity:.35;pointer-events:none;z-index:-1}
 
 .toast{position:fixed;bottom:60px;right:28px;display:flex;align-items:center;gap:10px;
     background:var(--accent);color:#0a0a0a;font-family:var(--mono);font-size:12px;
@@ -59,7 +59,7 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);overflow-x:h
 .mobile-nav{display:none}
 .sidebar-fechar{display:none}
 
-.layout{position:relative;z-index:1;display:flex;min-height:100vh;padding-top:34px;padding-bottom:44px}
+.layout{position:relative;display:flex;min-height:100vh;padding-top:34px;padding-bottom:44px}
 
 /* ── Sidebar desktop: scrola com a página ── */
 .sidebar{width:210px;flex-shrink:0;border-right:1px solid var(--border);padding:32px 24px;
@@ -266,8 +266,8 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);overflow-x:h
 
 /* ── Mobile ── */
 @media(max-width:768px){
-    .marquee-bar{display:none}
-    .mobile-nav{display:flex;position:fixed;top:0;left:0;right:0;height:50px;background:rgba(10,10,10,0.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 20px;align-items:center;justify-content:space-between;z-index:90}
+    .marquee-bar{position:fixed;top:0;left:0;right:0;height:28px;z-index:91}
+    .mobile-nav{display:flex;position:fixed;top:28px;left:0;right:0;height:50px;background:rgba(10,10,10,0.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 20px;align-items:center;justify-content:space-between;z-index:90}
     .mobile-logo{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent);letter-spacing:.1em}
     .mobile-menu-btn{display:flex;flex-direction:column;gap:5px;background:none;border:1px solid var(--border2);padding:9px 11px;cursor:pointer;transition:all .2s}
     .mobile-menu-btn span{display:block;width:20px;height:2px;background:var(--text);transition:all .3s ease}
@@ -279,7 +279,7 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);overflow-x:h
     .sidebar-fechar{display:none !important}
     .sidebar{position:fixed;top:0;bottom:0;left:-270px;width:260px;height:100vh;z-index:200;border-right:1px solid var(--border2);background:rgba(10,10,10,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);transition:left .3s cubic-bezier(.4,0,.2,1);padding:20px 24px 32px;overflow-y:auto}
     .sidebar.aberta{left:0}
-    .layout{padding-top:50px;padding-bottom:52px}
+    .layout{padding-top:78px;padding-bottom:52px}
     .main{padding:20px 14px;gap:28px}
     .titulo-principal{font-size:28px;letter-spacing:-.8px}
     .header-num{display:none}
