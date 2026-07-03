@@ -76,9 +76,9 @@ Na inicialização, o app tenta detectar qual motor de conversão está disponí
 
 ---
 
-## Formatos suportados (56 rotas de conversão)
+## Formatos suportados (52 rotas de conversão)
 
-Graças ao motor de hub universal embutido no Prisma, os arquivos podem transitar entre si utilizando passos intermediários inteligentes, permitindo **56 combinações** possíveis:
+Graças ao motor de hub universal embutido no Prisma, os arquivos podem transitar entre si utilizando passos intermediários inteligentes, permitindo **52 combinações** possíveis:
 
 | Origem | Destinos Possíveis |
 |---|---|
@@ -87,7 +87,7 @@ Graças ao motor de hub universal embutido no Prisma, os arquivos podem transita
 | **PDF** | DOCX, PPTX, PPT, PNG, JPG, XLSX, CSV |
 | **DOCX** | PDF, PNG, JPG, XLSX, CSV, PPTX |
 | **PPT / PPTX**| PDF, DOCX, XLSX, CSV, PNG, JPG, PPT/PPTX |
-| **PNG / JPG** | PDF, JPG/PNG, DOCX, XLSX, CSV, PPTX |
+| **PNG / JPG** | PDF, JPG/PNG, DOCX, PPTX |
 
 > **Nota:** Conversões que exigem renderização visual complexa para PDF (DOCX→PDF, XLSX→PDF, PPT→PDF) necessitam do Microsoft Office ou LibreOffice instalados na máquina.
 

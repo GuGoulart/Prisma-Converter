@@ -61,9 +61,9 @@ CONVERSOES = {
     "docx": ["pdf",  "png", "jpg", "xlsx", "csv", "pptx"],
     "ppt":  ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "pptx"],
     "pptx": ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "ppt"],
-    "png":  ["pdf",  "jpg", "docx", "xlsx", "csv", "pptx"],
-    "jpg":  ["pdf",  "png", "docx", "xlsx", "csv", "pptx"],
-    "jpeg": ["pdf",  "png", "docx", "xlsx", "csv", "pptx"],
+    "png":  ["pdf",  "jpg", "docx", "pptx"],
+    "jpg":  ["pdf",  "png", "docx", "pptx"],
+    "jpeg": ["pdf",  "png", "docx", "pptx"],
 }
 
 def obter_conversoes(extensao): return CONVERSOES.get(extensao.lower(), [])
@@ -645,12 +645,8 @@ def pptx_para_xlsx(e, s): _via_pdf(e, s, "pptx", "xlsx")
 def pptx_para_csv(e, s):  _via_pdf(e, s, "pptx", "csv")
 def pptx_para_ppt(e, s):  _via_pdf(e, s, "pptx", "ppt")
 def png_para_docx(e, s):  _via_pdf(e, s, "png",  "docx")
-def png_para_xlsx(e, s):  _via_pdf(e, s, "png",  "xlsx")
-def png_para_csv(e, s):   _via_pdf(e, s, "png",  "csv")
 def png_para_pptx(e, s):  _via_pdf(e, s, "png",  "pptx")
 def jpg_para_docx(e, s):  _via_pdf(e, s, "jpg",  "docx")
-def jpg_para_xlsx(e, s):  _via_pdf(e, s, "jpg",  "xlsx")
-def jpg_para_csv(e, s):   _via_pdf(e, s, "jpg",  "csv")
 def jpg_para_pptx(e, s):  _via_pdf(e, s, "jpg",  "pptx")
 def jpg_para_png_img(e, s): jpg_para_png(e, s)
 
@@ -707,22 +703,16 @@ _MAPA = {
     ("png",  "pdf"):  imagem_para_pdf,
     ("png",  "jpg"):  png_para_jpg,
     ("png",  "docx"): png_para_docx,
-    ("png",  "xlsx"): png_para_xlsx,
-    ("png",  "csv"):  png_para_csv,
     ("png",  "pptx"): png_para_pptx,
     # JPG
     ("jpg",  "pdf"):  imagem_para_pdf,
     ("jpg",  "png"):  jpg_para_png,
     ("jpg",  "docx"): jpg_para_docx,
-    ("jpg",  "xlsx"): jpg_para_xlsx,
-    ("jpg",  "csv"):  jpg_para_csv,
     ("jpg",  "pptx"): jpg_para_pptx,
     # JPEG (alias)
     ("jpeg", "pdf"):  imagem_para_pdf,
     ("jpeg", "png"):  jpg_para_png,
     ("jpeg", "docx"): jpg_para_docx,
-    ("jpeg", "xlsx"): jpg_para_xlsx,
-    ("jpeg", "csv"):  jpg_para_csv,
     ("jpeg", "pptx"): jpg_para_pptx,
 }
 
