@@ -1,6 +1,9 @@
 # PRISMA Converter
 
-> Conversor de arquivos local, seguro e sem frescura. Feito com Flask + Python.
+> Você pensa. O Prisma faz.
+> De conversões a novas possibilidades. Tudo para seus arquivos, em um só lugar.
+
+**🟢 Disponível Online:** [prisma-vmbr.onrender.com](https://prisma-vmbr.onrender.com/)
 
 **Criador:** Gustavo Goulart Bretas — [github.com/GuGoulart](https://github.com/GuGoulart)
 
@@ -20,39 +23,41 @@ A ideia é simples: arraste um arquivo, escolha o formato de destino, clique em 
 |---|---|---|
 | **Backend** | Python 3.10+ | Linguagem principal |
 | **Framework web** | Flask | Servidor HTTP e rotas |
+| **Conversor Universal**| `_via_pdf` (Hub) | Sistema de conversão cruzada para formatos incompatíveis nativamente |
 | **Conversão Office** | pywin32 (`win32com`) | Word, Excel e PowerPoint → PDF (via MS Office) |
-| **Conversão LibreOffice** | subprocess + soffice | Word, Excel e PowerPoint → PDF (via LibreOffice) |
-| **PDF → DOCX** | pdf2docx | Extração e conversão de PDFs |
-| **PDF → PNG** | PyMuPDF (`fitz`) | Renderização de páginas do PDF |
+| **Conversão LibreOffice**| subprocess + soffice | Word, Excel e PowerPoint → PDF (via LibreOffice) |
+| **PDF → DOCX** | pdf2docx | Extração e conversão de PDFs para Word |
+| **PDF → Imagens** | PyMuPDF (`fitz`) | Renderização de páginas do PDF para PNG/JPG |
 | **Imagem → PDF** | Pillow | Conversão de PNG/JPG para PDF |
 | **Planilhas** | pandas + openpyxl | Leitura e escrita de CSV e XLSX |
+| **Extração de Tabelas**| pdfplumber | Extração de dados tabulares de PDFs |
 | **Encoding** | chardet *(opcional)* | Detecção automática de encoding em CSVs |
 | **Frontend** | HTML + CSS + JS puro | Interface sem frameworks |
 | **Tipografia** | Space Grotesk + Space Mono | Google Fonts |
 
 ### Como foi feito
 
-O backend é um servidor Flask com duas rotas principais: `/upload` (recebe o arquivo, valida, e exibe as opções de conversão) e `/converter` (executa a conversão e devolve o arquivo via `send_file`). Toda a lógica de conversão está isolada em `converter.py`, que detecta automaticamente na inicialização qual motor está disponível (Microsoft Office ou LibreOffice) e usa o mais adequado para cada tarefa.
+O backend é um servidor Flask com rotas principais para upload, preview e conversão. Toda a lógica está isolada em `converter.py`, que atua como uma verdadeira **fábrica de conversão universal**. Ele detecta automaticamente o motor disponível (Microsoft Office ou LibreOffice) e utiliza um hub central (`_via_pdf`) para encadear conversões (ex: PNG → PDF → DOCX), permitindo que praticamente qualquer formato chegue a qualquer outro.
 
-O frontend é HTML/CSS/JS puro — sem React, sem Tailwind, sem dependências de build. O design segue uma estética sharp/técnica: dark mode, sem bordas arredondadas, tipografia monospace, grid de fundo, e micro-animações via CSS puro.
+O frontend é HTML/CSS/JS puro — sem React, sem Tailwind, sem dependências de build. O design segue uma estética sharp/técnica: dark mode, sem bordas arredondadas (0px radius), tipografia monospace, grid de fundo translúcido, menus overlay com glassmorphism (backdrop-filter) e micro-animações dinâmicas.
 
 ---
 
 ## Como funciona
 
-```
+```text
 Usuário envia arquivo
         ↓
 Flask valida (magic bytes, extensão, tamanho, CSRF, rate limit)
         ↓
 Arquivo salvo em pasta isolada por UUID (uploads/<uuid>/)
         ↓
-Interface exibe opções de conversão disponíveis
-(CSV e XLSX também mostram prévia das 5 primeiras linhas)
+Interface exibe opções de destinos cruzados dinamicamente
+(Exibe prévias visuais em tempo real ou extração completa de dados para planilhas)
         ↓
 Usuário escolhe formato de destino e clica em converter
         ↓
-Flask aciona converter.py → motor correto (Office ou LibreOffice)
+Flask aciona converter.py → Roteia via motor direto ou hub universal (_via_pdf)
         ↓
 Arquivo convertido enviado via send_file (stream direto)
         ↓
@@ -67,24 +72,24 @@ Na inicialização, o app tenta detectar qual motor de conversão está disponí
 
 1. **Microsoft Office** — via `win32com`. Requer Office instalado no Windows.
 2. **LibreOffice** — via subprocess (`soffice --headless`). Detecta automaticamente nos caminhos padrão do Windows ou via PATH.
-3. **Nenhum** — O app ainda funciona para conversões que não dependem de Office/LibreOffice (CSV↔XLSX, PDF→PNG, Imagem→PDF).
+3. **Nenhum** — O app ainda funciona para conversões que não dependem de Office/LibreOffice (CSV↔XLSX, PDF→PNG, Imagem→PDF, PDF→DOCX).
 
 ---
 
-## Formatos suportados
+## Formatos suportados (56 rotas de conversão)
 
-| Entrada | Saída |
+Graças ao motor de hub universal embutido no Prisma, os arquivos podem transitar entre si utilizando passos intermediários inteligentes, permitindo **56 combinações** possíveis:
+
+| Origem | Destinos Possíveis |
 |---|---|
-| CSV | XLSX, PDF |
-| XLSX | CSV, PDF |
-| PDF | DOCX, PNG |
-| DOCX | PDF |
-| PPT | PDF |
-| PPTX | PDF |
-| PNG | PDF |
-| JPG / JPEG | PDF |
+| **CSV** | XLSX, PDF, PNG, JPG, DOCX, PPTX |
+| **XLSX** | CSV, PDF, PNG, JPG, DOCX, PPTX |
+| **PDF** | DOCX, PPTX, PPT, PNG, JPG, XLSX, CSV |
+| **DOCX** | PDF, PNG, JPG, XLSX, CSV, PPTX |
+| **PPT / PPTX**| PDF, DOCX, XLSX, CSV, PNG, JPG, PPT/PPTX |
+| **PNG / JPG** | PDF, JPG/PNG, DOCX, XLSX, CSV, PPTX |
 
-> **Nota:** Conversões para PDF que envolvam Office (DOCX, XLSX, PPT, PPTX) requerem Microsoft Office ou LibreOffice instalado.
+> **Nota:** Conversões que exigem renderização visual complexa para PDF (DOCX→PDF, XLSX→PDF, PPT→PDF) necessitam do Microsoft Office ou LibreOffice instalados na máquina.
 
 ---
 
@@ -124,8 +129,6 @@ venv\Scripts\Activate.ps1
 venv\Scripts\activate.bat
 ```
 
-> Você saberá que está ativo quando aparecer `(venv)` no início da linha do terminal.
-
 ---
 
 ### 3. Instale as dependências
@@ -138,9 +141,11 @@ pip install pymupdf
 pip install Pillow
 pip install pywin32
 pip install chardet
+pip install pdfplumber
+pip install python-pptx
 ```
 
-Ou, se quiser use o `requirements.txt` do projeto:
+Ou, use o `requirements.txt` do projeto:
 
 ```bash
 pip install -r requirements.txt
@@ -148,19 +153,7 @@ pip install -r requirements.txt
 
 ---
 
-### 4. (Opcional) Verifique se o LibreOffice está no PATH
-
-Se você usa LibreOffice em vez do Microsoft Office, o app o detecta automaticamente nos caminhos padrão. Para verificar:
-
-```bash
-soffice --version
-```
-
-Se retornar algo como `LibreOffice 7.x.x`, está funcionando. Se não, adicione o caminho manualmente ao PATH do Windows ou edite a lista `_caminhos` em `converter.py`.
-
----
-
-### 5. Execute o aplicativo
+### 4. Execute o aplicativo
 
 ```bash
 python app.py
@@ -175,161 +168,69 @@ Você verá algo como:
 
 ---
 
-### 6. Acesse no navegador
+### 5. Acesse no navegador
 
-Abra o seu navegador e acesse:
-
-```
-http://localhost:5000
-```
-
----
-
-### 7. Use o conversor
-
-1. **Arraste** um arquivo para a área de upload, ou clique para selecionar
-2. Clique em **Enviar**
-3. Se for CSV ou XLSX, uma **prévia das 5 primeiras linhas** aparecerá à direita
-4. Selecione o **formato de destino** nos cards de opção
-5. Clique em **Converter e baixar**
-6. O download começa automaticamente — os arquivos são apagados do servidor logo após
-
----
-
-### 8. Atalhos de teclado
-
-| Tecla | Ação |
-|---|---|
-| `K` | Abre o seletor de arquivo |
-| `Enter` | Confirma a conversão (equivale a clicar no botão) |
-| `Esc` | Fecha o menu lateral no mobile |
-
----
-
-### 9. Encerrando o app
-
-No terminal, pressione `Ctrl + C` para parar o servidor.
-
-Para desativar o ambiente virtual:
-
-```bash
-deactivate
-```
+Abra o seu navegador e acesse: `http://localhost:5000`
 
 ---
 
 ## Funcionalidades de segurança
 
-O Prisma Converter foi desenvolvido com segurança em camadas, mesmo sendo uma aplicação local.
+O Prisma Converter foi desenvolvido com segurança em camadas, mesmo sendo uma aplicação local:
 
-### Proteção CSRF
-Todos os formulários incluem um token CSRF gerado via `secrets.token_hex(32)` e armazenado na sessão Flask. Qualquer requisição POST sem o token correto é rejeitada imediatamente.
-
-### Validação de magic bytes
-O app não confia apenas na extensão do arquivo. Ele lê os primeiros bytes do arquivo e verifica se batem com o formato declarado:
-- PDF: `%PDF`
-- DOCX / XLSX / PPTX: `PK\x03\x04` (cabeçalho ZIP do Office Open XML)
-- PPT / XLS / DOC antigos: `\xd0\xcf\x11\xe0` (cabeçalho OLE2)
-- PNG: `\x89PNG`
-- JPG: `\xff\xd8\xff`
-
-Se não bater, o arquivo é rejeitado e apagado.
-
-### Bloqueio de extensões duplas perigosas
-Arquivos com extensões intermediárias perigosas (ex: `documento.pdf.exe`, `planilha.xlsx.bat`) são bloqueados antes mesmo de serem salvos. A lista de extensões bloqueadas inclui: `exe`, `bat`, `cmd`, `php`, `sh`, `ps1`, `vbs`, `js`, `jar`, `py`, `dll`, entre outras.
-
-### Limite de tamanho por tipo de arquivo
-Cada formato tem um limite próprio, mais inteligente do que um limite global:
-
-| Formato | Limite |
-|---|---|
-| CSV | 5 MB |
-| DOCX / XLSX | 20 MB |
-| PNG / JPG | 10 MB |
-| PDF / PPT / PPTX | 50 MB |
-
-### Isolamento por pasta de sessão
-Cada upload cria uma subpasta única (`uploads/<uuid>/`) exclusiva para aquela sessão. Não há risco de colisão entre arquivos de diferentes usuários.
-
-### Token de sessão por arquivo
-Após o upload, o servidor salva um token na sessão Flask vinculado à pasta do arquivo. Na conversão, valida que o arquivo pertence à sessão atual. Isso impede que uma URL manipulada acesse arquivos de outro usuário.
-
-### Deleção imediata após download
-Usando o decorator `@after_this_request` do Flask, todos os arquivos (upload e saída) são apagados do disco imediatamente após o `send_file` ser concluído. Em caso de erro na conversão, os arquivos de upload também são apagados.
-
-### Rate limiting por IP
-Máximo de **10 ações por minuto por IP**, implementado sem biblioteca externa. Protege contra abuso e loops automáticos.
-
-### Limite de conversões paralelas
-O servidor processa no máximo **3 conversões simultâneas**. Requisições excedentes recebem uma mensagem de "servidor ocupado" em vez de travar o processo.
-
-### Timeout de conversão
-Cada conversão tem um timeout de **120 segundos**, implementado via `threading.Event`. Se o processo travar (ex: arquivo corrompido, Office travado), ele é interrompido e o usuário recebe uma mensagem de erro clara.
-
-### Cabeçalhos HTTP de segurança
-Todas as respostas incluem cabeçalhos de segurança HTTP aplicados via `@app.after_request`:
-
-```
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
-X-XSS-Protection: 1; mode=block
-Referrer-Policy: no-referrer
-```
-
-### Limpeza residual em background
-Uma thread em daemon roda a cada 15 minutos e remove qualquer arquivo com mais de 15 minutos que, por algum motivo, não tenha sido apagado (ex: sessão abandonada, queda de conexão).
-
-### Logging estruturado
-Todas as ações relevantes (uploads, conversões, erros, tentativas bloqueadas por rate limit ou CSRF) são registradas em `prisma.log` com timestamp, nível e IP de origem.
+- **Proteção CSRF:** Todos os formulários incluem um token único.
+- **Validação de magic bytes:** O app verifica os headers binários dos arquivos para garantir que extensões não foram falsificadas.
+- **Bloqueio de extensões duplas perigosas:** Bloqueia `.exe`, `.bat`, `.php`, `.py`, `.vbs`, etc.
+- **Limite de tamanho inteligente:** Limites dinâmicos por tipo (ex: 5MB para CSV, 50MB para PDF).
+- **Isolamento de sessão:** Pastas temporárias com UUIDs únicas.
+- **Deleção imediata:** Arquivos são varridos do disco assim que o download termina, e uma thread em background limpa arquivos órfãos a cada 15 minutos.
+- **Rate limiting e Pooling:** Máximo de 10 requisições por minuto por IP e travamento em 3 conversões simultâneas para evitar sobrecarga.
 
 ---
 
 ## Features que valem destaque
 
-### Detecção automática de encoding e separador em CSVs
-CSVs do Windows muitas vezes vêm em `latin-1` ou `cp1252` em vez de `UTF-8`. O Prisma usa `chardet` (se instalado) para detectar o encoding correto antes de ler. Além disso, usa `sep=None, engine="python"` do pandas para detectar automaticamente se o separador é `,`, `;`, `|` ou `Tab` — sem configuração manual.
+### Prévia de documentos e planilhas em tempo real
+O sistema exibe o conteúdo visual do documento *antes* da conversão. Para planilhas (CSV e XLSX), todos os dados reais são extraídos sem limites de linhas e mostrados diretamente na tela com scroll nativo.
 
-### Prévia de tabela em tempo real
-Para arquivos CSV e XLSX, o app exibe uma prévia das 5 primeiras linhas e até 8 colunas assim que o arquivo é enviado, antes mesmo de converter. Útil para confirmar que o arquivo correto foi selecionado.
+### Motor Universal de Conversão (`_via_pdf`)
+O backend possui inteligência de roteamento. Se o usuário quiser converter um CSV para DOCX (dois formatos incompatíveis diretamente), o Prisma converte o CSV em um PDF temporário, e na sequência extrai e remonta o conteúdo como um arquivo de texto DOCX, de forma totalmente transparente e rápida.
 
-### Histórico da sessão
-As últimas 5 conversões da sessão aparecem com formato de origem, destino, nome do arquivo e horário. Os dados ficam apenas na sessão Flask (memória do servidor) e somem quando o servidor é reiniciado.
+### Detecção automática de encoding
+CSVs do Windows muitas vezes vêm em `latin-1` ou `cp1252` em vez de `UTF-8`. O Prisma usa `chardet` para detectar o encoding correto antes de ler, evitando caracteres corrompidos.
 
-### Contador de conversões ao vivo
-A sidebar exibe o total de conversões realizadas desde que o servidor foi iniciado.
+### UI Responsiva e Glassmorphism
+Design focado na experiência técnica: letreiros infinitos de status fixos no topo, menu lateral drawer no mobile com efeito backdrop-filter embaçando a tela traseira, e feedbacks interativos via CSS. 
 
-### Motor visível na sidebar
-A sidebar indica qual motor está sendo usado (`MS Office` ou `LibreOffice`), para que o usuário saiba exatamente o que está acontecendo.
-
-### Design totalmente responsivo com drawer mobile
-No mobile, a sidebar vira um drawer deslizante acessível pelo ícone de menu. Os botões têm 56px de altura para conforto no toque.
-
-### Sem dependências de build no frontend
-O frontend usa HTML, CSS e JS puros. Não há npm, webpack, Vite ou qualquer ferramenta de build. Para editar o visual, basta alterar os arquivos estáticos diretamente.
+### Atalhos de teclado
+- `K`: Abre o seletor de arquivo
+- `Enter`: Confirma a conversão
+- `Esc`: Fecha o menu lateral no mobile
 
 ---
 
 ## Estrutura do projeto
 
-```
+```text
 prisma-converter/
 ├── app.py              # Servidor Flask, rotas, segurança
-├── converter.py        # Lógica de conversão, detecção de motor
-├── prisma.log          # Log de eventos (gerado automaticamente)
-├── uploads/            # Pasta temporária de uploads (auto-criada)
-├── downloads/          # Pasta temporária de saídas (auto-criada)
+├── converter.py        # Fábrica de conversões universais cruzadas
+├── prisma.log          # Log de eventos
+├── uploads/            # Pasta temporária (auto-limpante)
+├── downloads/          # Pasta temporária (auto-limpante)
 ├── templates/
-│   └── index.html      # Interface principal
+│   └── index.html      # UI Principal 
 └── static/
-    ├── style.css        # Estilos (dark, sharp, sem border-radius)
-    └── script.js        # Interatividade, drawer, cookie polling
+    ├── style.css       # Estilos (Sharp, Dark Mode, animações)
+    └── script.js       # Interatividade (Drag&drop, polling de cookie)
 ```
 
 ---
 
 ## Licença
 
-MIT — use, modifique e distribua à vontade. Créditos são bem-vindos mas não obrigatórios.
+**Todos os direitos reservados.** 
+Este código e projeto são de propriedade exclusiva de Gustavo Goulart Bretas. Não é permitida a cópia, distribuição, modificação ou uso (comercial ou não) sem autorização prévia e expressa do autor.
 
 ---
 
