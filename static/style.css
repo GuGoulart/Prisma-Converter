@@ -1496,7 +1496,7 @@ body {
         padding: 0 20px;
         align-items: center;
         justify-content: space-between;
-        z-index: 160
+        z-index: 90
     }
 
     .mobile-logo {

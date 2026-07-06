@@ -140,39 +140,6 @@
             .pdf-tool-grid { grid-template-columns: 1fr; }
         }
         
-        .symbol-storm {
-            width: 100%;
-            height: 32px;
-            overflow: hidden;
-            display: flex;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            position: relative;
-            z-index: 50;
-        }
-        
-        .storm-icon {
-            position: absolute;
-            color: var(--accent);
-            opacity: 0.15;
-            animation: drift linear infinite;
-        }
-        
-        @keyframes drift {
-            from { left: 100%; transform: rotate(0deg); }
-            to { left: -50px; transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 768px) {
-            .symbol-storm {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 28px;
-                z-index: 91;
-            }
-        }
     </style>
 </head>
 <body>
@@ -181,8 +148,21 @@
 
 <div class="drawer-overlay" id="drawerOverlay"></div>
 
-<!-- Tempestade de Símbolos no Topo -->
-<div class="symbol-storm" id="stormContainer"></div>
+<!-- Barra animada no topo -->
+<div class="marquee-bar">
+    <div class="marquee-track">
+        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+    </div>
+    <div class="marquee-track">
+        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+    </div>
+</div>
 
 <!-- Nav mobile -->
 <div class="mobile-nav">
@@ -487,51 +467,7 @@
     setupFileInput('protectInput', 'protectFileName');
     setupFileInput('unprotectInput', 'unprotectFileName');
 
-    // Gerador da tempestade de símbolos
-    const stormContainer = document.getElementById('stormContainer');
-    if (stormContainer) {
-        const icones = [
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>', // Mesclar
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>', // Dividir
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>', // Proteger
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>', // Desproteger
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', // File Text
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>', // Info
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>' // Search
-        ];
 
-        function spawnIcon() {
-            const el = document.createElement('div');
-            el.className = 'storm-icon';
-            el.innerHTML = icones[Math.floor(Math.random() * icones.length)];
-            
-            // Randomizar tamanho e opacidade (mais claros e vísiveis)
-            const size = 14 + Math.random() * 14;
-            el.style.width = size + 'px';
-            el.style.height = size + 'px';
-            el.style.opacity = (0.2 + Math.random() * 0.4).toString();
-            
-            // Randomizar posição Y na barra (que tem 32px de altura)
-            el.style.top = (Math.random() * 12) + 'px';
-            
-            // Randomizar velocidade (duração da animação mais rápida)
-            const duration = 6 + Math.random() * 8;
-            el.style.animationDuration = duration + 's';
-            
-            stormContainer.appendChild(el);
-            
-            // Remover depois que passar da tela
-            setTimeout(() => el.remove(), duration * 1000);
-        }
-
-        // Criar ícones iniciais espalhados
-        for (let i = 0; i < 15; i++) {
-            setTimeout(spawnIcon, i * 600);
-        }
-
-        // Continuar criando com maior frequência
-        setInterval(spawnIcon, 1200);
-    }
 </script>
 </body>
 </html>
