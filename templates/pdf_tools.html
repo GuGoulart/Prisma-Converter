@@ -162,6 +162,17 @@
             from { left: 100%; transform: rotate(0deg); }
             to { left: -50px; transform: rotate(360deg); }
         }
+        
+        @media (max-width: 768px) {
+            .symbol-storm {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 28px;
+                z-index: 91;
+            }
+        }
     </style>
 </head>
 <body>
@@ -372,18 +383,20 @@
 
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
-    const overlay = document.createElement('div');
-    overlay.className = 'drawer-overlay';
-    document.body.appendChild(overlay);
+    const overlay = document.getElementById('drawerOverlay');
 
     menuBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('show');
+        sidebar.classList.toggle('aberta');
+        overlay.classList.toggle('ativo');
+        menuBtn.classList.toggle('ativo');
+        document.body.style.overflow = sidebar.classList.contains('aberta') ? 'hidden' : '';
     });
 
     overlay.addEventListener('click', () => {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('show');
+        sidebar.classList.remove('aberta');
+        overlay.classList.remove('ativo');
+        menuBtn.classList.remove('ativo');
+        document.body.style.overflow = '';
     });
 
     // Timeout para ocultar o erro após 5 segundos
