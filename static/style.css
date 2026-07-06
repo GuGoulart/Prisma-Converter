@@ -1476,10 +1476,6 @@ body {
     }
 }
 
-.github-mobile {
-    display: none !important;
-}
-
 /* ── PDF loader overlay ── */
 .pdf-loader-overlay {
     position: absolute;
@@ -1520,14 +1516,6 @@ body {
         right: 0;
         height: 28px;
         z-index: 91
-    }
-
-    .github-desktop {
-        display: none !important;
-    }
-
-    .github-mobile {
-        display: flex !important;
     }
 
     .mobile-nav {
