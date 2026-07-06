@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-    // ── Tema Claro / Escurooooo ───────────────────────────────────
+    // ── Tema Claro / Escuro ───────────────────────────────────
     const themeToggleBtn = document.getElementById("themeToggle");
     const currentTheme = localStorage.getItem("theme") || "dark";
 

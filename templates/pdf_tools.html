@@ -28,7 +28,6 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
-            min-width: 0;
             transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
         }
 
@@ -72,7 +71,7 @@
             font-size: 13px;
         }
 
-        /* Oculta visualmente o input de arquivo mantendo foco e validação o*/
+        /* Oculta visualmente o input de arquivo mantendo foco e validação */
         .hidden-file-input {
             width: 0.1px;
             height: 0.1px;
@@ -147,18 +146,42 @@
             color: var(--text);
             font-family: var(--font);
             width: 100%;
-            max-width: 100%;
             box-sizing: border-box;
             font-size: 13px;
             appearance: none;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         @media (max-width: 768px) {
             .pdf-tool-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        .symbol-storm {
+            width: 100%;
+            height: 32px;
+            overflow: hidden;
+            display: flex;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 50;
+        }
+
+        .storm-icon {
+            position: absolute;
+            color: var(--accent);
+            opacity: 0.15;
+            animation: drift linear infinite;
+        }
+
+        @keyframes drift {
+            from {
+                transform: translateX(100vw) rotate(0deg);
+            }
+
+            to {
+                transform: translateX(-50px) rotate(360deg);
             }
         }
     </style>
@@ -168,47 +191,8 @@
 
     <div class="bg-grid"></div>
 
-    <div class="drawer-overlay" id="drawerOverlay"></div>
-
-    <!-- Barra animada no topo -->
-    <div class="marquee-bar">
-        <div class="marquee-track">
-            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
-                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
-                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
-                class="sep">—</span><span>JPG</span><span class="sep">—</span>
-            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
-                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
-                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
-                class="sep">—</span><span>JPG</span><span class="sep">—</span>
-            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
-                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
-                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
-                class="sep">—</span><span>JPG</span><span class="sep">—</span>
-            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
-                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
-                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
-                class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        </div>
-        <div class="marquee-track">
-            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
-                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
-                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
-                class="sep">—</span><span>JPG</span><span class="sep">—</span>
-            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
-                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
-                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
-                class="sep">—</span><span>JPG</span><span class="sep">—</span>
-            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
-                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
-                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
-                class="sep">—</span><span>JPG</span><span class="sep">—</span>
-            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
-                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
-                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
-                class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        </div>
-    </div>
+    <!-- Tempestade de Símbolos no Topo -->
+    <div class="symbol-storm" id="stormContainer"></div>
 
     <!-- Nav mobile -->
     <div class="mobile-nav">
@@ -237,14 +221,7 @@
 
             <div class="sidebar-linha"></div>
 
-            <a href="https://github.com/GuGoulart" target="_blank" rel="noopener noreferrer"
-                class="sidebar-github-mobile">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                        d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-                </svg>
-                <span>Made by Gustavo Goulart</span>
-            </a>
+
 
             <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
                 <p class="sidebar-label" style="margin-bottom: 0;">Tema</p>
@@ -477,20 +454,18 @@
 
         const menuBtn = document.getElementById('menuBtn');
         const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('drawerOverlay');
+        const overlay = document.createElement('div');
+        overlay.className = 'drawer-overlay';
+        document.body.appendChild(overlay);
 
         menuBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('aberta');
-            overlay.classList.toggle('ativo');
-            menuBtn.classList.toggle('ativo');
-            document.body.style.overflow = sidebar.classList.contains('aberta') ? 'hidden' : '';
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
         });
 
         overlay.addEventListener('click', () => {
-            sidebar.classList.remove('aberta');
-            overlay.classList.remove('ativo');
-            menuBtn.classList.remove('ativo');
-            document.body.style.overflow = '';
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
         });
 
         // Timeout para ocultar o erro após 5 segundos
@@ -581,7 +556,51 @@
         setupFileInput('protectInput', 'protectFileName');
         setupFileInput('unprotectInput', 'unprotectFileName');
 
+        // Gerador da tempestade de símbolos
+        const stormContainer = document.getElementById('stormContainer');
+        if (stormContainer) {
+            const icones = [
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>', // Mesclar
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>', // Dividir
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>', // Proteger
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>', // Desproteger
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', // File Text
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>', // Info
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>' // Search
+            ];
 
+            function spawnIcon() {
+                const el = document.createElement('div');
+                el.className = 'storm-icon';
+                el.innerHTML = icones[Math.floor(Math.random() * icones.length)];
+
+                // Randomizar tamanho e opacidade (mais claros e vísiveis)
+                const size = 14 + Math.random() * 14;
+                el.style.width = size + 'px';
+                el.style.height = size + 'px';
+                el.style.opacity = (0.2 + Math.random() * 0.4).toString();
+
+                // Randomizar posição Y na barra (que tem 32px de altura)
+                el.style.top = (Math.random() * 12) + 'px';
+
+                // Randomizar velocidade (duração da animação mais rápida)
+                const duration = 6 + Math.random() * 8;
+                el.style.animationDuration = duration + 's';
+
+                stormContainer.appendChild(el);
+
+                // Remover depois que passar da tela
+                setTimeout(() => el.remove(), duration * 1000);
+            }
+
+            // Criar ícones iniciais espalhados
+            for (let i = 0; i < 15; i++) {
+                setTimeout(spawnIcon, i * 600);
+            }
+
+            // Continuar criando com maior frequência
+            setInterval(spawnIcon, 1200);
+        }
     </script>
 </body>
 
