@@ -11,9 +11,9 @@
 
 ## O que é
 
-O **Prisma Converter** é uma aplicação web local para conversão de arquivos entre diferentes formatos. Ele roda 100% na sua máquina — nenhum arquivo é enviado para nenhum servidor externo, nenhuma conta é necessária, e nenhum dado fica armazenado após o download.
+O **Prisma Converter** é uma aplicação web completa para conversão de arquivos e manipulação avançada de PDFs. Originalmente concebido para rodar de forma 100% local (focado na privacidade total, sem envio de dados para terceiros), o projeto hoje também conta com uma versão online otimizada para demonstração e uso em nuvem.
 
-A ideia é simples: arraste um arquivo, escolha o formato de destino, clique em converter, e baixe. Rápido, seguro e sem propaganda.
+A ideia é simples: arraste um arquivo, escolha a ferramenta, clique no botão e baixe seu arquivo. Rápido, seguro e sem propagandas.
 
 ---
 
@@ -22,215 +22,138 @@ A ideia é simples: arraste um arquivo, escolha o formato de destino, clique em 
 | Camada | Tecnologia | Função |
 |---|---|---|
 | **Backend** | Python 3.10+ | Linguagem principal |
-| **Framework web** | Flask | Servidor HTTP e rotas |
-| **Conversor Universal**| `_via_pdf` (Hub) | Sistema de conversão cruzada para formatos incompatíveis nativamente |
-| **Conversão Office** | pywin32 (`win32com`) | Word, Excel e PowerPoint → PDF (via MS Office) |
+| **Framework web** | Flask | Servidor HTTP e sistema de rotas |
+| **Conversor Universal**| `_via_pdf` (Hub) | Sistema inteligente de conversão cruzada para formatos incompatíveis nativamente |
+| **Conversão Office** | pywin32 (`win32com`) | Word, Excel e PowerPoint → PDF (via MS Office local) |
 | **Conversão LibreOffice**| subprocess + soffice | Word, Excel e PowerPoint → PDF (via LibreOffice) |
 | **PDF → DOCX** | pdf2docx | Extração e conversão de PDFs para Word |
-| **PDF → Imagens** | PyMuPDF (`fitz`) | Renderização de páginas do PDF para PNG/JPG |
-| **Imagem → PDF** | Pillow | Conversão de PNG/JPG para PDF |
-| **Planilhas** | pandas + openpyxl | Leitura e escrita de CSV e XLSX |
-| **Extração de Tabelas**| pdfplumber | Extração de dados tabulares de PDFs |
-| **Encoding** | chardet *(opcional)* | Detecção automática de encoding em CSVs |
-| **Frontend** | HTML + CSS + JS puro | Interface sem frameworks |
-| **Tipografia** | Space Grotesk + Space Mono | Google Fonts |
+| **Extração de Tabelas**| pdfplumber | Extração avançada de dados tabulares do PDF para XLSX/CSV usando 3 estratégias de leitura |
+| **Planilhas** | pandas + openpyxl | Leitura, edição e escrita eficiente de CSV e XLSX |
+| **Imagens e PDFs** | PyMuPDF (`fitz`) / Pillow | Renderização, Mesclagem, Divisão, Proteção e Senhas em PDFs |
+| **Segurança** | python-dotenv / secrets | Gerenciamento seguro de chaves de sessão e proteção contra CSRF (`.env`) |
+| **Deploy** | Gunicorn | Servidor WSGI robusto para lidar com múltiplos workers em produção (Render) |
+| **Frontend** | HTML + CSS + JS puro | Interface moderna, veloz e responsiva (sem frameworks) |
+| **Tipografia** | Space Grotesk + Space Mono | Estética técnica/hacker via Google Fonts |
 
 ### Como foi feito
 
-O backend é um servidor Flask com rotas principais para upload, preview e conversão. Toda a lógica está isolada em `converter.py`, que atua como uma verdadeira **fábrica de conversão universal**. Ele detecta automaticamente o motor disponível (Microsoft Office ou LibreOffice) e utiliza um hub central (`_via_pdf`) para encadear conversões (ex: PNG → PDF → DOCX), permitindo que praticamente qualquer formato chegue a qualquer outro.
+O backend é um servidor Flask com rotas organizadas para upload, geração de prévias em tempo real, conversões e ferramentas PDF. A inteligência principal mora no `converter.py`, atuando como uma verdadeira **fábrica de conversão universal**. Ele detecta de forma autônoma o motor disponível (Office da Microsoft ou LibreOffice) e utiliza um hub (`_via_pdf`) para encadear conversões complexas nos bastidores (exemplo: `PNG → PDF → DOCX`). Já as manipulações exclusivas de PDF (como dividir páginas, juntar arquivos, e trancar com senha) estão isoladas no `pdf_tools.py`.
 
-O frontend é HTML/CSS/JS puro — sem React, sem Tailwind, sem dependências de build. O design segue uma estética sharp/técnica: dark mode, sem bordas arredondadas (0px radius), tipografia monospace, grid de fundo translúcido, menus overlay com glassmorphism (backdrop-filter) e micro-animações dinâmicas.
+O frontend é HTML/CSS/JS puro, sem a pesada cadeia de build do React ou dependências como Tailwind. O design foi concebido com uma forte estética sharp e técnica: dark mode elegante, bordas totalmente retas (0px radius), tipografia monospace para dados técnicos, grid de fundo paramétrico translúcido, menus modais com efeito de *glassmorphism* (`backdrop-filter`) e feedbacks interativos precisos com CSS animations.
 
 ---
 
-## Como funciona
+## Fluxo da Aplicação
 
 ```text
-Usuário envia arquivo
+Usuário envia arquivo (Conversão ou Ferramentas de PDF)
         ↓
-Flask valida (magic bytes, extensão, tamanho, CSRF, rate limit)
+Flask valida (magic bytes de segurança, extensão, CSRF Token via Cookie)
         ↓
-Arquivo salvo em pasta isolada por UUID (uploads/<uuid>/)
+Arquivo é salvo temporariamente por UUID isolado (uploads/<uuid>/)
         ↓
-Interface exibe opções de destinos cruzados dinamicamente
-(Exibe prévias visuais em tempo real ou extração completa de dados para planilhas)
+Interface carrega opções dinamicamente e gera a PRÉVIA do conteúdo
+(Para planilhas, extrai dados via pandas; para DOCX, processa conversão de prévia em background)
         ↓
-Usuário escolhe formato de destino e clica em converter
+Usuário escolhe o destino ou ferramenta (juntar, dividir, senha)
         ↓
-Flask aciona converter.py → Roteia via motor direto ou hub universal (_via_pdf)
+Flask aciona converter.py ou pdf_tools.py usando controle de Rate Limiting
         ↓
-Arquivo convertido enviado via send_file (stream direto)
+Arquivo finalizado é servido para download (stream direto)
         ↓
-@after_this_request apaga TODOS os arquivos imediatamente após o download
-        ↓
-Histórico da sessão atualizado + contador incrementado
+@after_this_request entra em ação + Cleanup Thread: todos os arquivos 
+originais e resultantes são completamente incinerados do disco do servidor.
 ```
 
-### Detecção automática de motor
+---
 
-Na inicialização, o app tenta detectar qual motor de conversão está disponível:
+## Funcionalidades e Ferramentas
 
-1. **Microsoft Office** — via `win32com`. Requer Office instalado no Windows.
-2. **LibreOffice** — via subprocess (`soffice --headless`). Detecta automaticamente nos caminhos padrão do Windows ou via PATH.
-3. **Nenhum** — O app ainda funciona para conversões que não dependem de Office/LibreOffice (CSV↔XLSX, PDF→PNG, Imagem→PDF, PDF→DOCX).
+### 1. Conversor Universal Inteligente (52 Rotas)
+Graças ao hub interno inteligente, arquivos transitam entre si utilizando processos intermediários invisíveis para o usuário. Isso possibilita combinações que normalmente não existem em sistemas de simples leitura:
+- **CSV / XLSX** ↔ PDF, PNG, JPG, DOCX, PPTX
+- **PDF** ↔ DOCX, PPT, PPTX, PNG, JPG, XLSX, CSV
+- **DOCX / PPTX** ↔ PDF, PNG, JPG, XLSX, CSV
+
+> **Nota Técnica:** Para evitar arquivos gerados corrompidos ou mal formatados, conversões de DOCX→PDF ou Planilhas para Imagens necessitam obrigatoriamente do MS Office ou LibreOffice rodando por trás do servidor. O sistema desabilita opções caso os motores não sejam detectados.
+
+### 2. Ferramentas PDF Nativas
+Além da conversão de formatos, o Prisma conta com ferramentas de manipulação direta via PyMuPDF:
+- **Mesclar:** Suba quantos arquivos quiser e os junte em um PDF único.
+- **Dividir:** Separe um PDF gigante em arquivos individuais compactados em um arquivo `.zip`.
+- **Proteger:** Adicione uma camada de encriptação com senha de forma irreversível.
+- **Desproteger:** Destranque um arquivo PDF permanentemente (é necessário informar a senha original).
 
 ---
 
-## Formatos suportados (52 rotas de conversão)
-
-Graças ao motor de hub universal embutido no Prisma, os arquivos podem transitar entre si utilizando passos intermediários inteligentes, permitindo **52 combinações** possíveis:
-
-| Origem | Destinos Possíveis |
-|---|---|
-| **CSV** | XLSX, PDF, PNG, JPG, DOCX, PPTX |
-| **XLSX** | CSV, PDF, PNG, JPG, DOCX, PPTX |
-| **PDF** | DOCX, PPTX, PPT, PNG, JPG, XLSX, CSV |
-| **DOCX** | PDF, PNG, JPG, XLSX, CSV, PPTX |
-| **PPT / PPTX**| PDF, DOCX, XLSX, CSV, PNG, JPG, PPT/PPTX |
-| **PNG / JPG** | PDF, JPG/PNG, DOCX, PPTX |
-
-> **Nota:** Conversões que exigem renderização visual complexa para PDF (DOCX→PDF, XLSX→PDF, PPT→PDF) necessitam do Microsoft Office ou LibreOffice instalados na máquina.
-
----
-
-## Passo a passo — como usar
+## Passo a passo — Como rodar localmente
 
 ### Pré-requisitos
-
-Antes de começar, certifique-se de ter instalado:
-
-- **Python 3.10 ou superior** → [python.org/downloads](https://www.python.org/downloads/)
-- **Git** → [git-scm.com](https://git-scm.com/)
-- **Microsoft Office** (Word, Excel, PowerPoint) **ou** **LibreOffice** → [libreoffice.org](https://www.libreoffice.org/)
-
----
+- **Python 3.10 ou superior**
+- **Git** instalado na máquina
+- **Microsoft Office** ou **LibreOffice** (Opcional, exigido apenas para formatar conversões de textos/slides).
 
 ### 1. Clone o repositório
-
-Abra o terminal (PowerShell ou CMD) e execute:
-
 ```bash
 git clone https://github.com/GuGoulart/prisma-converter.git
 cd prisma-converter
 ```
 
----
-
 ### 2. Crie e ative o ambiente virtual
-
 ```bash
-# Cria o ambiente virtual
 python -m venv venv
-
-# Ativa no Windows (PowerShell)
-venv\Scripts\Activate.ps1
-
-# Ativa no Windows (CMD)
-venv\Scripts\activate.bat
+venv\Scripts\Activate.ps1   # No Windows (PowerShell)
 ```
 
----
-
-### 3. Instale as dependências
-
-```bash
-pip install flask
-pip install pandas openpyxl
-pip install pdf2docx
-pip install pymupdf
-pip install Pillow
-pip install pywin32
-pip install chardet
-pip install pdfplumber
-pip install python-pptx
-```
-
-Ou, use o `requirements.txt` do projeto:
-
+### 3. Instale as dependências essenciais
+O projeto conta com um script robusto de instalação via requirements:
 ```bash
 pip install -r requirements.txt
 ```
 
----
+### 4. Segurança Local (.env)
+Para proteger a sessão e garantir o funcionamento correto dos formulários, crie um arquivo chamado `.env` (exatamente com esse nome) na pasta principal do projeto e adicione a seguinte linha com uma chave aleatória:
+```text
+SECRET_KEY=cole-aqui-uma-sequencia-maluca-de-letras-e-numeros
+```
 
-### 4. Execute o aplicativo
-
+### 5. Execute o aplicativo
 ```bash
 python app.py
 ```
-
-Você verá algo como:
-
-```
-[Prisma] Motor de conversão: office
- * Running on http://127.0.0.1:5000
-```
+O servidor será exposto localmente. Acesse `http://127.0.0.1:5000` no seu navegador!
 
 ---
 
-### 5. Acesse no navegador
+## Deploy em Produção (Render / Heroku)
 
-Abra o seu navegador e acesse: `http://localhost:5000`
+Se você decidir publicar a aplicação na web, lembre-se: plataformas como o Render utilizam o servidor Gunicorn operando múltiplos processos (workers) ao mesmo tempo para suportar muitos acessos.
 
----
-
-## Funcionalidades de segurança
-
-O Prisma Converter foi desenvolvido com segurança em camadas, mesmo sendo uma aplicação local:
-
-- **Proteção CSRF:** Todos os formulários incluem um token único.
-- **Validação de magic bytes:** O app verifica os headers binários dos arquivos para garantir que extensões não foram falsificadas.
-- **Bloqueio de extensões duplas perigosas:** Bloqueia `.exe`, `.bat`, `.php`, `.py`, `.vbs`, etc.
-- **Limite de tamanho inteligente:** Limites dinâmicos por tipo (ex: 5MB para CSV, 50MB para PDF).
-- **Isolamento de sessão:** Pastas temporárias com UUIDs únicas.
-- **Deleção imediata:** Arquivos são varridos do disco assim que o download termina, e uma thread em background limpa arquivos órfãos a cada 15 minutos.
-- **Rate limiting e Pooling:** Máximo de 10 requisições por minuto por IP e travamento em 3 conversões simultâneas para evitar sobrecarga.
+Para evitar que o "token de acesso" do usuário mude durante a navegação, ocasionando o erro de **Token Inválido**, é mandatório definir a chave no painel:
+1. No seu servidor, vá até o menu **Environment Variables**.
+2. Adicione uma variável com **Key:** `SECRET_KEY` e defina um valor longo e aleatório.
+*(Observação: Caso essa etapa seja esquecida, o aplicativo fará fallback automático para uma chave estática interna, preservando o fluxo sem quebrar o uso do usuário final).*
 
 ---
 
-## Features que valem destaque
+## Features e Camadas de Segurança (Privacy First)
 
-### Prévia de documentos e planilhas em tempo real
-O sistema exibe o conteúdo visual do documento *antes* da conversão. Para planilhas (CSV e XLSX), todos os dados reais são extraídos sem limites de linhas e mostrados diretamente na tela com scroll nativo.
+Sendo uma aplicação que lida com arquivos muitas vezes pessoais ou de trabalho de usuários, o nível de segurança do Prisma foi desenhado em camadas profundas:
 
-### Motor Universal de Conversão (`_via_pdf`)
-O backend possui inteligência de roteamento. Se o usuário quiser converter um CSV para DOCX (dois formatos incompatíveis diretamente), o Prisma converte o CSV em um PDF temporário, e na sequência extrai e remonta o conteúdo como um arquivo de texto DOCX, de forma totalmente transparente e rápida.
-
-### Detecção automática de encoding
-CSVs do Windows muitas vezes vêm em `latin-1` ou `cp1252` em vez de `UTF-8`. O Prisma usa `chardet` para detectar o encoding correto antes de ler, evitando caracteres corrompidos.
-
-### UI Responsiva e Glassmorphism
-Design focado na experiência técnica: letreiros infinitos de status fixos no topo, menu lateral drawer no mobile com efeito backdrop-filter embaçando a tela traseira, e feedbacks interativos via CSS. 
-
-### Atalhos de teclado
-- `K`: Abre o seletor de arquivo
-- `Enter`: Confirma a conversão
-- `Esc`: Fecha o menu lateral no mobile
-
----
-
-## Estrutura do projeto
-
-```text
-prisma-converter/
-├── app.py              # Servidor Flask, rotas, segurança
-├── converter.py        # Fábrica de conversões universais cruzadas
-├── prisma.log          # Log de eventos
-├── uploads/            # Pasta temporária (auto-limpante)
-├── downloads/          # Pasta temporária (auto-limpante)
-├── templates/
-│   └── index.html      # UI Principal 
-└── static/
-    ├── style.css       # Estilos (Sharp, Dark Mode, animações)
-    └── script.js       # Interatividade (Drag&drop, polling de cookie)
-```
+- **Proteção Cross-Site (CSRF):** Sessões encriptadas através da Secret Key protegem contra submissão remota maliciosa de formulários.
+- **Validação de Magic Bytes:** É inútil alguém tentar renomear um arquivo `.exe` ou vírus para `.pdf` e enviar. O sistema realiza varredura dos *headers* binários e bloqueia extensões falsificadas.
+- **Bloqueio Hardcoded:** Arquivos suspeitos (`.bat`, `.sh`, `.py`, `.php`, `.vbs`) são rejeitados no ato.
+- **Sanitização Universal:** O nome original de todo e qualquer arquivo submetido é formatado através do `secure_filename`, impedindo injeções de diretório em Linux/Windows.
+- **Filtros Dinâmicos de Peso:** CSVs são barrados acima de 5MB (impedindo travamento via consumo desenfreado do Pandas na memória ram) enquanto PDFs possuem tolerância de 50MB.
+- **Incineração Imediata:** Assim que a conversão finaliza, a função *decorator* `@after_this_request` varre os bytes do arquivo de entrada e de saída imediatamente. Em paralelo, a *thread* do `cleanup.py` desperta para expurgar pastas temporárias que os usuários tenham abandonado no meio da conversão.
+- **Proteção Anti-Spam:** Sistema interno de Rate Limiting que rastreia IPs e Lock Mutex Threading que trava o backend em 3 processos simultâneos. Isso defende a memória do servidor caso dezenas de usuários cliquem em converter planilhas gigantes no mesmo segundo.
 
 ---
 
 ## Licença
 
 **Todos os direitos reservados.** 
-Este código e projeto são de propriedade exclusiva de Gustavo Goulart Bretas. Não é permitida a cópia, distribuição, modificação ou uso (comercial ou não) sem autorização prévia e expressa do autor.
+Este código, assets e design são de propriedade exclusiva de Gustavo Goulart Bretas. Não é permitida a cópia, bifurcação não-autorizada, distribuição, modificação ou uso comercial/monetizado desta base sem autorização prévia, formal e expressa do autor.
 
 ---
 
