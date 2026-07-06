@@ -83,58 +83,73 @@ body {
 }
 
 .badge-pdf {
-    background: var(--col-pdf) !important;
-    color: #fff !important
+    background: color-mix(in srgb, var(--col-pdf) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-pdf) 40%, transparent) !important;
+    color: var(--col-pdf) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-pdf) 40%, transparent) !important;
 }
 
-.badge-xlsx {
-    background: var(--col-xlsx) !important;
-    color: #000 !important
-}
-
-.badge-xls {
-    background: var(--col-xls) !important;
-    color: #000 !important
+.badge-xlsx, .badge-xls {
+    background: color-mix(in srgb, var(--col-xlsx) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-xlsx) 40%, transparent) !important;
+    color: var(--col-xlsx) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-xlsx) 40%, transparent) !important;
 }
 
 .badge-csv {
-    background: var(--col-csv) !important;
-    color: #000 !important
+    background: color-mix(in srgb, var(--col-csv) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-csv) 40%, transparent) !important;
+    color: var(--col-csv) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-csv) 40%, transparent) !important;
 }
 
-.badge-docx {
-    background: var(--col-docx) !important;
-    color: #fff !important
-}
-
-.badge-doc {
-    background: var(--col-doc) !important;
-    color: #fff !important
+.badge-docx, .badge-doc {
+    background: color-mix(in srgb, var(--col-docx) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-docx) 40%, transparent) !important;
+    color: var(--col-docx) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-docx) 40%, transparent) !important;
 }
 
 .badge-ppt {
-    background: var(--col-ppt) !important;
-    color: #fff !important
+    background: color-mix(in srgb, var(--col-ppt) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-ppt) 40%, transparent) !important;
+    color: var(--col-ppt) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-ppt) 40%, transparent) !important;
 }
 
 .badge-pptx {
-    background: var(--col-pptx) !important;
-    color: #fff !important
+    background: color-mix(in srgb, var(--col-pptx) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-pptx) 40%, transparent) !important;
+    color: var(--col-pptx) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-pptx) 40%, transparent) !important;
 }
 
-.badge-png {
-    background: var(--col-png) !important;
-    color: #fff !important
+.badge-png, .badge-jpg, .badge-jpeg {
+    background: color-mix(in srgb, var(--col-png) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-png) 40%, transparent) !important;
+    color: var(--col-png) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-png) 40%, transparent) !important;
 }
 
-.badge-jpg {
-    background: var(--col-jpg) !important;
-    color: #fff !important
+.badge-json {
+    background: color-mix(in srgb, #ffb74d 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, #ffb74d 40%, transparent) !important;
+    color: #ffb74d !important;
+    text-shadow: 0 0 10px color-mix(in srgb, #ffb74d 40%, transparent) !important;
 }
 
-.badge-jpeg {
-    background: var(--col-jpeg) !important;
-    color: #fff !important
+.badge-webp {
+    background: color-mix(in srgb, #009688 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, #009688 40%, transparent) !important;
+    color: #009688 !important;
+    text-shadow: 0 0 10px color-mix(in srgb, #009688 40%, transparent) !important;
+}
+
+.badge-heic {
+    background: color-mix(in srgb, #9c27b0 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, #9c27b0 40%, transparent) !important;
+    color: #9c27b0 !important;
+    text-shadow: 0 0 10px color-mix(in srgb, #9c27b0 40%, transparent) !important;
 }
 
 .badge-text-pdf {

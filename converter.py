@@ -28,6 +28,25 @@ try:
 except ImportError:
     _TEM_PDFPLUMBER = False
 
+try:
+    import pytesseract
+    _TEM_PYTESSERACT = True
+except ImportError:
+    _TEM_PYTESSERACT = False
+
+try:
+    from rembg import remove as rembg_remove
+    _TEM_REMBG = True
+except ImportError:
+    _TEM_REMBG = False
+
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+    _TEM_HEIF = True
+except ImportError:
+    _TEM_HEIF = False
+
 
 # ─── Motor ───────────────────────────────────────────────────
 
@@ -56,15 +75,18 @@ print(f"[Prisma] Motor: {MOTOR or 'NENHUM'} | pdfplumber: {_TEM_PDFPLUMBER}")
 # ─── Conversões disponíveis ───────────────────────────────────
 
 CONVERSOES = {
-    "csv":  ["xlsx", "pdf", "png", "jpg", "docx", "pptx"],
-    "xlsx": ["csv",  "pdf", "png", "jpg", "docx", "pptx"],
-    "pdf":  ["docx", "pptx", "ppt", "png", "jpg", "xlsx", "csv"],
+    "csv":  ["xlsx", "pdf", "png", "jpg", "docx", "pptx", "json"],
+    "xlsx": ["csv",  "pdf", "png", "jpg", "docx", "pptx", "json"],
+    "json": ["csv",  "xlsx", "pdf"],
+    "pdf":  ["docx", "pptx", "ppt", "png", "jpg", "xlsx", "csv", "txt"],
     "docx": ["pdf",  "png", "jpg", "xlsx", "csv", "pptx"],
     "ppt":  ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "pptx"],
     "pptx": ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "ppt"],
-    "png":  ["pdf",  "jpg", "docx", "pptx"],
-    "jpg":  ["pdf",  "png", "docx", "pptx"],
-    "jpeg": ["pdf",  "png", "docx", "pptx"],
+    "png":  ["pdf",  "jpg", "webp", "docx", "pptx", "txt"],
+    "jpg":  ["pdf",  "png", "webp", "docx", "pptx", "txt"],
+    "jpeg": ["pdf",  "png", "webp", "docx", "pptx", "txt"],
+    "webp": ["pdf",  "png", "jpg"],
+    "heic": ["pdf",  "png", "jpg", "webp"],
 }
 
 def obter_conversoes(extensao): return CONVERSOES.get(extensao.lower(), [])
@@ -614,11 +636,110 @@ def _via_pdf(entrada, saida, origem_ext, destino_ext):
             except: pass
 
 
+# ─── JSON ↔ CSV/XLSX ──────────────────────────────────────────────
+def json_para_csv(entrada, saida):
+    df = pd.read_json(entrada)
+    df.fillna("").to_csv(saida, index=False, encoding="utf-8-sig")
+
+def csv_para_json(entrada, saida):
+    enc = detectar_encoding(entrada)
+    df = _carregar_csv(entrada, enc)
+    df.fillna("").to_json(saida, orient="records", force_ascii=False, indent=2)
+
+def json_para_xlsx(entrada, saida):
+    df = pd.read_json(entrada)
+    df.fillna("").to_excel(saida, index=False, engine="openpyxl")
+
+def xlsx_para_json(entrada, saida):
+    df = pd.read_excel(entrada, engine="openpyxl")
+    df.fillna("").to_json(saida, orient="records", force_ascii=False, indent=2)
+
+def json_para_pdf(entrada, saida, orientacao="retrato"):
+    temp = os.path.join(os.path.dirname(saida) or ".", f"_tmp_{uuid.uuid4().hex}.xlsx")
+    try:
+        json_para_xlsx(entrada, temp)
+        xlsx_para_pdf(temp, saida, orientacao=orientacao)
+    finally:
+        if os.path.exists(temp):
+            try: os.remove(temp)
+            except: pass
+
+# ─── Removedor de Fundo ─────────────────────────────────────────
+def remover_fundo_imagem(entrada, saida):
+    if not _TEM_REMBG: raise RuntimeError("rembg não instalado.")
+    with open(entrada, "rb") as i, open(saida, "wb") as o:
+        input_data = i.read()
+        output_data = rembg_remove(input_data)
+        o.write(output_data)
+
+# ─── Mesclar Planilhas ──────────────────────────────────────────
+def mesclar_planilhas(arquivos: list, saida: str, formato: str = "xlsx"):
+    dfs = []
+    for arquivo in arquivos:
+        ext = arquivo.split(".")[-1].lower()
+        if ext == "csv":
+            dfs.append(_carregar_csv(arquivo, detectar_encoding(arquivo)))
+        elif ext in ("xlsx", "xls"):
+            dfs.append(pd.read_excel(arquivo, engine="openpyxl"))
+        elif ext == "json":
+            dfs.append(pd.read_json(arquivo))
+    
+    if not dfs:
+        raise ValueError("Nenhum dado válido para mesclar.")
+        
+    df_final = pd.concat(dfs, ignore_index=True)
+    
+    if formato == "csv":
+        df_final.to_csv(saida, index=False, encoding="utf-8-sig")
+    elif formato == "json":
+        df_final.to_json(saida, orient="records", force_ascii=False, indent=2)
+    else:
+        df_final.to_excel(saida, index=False, engine="openpyxl")
+
+# ─── OCR ───────────────────────────────────────────────
+def imagem_para_txt_ocr(entrada, saida):
+    if not _TEM_PYTESSERACT: raise RuntimeError("pytesseract não instalado.")
+    img = Image.open(entrada)
+    texto = pytesseract.image_to_string(img, lang="por+eng")
+    with open(saida, "w", encoding="utf-8") as f:
+        f.write(texto)
+
+def pdf_para_txt_ocr(entrada, saida):
+    if not _TEM_PYTESSERACT: raise RuntimeError("pytesseract não instalado.")
+    doc = fitz.open(entrada)
+    texto_total = []
+    try:
+        for page in doc:
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            import io
+            img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
+            texto = pytesseract.image_to_string(img, lang="por+eng")
+            texto_total.append(texto)
+    finally:
+        doc.close()
+    with open(saida, "w", encoding="utf-8") as f:
+        f.write("\n\n---\n\n".join(texto_total))
+
+# ─── WEBP / HEIC ────────────────────────────────────────────────
+def imagem_para_webp(entrada, saida):
+    img = Image.open(entrada).convert("RGBA")
+    img.save(saida, "WEBP", quality=92)
+
+def heic_para_png(entrada, saida):
+    img = Image.open(entrada).convert("RGBA")
+    img.save(saida, "PNG")
+
+def heic_para_jpg(entrada, saida):
+    img = Image.open(entrada).convert("RGB")
+    img.save(saida, "JPEG", quality=92)
+
+
 # Mapas auxiliares para conversão via PDF
 _MAPA_PARA_PDF = {
     "csv":  lambda e, s: csv_para_pdf(e, s),
     "xlsx": lambda e, s: xlsx_para_pdf(e, s),
     "xls":  lambda e, s: xlsx_para_pdf(e, s),
+    "json": lambda e, s: json_para_pdf(e, s),
     "docx": lambda e, s: docx_para_pdf(e, s),
     "doc":  lambda e, s: docx_para_pdf(e, s),
     "ppt":  lambda e, s: ppt_para_pdf(e, s),
@@ -626,6 +747,8 @@ _MAPA_PARA_PDF = {
     "png":  imagem_para_pdf,
     "jpg":  imagem_para_pdf,
     "jpeg": imagem_para_pdf,
+    "webp": imagem_para_pdf,
+    "heic": imagem_para_pdf,
 }
 
 _MAPA_DE_PDF = {
@@ -643,6 +766,8 @@ def csv_para_docx(e, s):  _via_pdf(e, s, "csv",  "docx")
 def csv_para_pptx(e, s):  _via_pdf(e, s, "csv",  "pptx")
 def xlsx_para_docx(e, s): _via_pdf(e, s, "xlsx", "docx")
 def xlsx_para_pptx(e, s): _via_pdf(e, s, "xlsx", "pptx")
+def json_para_docx(e, s): _via_pdf(e, s, "json", "docx")
+def json_para_pptx(e, s): _via_pdf(e, s, "json", "pptx")
 def docx_para_xlsx(e, s): _via_pdf(e, s, "docx", "xlsx")
 def docx_para_csv(e, s):  _via_pdf(e, s, "docx", "csv")
 def docx_para_pptx(e, s): _via_pdf(e, s, "docx", "pptx")
@@ -658,6 +783,10 @@ def png_para_docx(e, s):  _via_pdf(e, s, "png",  "docx")
 def png_para_pptx(e, s):  _via_pdf(e, s, "png",  "pptx")
 def jpg_para_docx(e, s):  _via_pdf(e, s, "jpg",  "docx")
 def jpg_para_pptx(e, s):  _via_pdf(e, s, "jpg",  "pptx")
+def webp_para_docx(e, s): _via_pdf(e, s, "webp", "docx")
+def webp_para_pptx(e, s): _via_pdf(e, s, "webp", "pptx")
+def heic_para_docx(e, s): _via_pdf(e, s, "heic", "docx")
+def heic_para_pptx(e, s): _via_pdf(e, s, "heic", "pptx")
 def jpg_para_png_img(e, s): jpg_para_png(e, s)
 
 
@@ -671,6 +800,7 @@ _MAPA = {
     ("csv",  "jpg"):  csv_para_jpg,
     ("csv",  "docx"): csv_para_docx,
     ("csv",  "pptx"): csv_para_pptx,
+    ("csv",  "json"): csv_para_json,
     # XLSX
     ("xlsx", "csv"):  xlsx_para_csv,
     ("xlsx", "pdf"):  xlsx_para_pdf,
@@ -678,6 +808,11 @@ _MAPA = {
     ("xlsx", "jpg"):  xlsx_para_jpg,
     ("xlsx", "docx"): xlsx_para_docx,
     ("xlsx", "pptx"): xlsx_para_pptx,
+    ("xlsx", "json"): xlsx_para_json,
+    # JSON
+    ("json", "csv"):  json_para_csv,
+    ("json", "xlsx"): json_para_xlsx,
+    ("json", "pdf"):  json_para_pdf,
     # PDF
     ("pdf",  "docx"): pdf_para_docx,
     ("pdf",  "pptx"): pdf_para_pptx,
@@ -686,6 +821,7 @@ _MAPA = {
     ("pdf",  "jpg"):  pdf_para_jpg,
     ("pdf",  "xlsx"): pdf_para_xlsx,
     ("pdf",  "csv"):  pdf_para_csv,
+    ("pdf",  "txt"):  pdf_para_txt_ocr,
     # DOCX
     ("docx", "pdf"):  docx_para_pdf,
     ("docx", "png"):  docx_para_png,
@@ -714,19 +850,34 @@ _MAPA = {
     ("png",  "jpg"):  png_para_jpg,
     ("png",  "docx"): png_para_docx,
     ("png",  "pptx"): png_para_pptx,
+    ("png",  "webp"): imagem_para_webp,
+    ("png",  "txt"):  imagem_para_txt_ocr,
     # JPG
     ("jpg",  "pdf"):  imagem_para_pdf,
     ("jpg",  "png"):  jpg_para_png,
     ("jpg",  "docx"): jpg_para_docx,
     ("jpg",  "pptx"): jpg_para_pptx,
+    ("jpg",  "webp"): imagem_para_webp,
+    ("jpg",  "txt"):  imagem_para_txt_ocr,
     # JPEG (alias)
     ("jpeg", "pdf"):  imagem_para_pdf,
     ("jpeg", "png"):  jpg_para_png,
     ("jpeg", "docx"): jpg_para_docx,
     ("jpeg", "pptx"): jpg_para_pptx,
+    ("jpeg", "webp"): imagem_para_webp,
+    ("jpeg", "txt"):  imagem_para_txt_ocr,
+    # WEBP
+    ("webp", "pdf"):  imagem_para_pdf,
+    ("webp", "png"):  jpg_para_png,
+    ("webp", "jpg"):  png_para_jpg,
+    # HEIC
+    ("heic", "pdf"):  imagem_para_pdf,
+    ("heic", "png"):  heic_para_png,
+    ("heic", "jpg"):  heic_para_jpg,
+    ("heic", "webp"): imagem_para_webp,
 }
 
-_ACEITA_ORIENTACAO = {("xlsx","pdf"), ("xls","pdf"), ("csv","pdf")}
+_ACEITA_ORIENTACAO = {("xlsx","pdf"), ("xls","pdf"), ("csv","pdf"), ("json","pdf")}
 
 def converter_arquivo(entrada, saida, origem, destino, orientacao="retrato"):
     origem  = origem.lower()

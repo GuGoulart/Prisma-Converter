@@ -4,11 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma — Ferramentas de PDF</title>
-    <meta name="description" content="Mesclar, dividir, proteger e misturar PDFs facilmente.">
-    <meta property="og:title" content="Prisma — Ferramentas de PDF">
-    <meta property="og:description" content="Mesclar, dividir, proteger e misturar PDFs facilmente.">
+    <title>Prisma — Ferramentas</title>
+    <meta name="description" content="Mesclar, dividir, proteger PDFs e outras ferramentas avançadas.">
+    <meta property="og:title" content="Prisma — Ferramentas">
+    <meta property="og:description" content="Mesclar, dividir, proteger PDFs e outras ferramentas avançadas.">
     <meta property="og:type" content="website">
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#c8ff00">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,7 +56,34 @@
             color: var(--text);
             display: flex;
             align-items: center;
+            justify-content: space-between;
+        }
+        .pdf-tool-title-left {
+            display: flex;
+            align-items: center;
             gap: 8px;
+        }
+        .tool-badges {
+            display: flex;
+            gap: 4px;
+        }
+        .tool-badge {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 0;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 6px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .pdf-tool-card:hover .tool-badge {
+            box-shadow: 0 0 15px currentColor, inset 0 0 8px currentColor !important;
+            border-color: currentColor !important;
+            background: color-mix(in srgb, currentColor 25%, transparent) !important;
         }
 
         .pdf-tool-desc {
@@ -220,7 +251,7 @@
             <div class="sidebar-info" style="gap: 8px;">
                 <p class="sidebar-label">Menu</p>
                 <a href="/" class="nav-link">Conversor de arquivos</a>
-                <a href="/ferramentas-pdf" class="nav-link nav-active">Ferramentas PDF</a>
+                <a href="/ferramentas-avancadas" class="nav-link nav-active">Ferramentas Avançadas</a>
             </div>
 
             <div class="sidebar-linha"></div>
@@ -248,8 +279,8 @@
         <main class="main">
 
             <header class="header-main">
-                <h1 class="titulo-principal">Ferramentas de <em>PDF</em></h1>
-                <p class="titulo-sub">Utilitários poderosos para processamento rápido e local de documentos PDF.</p>
+                <h1 class="titulo-principal">Ferramentas <em>Avançadas</em></h1>
+                <p class="titulo-sub">Utilitários poderosos para processamento rápido e local de documentos e imagens.</p>
             </header>
 
             <!-- Erro -->
@@ -265,14 +296,19 @@
                 <!-- Mesclar PDF -->
                 <div class="pdf-tool-card">
                     <div class="pdf-tool-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="12" y1="18" x2="12" y2="12"></line>
-                            <line x1="9" y1="15" x2="15" y2="15"></line>
-                        </svg>
-                        Mesclar PDFs
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                            Mesclar PDFs
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-pdf">PDF</span>
+                        </div>
                     </div>
                     <p class="pdf-tool-desc">Selecione vários arquivos PDF e junte-os em um único documento contínuo.
                         Você pode clicar várias vezes para ir adicionando mais arquivos.</p>
@@ -307,15 +343,20 @@
                 <!-- Dividir PDF -->
                 <div class="pdf-tool-card">
                     <div class="pdf-tool-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
-                            <circle cx="6" cy="6" r="3"></circle>
-                            <circle cx="6" cy="18" r="3"></circle>
-                            <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
-                            <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
-                            <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
-                        </svg>
-                        Dividir PDF
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <circle cx="6" cy="6" r="3"></circle>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                            </svg>
+                            Dividir PDF
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-pdf">PDF</span>
+                        </div>
                     </div>
                     <p class="pdf-tool-desc">Separe cada página de um PDF em arquivos independentes (entregues em ZIP).
                     </p>
@@ -355,12 +396,17 @@
                 <!-- Proteger PDF -->
                 <div class="pdf-tool-card">
                     <div class="pdf-tool-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
-                        Proteger PDF
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            Proteger PDF
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-pdf">PDF</span>
+                        </div>
                     </div>
                     <p class="pdf-tool-desc">Adicione uma senha forte para criptografar e restringir a abertura do PDF.
                     </p>
@@ -391,12 +437,17 @@
                 <!-- Desproteger PDF -->
                 <div class="pdf-tool-card">
                     <div class="pdf-tool-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
-                        </svg>
-                        Desproteger PDF
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                            </svg>
+                            Desproteger PDF
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-pdf">PDF</span>
+                        </div>
                     </div>
                     <p class="pdf-tool-desc">Remova a senha de um PDF criptografado (necessita da senha original).</p>
                     <form action="/api/pdf/desproteger" method="POST" enctype="multipart/form-data"
@@ -421,7 +472,269 @@
                             <span>Desproteger e baixar</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
+                    </div>
+
+                <!-- Comprimir PDF -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                                <path d="M12 12v9"></path>
+                                <path d="m8 17 4 4 4-4"></path>
+                            </svg>
+                            Comprimir PDF
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-pdf">PDF</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Reduza o tamanho do seu arquivo PDF mantendo a qualidade. Ideal para envio por email.</p>
+                    <form action="/api/pdf/comprimir" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="compressInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="compressFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="compressInput" accept=".pdf" required
+                                class="hidden-file-input">
+                        </div>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Comprimir e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
                 </div>
+
+                <!-- Marca D'água PDF -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
+                                <line x1="16" y1="8" x2="2" y2="22"></line>
+                                <line x1="17.5" y1="15" x2="9" y2="6.5"></line>
+                            </svg>
+                            Marca D'água PDF
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-pdf">PDF</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Adicione uma marca d'água em texto em todas as páginas do seu PDF.</p>
+                    <form action="/api/pdf/marca-dagua" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="watermarkInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="watermarkFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="watermarkInput" accept=".pdf" required
+                                class="hidden-file-input">
+                        </div>
+                        <input type="text" name="texto" placeholder="Texto da Marca D'água" required>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Aplicar e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Extrair Imagens PDF -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            Extrair Imagens PDF
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-pdf">PDF</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Extraia todas as imagens embutidas em um PDF. Retorna um arquivo ZIP.</p>
+                    <form action="/api/pdf/extrair-imagens" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="extractInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="extractFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="extractInput" accept=".pdf" required
+                                class="hidden-file-input">
+                        </div>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Extrair e baixar ZIP</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Manipular Páginas PDF -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <path d="M14 2v6h6"></path>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                            Remover e Rotacionar
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-pdf">PDF</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Remova ou rotacione (90°, 180°, 270°) páginas específicas do PDF.</p>
+                    <form action="/api/pdf/manipular-paginas" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="manipulateInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="manipulateFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="manipulateInput" accept=".pdf" required
+                                class="hidden-file-input">
+                        </div>
+                        <input type="text" name="remover" placeholder="Páginas p/ remover (ex: 1,3-5)">
+                        <input type="text" name="rotacionar" placeholder="Páginas p/ rotacionar (ex: 2:90,4:180)">
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Aplicar e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Remover Fundo da Imagem -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                <circle cx="12" cy="11" r="3"></circle>
+                            </svg>
+                            Remover Fundo (Imagem)
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-png">PNG</span>
+                            <span class="tool-badge badge-jpg">JPG</span>
+                            <span class="tool-badge badge-webp">WEBP</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Remova o fundo de imagens automaticamente. A primeira vez pode demorar mais.
+                    </p>
+                    <form action="/api/img/remover-fundo" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="rembgInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="rembgFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="rembgInput" accept=".jpg,.jpeg,.png,.webp,.heic" required
+                                class="hidden-file-input">
+                        </div>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Remover Fundo</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Mesclar Planilhas -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                <path d="M9 14h6"></path>
+                                <path d="M9 18h6"></path>
+                                <path d="M9 10h6"></path>
+                            </svg>
+                            Mesclar Planilhas
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-csv">CSV</span>
+                            <span class="tool-badge badge-xlsx">XLSX</span>
+                            <span class="tool-badge badge-json">JSON</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Junte vários arquivos CSV, XLSX ou JSON em um só arquivo (empilhamento vertical).
+                    </p>
+                    <form action="/api/data/mesclar-planilhas" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="mergeDataInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivos
+                            </label>
+                            <input type="file" name="arquivos" id="mergeDataInput" multiple accept=".csv,.xlsx,.xls,.json" required
+                                class="hidden-file-input">
+                        </div>
+                        <div id="mergeDataListContainer"
+                            style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
+                            <span id="mergeDataEmptyMsg"
+                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum
+                                arquivo selecionado</span>
+                        </div>
+                        <select name="formato" id="mergeDataFormato">
+                            <option value="xlsx">Salvar como XLSX</option>
+                            <option value="csv">Salvar como CSV</option>
+                            <option value="json">Salvar como JSON</option>
+                        </select>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Mesclar e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
 
             </div>
 
@@ -563,6 +876,45 @@
         setupFileInput('splitInput', 'splitFileName');
         setupFileInput('protectInput', 'protectFileName');
         setupFileInput('unprotectInput', 'unprotectFileName');
+        setupFileInput('compressInput', 'compressFileName');
+        setupFileInput('watermarkInput', 'watermarkFileName');
+        setupFileInput('extractInput', 'extractFileName');
+        setupFileInput('manipulateInput', 'manipulateFileName');
+        setupFileInput('rembgInput', 'rembgFileName');
+
+        // Lógica para acumular arquivos no input de Mesclar Planilhas
+        const dtData = new DataTransfer();
+        const mergeDataInput = document.getElementById('mergeDataInput');
+        const mergeDataListContainer = document.getElementById('mergeDataListContainer');
+        const mergeDataEmptyMsg = document.getElementById('mergeDataEmptyMsg');
+
+        if(mergeDataInput) {
+            mergeDataInput.addEventListener('change', function () {
+                for (let file of this.files) {
+                    dtData.items.add(file);
+                }
+                this.files = dtData.files;
+
+                const olds = mergeDataListContainer.querySelectorAll('.merge-item');
+                olds.forEach(o => o.remove());
+
+                if (dtData.files.length > 0) {
+                    if (mergeDataEmptyMsg) mergeDataEmptyMsg.style.display = 'none';
+                }
+
+                for (let file of dtData.files) {
+                    let div = document.createElement('div');
+                    div.className = 'merge-item';
+                    div.textContent = '📊 ' + file.name;
+                    div.style.fontSize = '12px';
+                    div.style.color = 'var(--text)';
+                    div.style.background = 'var(--surface)';
+                    div.style.padding = '4px 8px';
+                    div.style.borderRadius = '4px';
+                    mergeDataListContainer.appendChild(div);
+                }
+            });
+        }
 
         // Gerador da tempestade de símbolos
         const stormContainer = document.getElementById('stormContainer');
@@ -601,13 +953,21 @@
                 setTimeout(() => el.remove(), duration * 1000);
             }
 
-            // Criar ícones iniciais espalhados
-            for (let i = 0; i < 15; i++) {
-                setTimeout(spawnIcon, i * 600);
+            // Criar ícones iniciais espalhados (aumentado para maior densidade)
+            for (let i = 0; i < 40; i++) {
+                setTimeout(spawnIcon, i * 200);
             }
 
-            // Continuar criando com maior frequência
-            setInterval(spawnIcon, 1200);
+            // Continuar criando com maior frequência (muito mais ícones)
+            setInterval(spawnIcon, 400);
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registrado', reg))
+                    .catch(err => console.error('SW erro', err));
+            });
         }
     </script>
 </body>

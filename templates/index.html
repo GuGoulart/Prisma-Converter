@@ -7,8 +7,13 @@
     <title>Prisma — Conversor de Arquivos</title>
     <meta name="description" content="Converta PDF, DOCX, XLSX, CSV, PPT, PNG e muito mais. Rápido, seguro e gratuito.">
     <meta property="og:title" content="Prisma — Conversor de Arquivos">
-    <meta property="og:description" content="Converta PDF, DOCX, XLSX, CSV, PPT, PNG e muito mais. Rápido, seguro e gratuito.">
+    <meta property="og:description"
+        content="Converta PDF, DOCX, XLSX, CSV, PPT, PNG, JSON, WEBP e HEIC. Rápido, seguro e gratuito.">
     <meta property="og:type" content="website">
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#c8ff00">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,7 +96,7 @@
             <div class="sidebar-info" style="gap: 8px;">
                 <p class="sidebar-label">Menu</p>
                 <a href="/" class="nav-link nav-active">Conversor de arquivos</a>
-                <a href="/ferramentas-pdf" class="nav-link">Ferramentas PDF</a>
+                <a href="/ferramentas-avancadas" class="nav-link">Ferramentas Avançadas</a>
             </div>
 
             <div class="sidebar-linha"></div>
@@ -227,7 +232,7 @@
                                     </div>
                                     <p class="upload-titulo" id="uploadTitulo">Arraste o arquivo aqui</p>
                                     <p class="upload-desc" id="uploadDesc">
-                                        PDF · DOCX · XLSX · CSV · PPT · PPTX · PNG · JPG
+                                        PDF · DOCX · XLSX · CSV · PPT · PPTX · PNG · JPG · WEBP · HEIC · JSON
                                     </p>
                                 </div>
                                 <input id="arquivo" type="file" name="arquivo" hidden required>
@@ -417,6 +422,15 @@
         const tabelaInicial = "{{ 'true' if tabela_html else 'false' }}" === "true";
     </script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registrado', reg))
+                    .catch(err => console.error('SW erro', err));
+            });
+        }
+    </script>
 </body>
 
 </html>

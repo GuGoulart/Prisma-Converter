@@ -1,7 +1,7 @@
 from flask import (Flask, render_template, request, send_file,
                    session, after_this_request, abort, Response)
-from converter import obter_conversoes, converter_arquivo, obter_motor, detectar_encoding
-from pdf_tools import mesclar_pdfs, dividir_pdf, proteger_pdf, desproteger_pdf
+from converter import obter_conversoes, converter_arquivo, obter_motor, detectar_encoding, remover_fundo_imagem, mesclar_planilhas
+from pdf_tools import mesclar_pdfs, dividir_pdf, proteger_pdf, desproteger_pdf, comprimir_pdf, adicionar_marca_dagua, extrair_imagens_pdf, manipular_paginas_pdf
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from collections import defaultdict
@@ -57,6 +57,9 @@ LIMITES_POR_TIPO = {
     "png":  MAX_MB * 1024 * 1024,
     "jpg":  MAX_MB * 1024 * 1024,
     "jpeg": MAX_MB * 1024 * 1024,
+    "json": MAX_MB * 1024 * 1024,
+    "webp": MAX_MB * 1024 * 1024,
+    "heic": MAX_MB * 1024 * 1024,
 }
 NOMES_LIMITES = {k: f"{MAX_MB} MB" for k in LIMITES_POR_TIPO}
 
@@ -106,6 +109,8 @@ def gerar_preview_tabela(caminho: str, extensao: str, limite: int = None):
             )
         elif extensao in ("xlsx", "xls"):
             df = pd.read_excel(caminho, nrows=limite, engine="openpyxl")
+        elif extensao == "json":
+            df = pd.read_json(caminho)
         else:
             return None
 
@@ -169,8 +174,14 @@ def favicon():
 def home():
     return render_template("index.html")
 
+from flask import redirect, url_for
+
 @app.route("/ferramentas-pdf")
-def pdf_tools_page():
+def redirect_ferramentas():
+    return redirect(url_for("ferramentas_pdf_page"))
+
+@app.route("/ferramentas-avancadas")
+def ferramentas_pdf_page():
     return render_template("pdf_tools.html")
 
 @app.route("/api/pdf/mesclar", methods=["POST"])
@@ -281,6 +292,170 @@ def api_desproteger():
         return render_template("pdf_tools.html", erro=str(e)), 400
 
 
+@app.route("/api/pdf/comprimir", methods=["POST"])
+def api_comprimir():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
+    f = request.files.get("arquivo")
+    if not f: return "Selecione um arquivo", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    entrada = os.path.join(pp, secure_filename(f.filename))
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "comprimido.pdf")
+    try:
+        comprimir_pdf(entrada, saida)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name="Prisma_Comprimido.pdf")
+    except Exception as e:
+        return render_template("pdf_tools.html", erro=str(e)), 400
+
+@app.route("/api/pdf/marca-dagua", methods=["POST"])
+def api_marca_dagua():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
+    f = request.files.get("arquivo")
+    texto = request.form.get("texto")
+    if not f or not texto: return "Arquivo e texto são obrigatórios", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    entrada = os.path.join(pp, secure_filename(f.filename))
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "marcado.pdf")
+    try:
+        adicionar_marca_dagua(entrada, texto, saida)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name="Prisma_Marcado.pdf")
+    except Exception as e:
+        return render_template("pdf_tools.html", erro=str(e)), 400
+
+@app.route("/api/pdf/extrair-imagens", methods=["POST"])
+def api_extrair_imagens():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
+    f = request.files.get("arquivo")
+    if not f: return "Selecione um arquivo", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    entrada = os.path.join(pp, secure_filename(f.filename))
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "imagens.zip")
+    try:
+        extrair_imagens_pdf(entrada, saida)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name="Prisma_Imagens_PDF.zip")
+    except Exception as e:
+        return render_template("pdf_tools.html", erro=str(e)), 400
+
+@app.route("/api/pdf/manipular-paginas", methods=["POST"])
+def api_manipular_paginas():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
+    f = request.files.get("arquivo")
+    if not f: return "Selecione um arquivo", 400
+    
+    remover = request.form.get("remover", "")
+    rotacionar = request.form.get("rotacionar", "")
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    entrada = os.path.join(pp, secure_filename(f.filename))
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "manipulado.pdf")
+    try:
+        manipular_paginas_pdf(entrada, saida, remover, rotacionar)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name="Prisma_Paginas_Manipuladas.pdf")
+    except Exception as e:
+        return render_template("pdf_tools.html", erro=str(e)), 400
+
+@app.route("/api/img/remover-fundo", methods=["POST"])
+def api_remover_fundo():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
+    f = request.files.get("arquivo")
+    if not f: return "Selecione um arquivo", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    entrada = os.path.join(pp, secure_filename(f.filename))
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "sem_fundo.png")
+    try:
+        remover_fundo_imagem(entrada, saida)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name="Prisma_Sem_Fundo.png")
+    except Exception as e:
+        return render_template("index.html", erro=str(e)), 400
+
+@app.route("/api/data/mesclar-planilhas", methods=["POST"])
+def api_mesclar_planilhas():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
+    arquivos = request.files.getlist("arquivos")
+    formato = request.form.get("formato", "xlsx")
+    if not arquivos or len(arquivos) < 2:
+        return "Selecione pelo menos 2 arquivos", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    caminhos = []
+    
+    for f in arquivos:
+        nome_seguro = secure_filename(f.filename)
+        caminho = os.path.join(pp, nome_seguro)
+        f.save(caminho)
+        caminhos.append(caminho)
+        
+    saida = os.path.join(pp, f"mesclado.{formato}")
+    try:
+        mesclar_planilhas(caminhos, saida, formato)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        return send_file(saida, as_attachment=True, download_name=f"Prisma_Mesclado.{formato}")
+    except Exception as e:
+        return render_template("index.html", erro=str(e)), 400
+
+@app.route("/manifest.json")
+def serve_manifest():
+    return send_file("static/manifest.json", mimetype="application/manifest+json")
+
+@app.route("/sw.js")
+def serve_sw():
+    return send_file("static/sw.js", mimetype="application/javascript")
+
+
 @app.route("/preview/<pasta_uuid>/<preview_file>")
 def preview_arquivo(pasta_uuid, preview_file):
     if session.get("pasta_upload") != pasta_uuid:
@@ -297,7 +472,7 @@ def preview_arquivo(pasta_uuid, preview_file):
 def preview_convert(pasta_uuid, destino):
     if session.get("pasta_upload") != pasta_uuid:
         abort(403)
-    if destino not in {"pdf","png","jpg","csv","xlsx","docx","pptx","ppt"}:
+    if destino not in {"pdf","png","jpg","csv","xlsx","docx","pptx","ppt","json","webp","heic","txt"}:
         abort(400)
 
     orientacao = request.args.get("orientacao", "retrato")
@@ -342,7 +517,7 @@ def preview_convert(pasta_uuid, destino):
 def preview_tabela(pasta_uuid, destino):
     if session.get("pasta_upload") != pasta_uuid:
         abort(403)
-    if destino not in ("csv", "xlsx"):
+    if destino not in ("csv", "xlsx", "json"):
         abort(400)
 
     extensao     = session.get("arquivo_ext", "")
@@ -354,8 +529,8 @@ def preview_tabela(pasta_uuid, destino):
         abort(404)
 
     # Sempre mostra os dados reais do arquivo original
-    # Se o arquivo já é CSV/XLSX, lê direto; senão converte
-    if extensao in ("csv", "xlsx", "xls"):
+    # Se o arquivo já é CSV/XLSX/JSON, lê direto; senão converte
+    if extensao in ("csv", "xlsx", "xls", "json"):
         alvo     = entrada
         alvo_ext = extensao
     else:
@@ -449,11 +624,11 @@ def upload():
             preview_url  = f"/preview/{uid}/{nome_i}"
             preview_tipo = "pdf"
 
-        elif ext in ("png", "jpg", "jpeg"):
+        elif ext in ("png", "jpg", "jpeg", "webp", "heic"):
             preview_url  = f"/preview/{uid}/{nome_i}"
             preview_tipo = "imagem"
 
-        elif ext in ("csv", "xlsx", "xls"):
+        elif ext in ("csv", "xlsx", "xls", "json"):
             tabela_html = gerar_preview_tabela(cam, ext, limite=None)
 
         else:

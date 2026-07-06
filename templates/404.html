@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Página não encontrada — Prisma</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        h1 { font-size: 64px; color: var(--accent); margin-bottom: 16px; font-family: var(--font); }
+        p { font-size: 18px; color: var(--muted); margin-bottom: 32px; font-family: var(--font); }
+        a { color: var(--bg); background: var(--accent); padding: 12px 24px; text-decoration: none; font-weight: 600; font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
+        a:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <h1>404</h1>
+    <p>Ops! A página que você está procurando não existe ou mudou de endereço.</p>
+    <a href="/">Voltar ao Início</a>
+</body>
+</html>

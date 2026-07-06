@@ -122,3 +122,147 @@ def desproteger_pdf(arquivo_entrada: str, senha: str, caminho_saida: str):
         
     doc.save(caminho_saida)
     doc.close()
+
+
+def comprimir_pdf(arquivo_entrada: str, caminho_saida: str):
+    """
+    Comprime o PDF reduzindo objetos redundantes e imagens.
+    """
+    doc = fitz.open(arquivo_entrada)
+    doc.save(caminho_saida, garbage=4, deflate=True)
+    doc.close()
+
+
+def adicionar_marca_dagua(arquivo_entrada: str, texto: str, caminho_saida: str):
+    """
+    Adiciona uma marca d'água de texto semi-transparente no centro de todas as páginas.
+    """
+    doc = fitz.open(arquivo_entrada)
+    for pagina in doc:
+        retangulo = pagina.rect
+        p = fitz.Point(retangulo.width / 4, retangulo.height / 2)
+        
+        tamanho_fonte = min(retangulo.width, retangulo.height) / (len(texto) * 0.5)
+        if tamanho_fonte > 72: tamanho_fonte = 72
+        
+        pagina.insert_text(
+            p,
+            texto,
+            fontsize=tamanho_fonte,
+            color=(0.5, 0.5, 0.5), # cinza
+            fill_opacity=0.3       # semi-transparente
+        )
+    doc.save(caminho_saida)
+    doc.close()
+
+
+def extrair_imagens_pdf(arquivo_entrada: str, caminho_saida_zip: str):
+    """
+    Extrai todas as imagens do PDF e compacta em um ZIP.
+    """
+    doc = fitz.open(arquivo_entrada)
+    pasta_temp = caminho_saida_zip + "_temp"
+    os.makedirs(pasta_temp, exist_ok=True)
+    
+    caminhos_gerados = []
+    img_index = 1
+    
+    for page_num in range(len(doc)):
+        pagina = doc[page_num]
+        lista_imagens = pagina.get_images(full=True)
+        
+        for img in lista_imagens:
+            xref = img[0]
+            imagem_bytes = doc.extract_image(xref)
+            ext = imagem_bytes["ext"]
+            conteudo = imagem_bytes["image"]
+            
+            caminho_img = os.path.join(pasta_temp, f"imagem_{img_index}.{ext}")
+            with open(caminho_img, "wb") as img_file:
+                img_file.write(conteudo)
+                
+            caminhos_gerados.append(caminho_img)
+            img_index += 1
+            
+    doc.close()
+    
+    with zipfile.ZipFile(caminho_saida_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for caminho in caminhos_gerados:
+            nome_arquivo = os.path.basename(caminho)
+            zipf.write(caminho, arcname=nome_arquivo)
+            
+    for caminho in caminhos_gerados:
+        try: os.remove(caminho)
+        except: pass
+    try: os.rmdir(pasta_temp)
+    except: pass
+
+
+def manipular_paginas_pdf(arquivo_entrada: str, caminho_saida: str, remover: str = "", rotacionar: str = ""):
+    """
+    Remove e/ou rotaciona páginas específicas.
+    remover: ex. "1, 3-5"
+    rotacionar: ex. "2:90, 4:180"
+    """
+    doc = fitz.open(arquivo_entrada)
+    total_paginas = doc.page_count
+    
+    # 1. Parse rotacoes (formato: "pagina:graus, pagina:graus")
+    rotacoes_dict = {}
+    if rotacionar:
+        partes = [p.strip() for p in rotacionar.split(",")]
+        for parte in partes:
+            if ":" in parte:
+                try:
+                    pg_str, grau_str = parte.split(":")
+                    pg = int(pg_str) - 1
+                    grau = int(grau_str)
+                    grau = round(grau / 90.0) * 90 # Arredondar para múltiplo de 90
+                    if 0 <= pg < total_paginas:
+                        rotacoes_dict[pg] = grau
+                except: pass
+                
+    # 2. Parse exclusões (formato: "1, 3-5")
+    paginas_manter = []
+    exclusoes = set()
+    if remover:
+        partes = [p.strip() for p in remover.split(",")]
+        for parte in partes:
+            if "-" in parte:
+                try:
+                    inicio, fim = parte.split("-")
+                    inicio = max(0, int(inicio) - 1)
+                    fim = min(total_paginas - 1, int(fim) - 1)
+                    for i in range(inicio, fim + 1):
+                        exclusoes.add(i)
+                except: pass
+            else:
+                try:
+                    pg = int(parte) - 1
+                    if 0 <= pg < total_paginas:
+                        exclusoes.add(pg)
+                except: pass
+
+    for i in range(total_paginas):
+        if i not in exclusoes:
+            paginas_manter.append(i)
+            
+    if not paginas_manter:
+        doc.close()
+        raise ValueError("Operação resultaria em um PDF sem páginas.")
+        
+    doc.select(paginas_manter)
+    
+    # 3. Aplicar rotacoes nas páginas que ficaram
+    # A numeração mudou, precisamos achar o index novo.
+    # Mas é mais fácil aplicar a rotação antes de deletar ou manter um mapeamento.
+    # doc.select() já reorganizou as páginas em doc[i]. 
+    # O paginas_manter[i] guarda o número original da página.
+    for i, original_idx in enumerate(paginas_manter):
+        if original_idx in rotacoes_dict:
+            pagina = doc[i]
+            nova_rotacao = (pagina.rotation + rotacoes_dict[original_idx]) % 360
+            pagina.set_rotation(nova_rotacao)
+            
+    doc.save(caminho_saida)
+    doc.close()

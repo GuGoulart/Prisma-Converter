@@ -1,0 +1,21 @@
+{
+  "name": "Prisma Converter",
+  "short_name": "Prisma",
+  "description": "Conversor rápido, seguro e local de arquivos.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#c8ff00",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
