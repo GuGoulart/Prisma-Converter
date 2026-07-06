@@ -24,6 +24,7 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+            min-width: 0;
             transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
         }
         .pdf-tool-card:hover {
@@ -132,9 +133,13 @@
             color: var(--text);
             font-family: var(--font);
             width: 100%;
+            max-width: 100%;
             box-sizing: border-box;
             font-size: 13px;
             appearance: none;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         @media (max-width: 768px) {
             .pdf-tool-grid { grid-template-columns: 1fr; }
