@@ -22,6 +22,12 @@ COPY . .
 # Cria as pastas que o app usa em runtime, caso não existam
 RUN mkdir -p uploads downloads
 
+# Cria usuário não-privilegiado e ajusta permissões
+RUN useradd -m appuser && \
+    chown -R appuser:appuser /app uploads downloads
+
+USER appuser
+
 # Render/Railway definem a variável PORT automaticamente
 ENV PORT=8080
 EXPOSE 8080

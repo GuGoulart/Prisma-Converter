@@ -1,5 +1,6 @@
 import os
 import re as _re
+import csv
 import uuid
 import shutil
 import subprocess
@@ -9,20 +10,20 @@ from pdf2docx import Converter as PDF2DOCXConverter
 from PIL import Image
 
 try:
-    import win32com.client
-    import pythoncom
+    import win32com.client # type: ignore
+    import pythoncom # type: ignore
     _TEM_WIN32 = True
 except ImportError:
     _TEM_WIN32 = False
 
 try:
-    import chardet
+    import chardet # type: ignore
     _TEM_CHARDET = True
 except ImportError:
     _TEM_CHARDET = False
 
 try:
-    import pdfplumber
+    import pdfplumber # type: ignore
     _TEM_PDFPLUMBER = True
 except ImportError:
     _TEM_PDFPLUMBER = False
@@ -133,10 +134,20 @@ def _preparar_xlsx_para_pdf(caminho: str, orientacao: str = "retrato"):
 
 # ─── CSV ↔ XLSX ───────────────────────────────────────────────
 
+
+def _carregar_csv(caminho, enc) -> pd.DataFrame:
+    try:
+        with open(caminho, 'r', encoding=enc, errors='replace') as f:
+            amostra = f.read(4096)
+            f.seek(0)
+            separador = csv.Sniffer().sniff(amostra).delimiter
+    except Exception:
+        separador = ','
+    return pd.read_csv(caminho, encoding=enc, sep=separador, engine="c", encoding_errors="replace", on_bad_lines="skip", low_memory=False)
+
 def csv_para_xlsx(entrada, saida):
     enc = detectar_encoding(entrada)
-    df  = pd.read_csv(entrada, encoding=enc, sep=None, engine="python",
-                      encoding_errors="replace", on_bad_lines="skip")
+    df  = _carregar_csv(entrada, enc)
     df.fillna("").to_excel(saida, index=False, engine="openpyxl")
 
 def xlsx_para_csv(entrada, saida):
@@ -189,8 +200,7 @@ def csv_para_pdf(entrada, saida, orientacao="retrato"):
     enc  = detectar_encoding(entrada)
     temp = os.path.join(os.path.dirname(saida) or ".", f"_tmp_{uuid.uuid4().hex}.xlsx")
     try:
-        df = pd.read_csv(entrada, encoding=enc, sep=None, engine="python",
-                         encoding_errors="replace", on_bad_lines="skip")
+        df = _carregar_csv(entrada, enc)
         df.fillna("").to_excel(temp, index=False, engine="openpyxl")
         xlsx_para_pdf(temp, saida, orientacao=orientacao)
     finally:
@@ -727,6 +737,7 @@ def converter_arquivo(entrada, saida, origem, destino, orientacao="retrato"):
     if not funcao:
         raise ValueError(f"Conversão '{origem.upper()}→{destino.upper()}' não suportada.")
     if (origem, destino) in _ACEITA_ORIENTACAO:
+        # pyrefly: ignore [unexpected-keyword]
         funcao(entrada, saida, orientacao=orientacao)
     else:
         funcao(entrada, saida)

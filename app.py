@@ -6,6 +6,9 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from collections import defaultdict
 from threading import Lock
+from security import gerar_csrf, validar_csrf, verificar_rate_limit, validar_nome, validar_magic
+from cleanup import iniciar_limpeza
+import sys
 from dotenv import load_dotenv
 
 import os, re, secrets, shutil, time, uuid, logging, threading, traceback
@@ -14,7 +17,7 @@ import pandas as pd
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "fallback-local-key")
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 
 UPLOAD_FOLDER   = "uploads"
 DOWNLOAD_FOLDER = "downloads"
@@ -32,11 +35,30 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 contador_conversoes = 0
 
 logging.basicConfig(
-    filename="prisma.log", level=logging.INFO,
+    stream=sys.stdout, level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 log = logging.getLogger(__name__)
+
+_conversoes_ativas = 0
+_lock_conv         = Lock()
+MAX_PARALELAS      = 3
+
+LIMITES_POR_TIPO = {
+    "pdf":  MAX_MB * 1024 * 1024,
+    "docx": MAX_MB * 1024 * 1024,
+    "xlsx": MAX_MB * 1024 * 1024,
+    "pptx": MAX_MB * 1024 * 1024,
+    "csv":  MAX_MB * 1024 * 1024,
+    "ppt":  MAX_MB * 1024 * 1024,
+    "doc":  MAX_MB * 1024 * 1024,
+    "xls":  MAX_MB * 1024 * 1024,
+    "png":  MAX_MB * 1024 * 1024,
+    "jpg":  MAX_MB * 1024 * 1024,
+    "jpeg": MAX_MB * 1024 * 1024,
+}
+NOMES_LIMITES = {k: f"{MAX_MB} MB" for k in LIMITES_POR_TIPO}
 
 
 # ── Segurança ─────────────────────────────────────────────────
@@ -47,68 +69,11 @@ def cabecalhos_seguranca(response):
     response.headers["X-Frame-Options"]         = "SAMEORIGIN"
     response.headers["X-XSS-Protection"]        = "1; mode=block"
     response.headers["Referrer-Policy"]          = "no-referrer"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"]   = "default-src 'self'; script-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"
     return response
 
 
-_contagem_ip = defaultdict(list)
-_lock_rate   = Lock()
-
-def verificar_rate_limit(ip):
-    agora = time.time()
-    with _lock_rate:
-        _contagem_ip[ip] = [t for t in _contagem_ip[ip] if agora - t < 60]
-        if len(_contagem_ip[ip]) >= 10: return False
-        _contagem_ip[ip].append(agora)
-        return True
-
-
-_conversoes_ativas = 0
-_lock_conv         = Lock()
-MAX_PARALELAS      = 3
-
-
-def gerar_csrf():
-    if "csrf_token" not in session:
-        session["csrf_token"] = secrets.token_hex(32)
-    return session["csrf_token"]
-
-def validar_csrf(tok):
-    return bool(tok and tok == session.get("csrf_token"))
-
-
-LIMITES_POR_TIPO = {
-    "csv":5*1024*1024,  "xlsx":20*1024*1024, "xls":20*1024*1024,
-    "pdf":50*1024*1024, "docx":20*1024*1024, "doc":20*1024*1024,
-    "ppt":50*1024*1024, "pptx":50*1024*1024,
-    "png":10*1024*1024, "jpg":10*1024*1024,  "jpeg":10*1024*1024,
-}
-NOMES_LIMITES = {k: f"{v//(1024*1024)} MB" for k, v in LIMITES_POR_TIPO.items()}
-
-_EXT_PERIGOSAS = {
-    "exe","bat","cmd","com","php","sh","ps1","vbs","js",
-    "jar","py","rb","pl","asp","jsp","cgi","msi","dll"
-}
-
-_MAGIC = {
-    "pdf":  [b"%PDF"],
-    "docx": [b"PK\x03\x04"], "xlsx": [b"PK\x03\x04"], "pptx": [b"PK\x03\x04"],
-    "ppt":  [b"\xd0\xcf\x11\xe0"], "doc": [b"\xd0\xcf\x11\xe0"], "xls": [b"\xd0\xcf\x11\xe0"],
-    "png":  [b"\x89PNG"],
-    "jpg":  [b"\xff\xd8\xff"], "jpeg": [b"\xff\xd8\xff"],
-    "csv":  None,
-}
-
-def validar_nome(nome):
-    p = nome.split(".")
-    return len(p) <= 2 or not any(x.lower() in _EXT_PERIGOSAS for x in p[1:-1])
-
-def validar_magic(caminho, ext):
-    m = _MAGIC.get(ext)
-    if m is None: return True
-    try:
-        with open(caminho, "rb") as f: h = f.read(8)
-        return any(h.startswith(x) for x in m)
-    except: return False
 
 
 def criar_pasta():
@@ -163,21 +128,7 @@ def gerar_preview_tabela(caminho: str, extensao: str, limite: int = None):
 
 # ── Limpeza automática ────────────────────────────────────────
 
-def _limpar_residuos():
-    limite = 15 * 60
-    while True:
-        time.sleep(900)
-        agora = time.time()
-        for pasta in [UPLOAD_FOLDER, DOWNLOAD_FOLDER]:
-            for item in os.listdir(pasta):
-                c = os.path.join(pasta, item)
-                try:
-                    if agora - os.path.getmtime(c) > limite:
-                        if os.path.isdir(c): shutil.rmtree(c, ignore_errors=True)
-                        else: os.remove(c)
-                except: pass
-
-threading.Thread(target=_limpar_residuos, daemon=True).start()
+iniciar_limpeza(UPLOAD_FOLDER, DOWNLOAD_FOLDER)
 
 
 # ── Context processor ─────────────────────────────────────────
@@ -196,6 +147,21 @@ def arquivo_grande(e):
     return render_template("index.html",
                            erro=f"Arquivo muito grande. Limite: {MAX_MB} MB."), 413
 
+@app.errorhandler(404)
+def pagina_nao_encontrada(e):
+    return render_template("404.html"), 404
+
+@app.errorhandler(500)
+def erro_interno_servidor(e):
+    return render_template("500.html"), 500
+
+@app.route('/health')
+def health_check():
+    return {"status": "ok"}, 200
+
+@app.route('/favicon.ico')
+def favicon():
+    return "", 204
 
 # ── Rotas ─────────────────────────────────────────────────────
 
@@ -209,6 +175,9 @@ def pdf_tools_page():
 
 @app.route("/api/pdf/mesclar", methods=["POST"])
 def api_mesclar():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
     arquivos = request.files.getlist("arquivos")
     if not arquivos or len(arquivos) < 2:
         return "Selecione pelo menos 2 arquivos", 400
@@ -236,6 +205,9 @@ def api_mesclar():
 
 @app.route("/api/pdf/dividir", methods=["POST"])
 def api_dividir():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
     f = request.files.get("arquivo")
     if not f: return "Selecione um arquivo", 400
     
@@ -260,6 +232,9 @@ def api_dividir():
 
 @app.route("/api/pdf/proteger", methods=["POST"])
 def api_proteger():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
     f = request.files.get("arquivo")
     senha = request.form.get("senha")
     if not f or not senha: return "Arquivo e senha são obrigatórios", 400
@@ -282,6 +257,9 @@ def api_proteger():
 
 @app.route("/api/pdf/desproteger", methods=["POST"])
 def api_desproteger():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return 'Token inválido', 403
+
     f = request.files.get("arquivo")
     senha = request.form.get("senha")
     if not f or not senha: return "Arquivo e senha são obrigatórios", 400
@@ -611,4 +589,5 @@ def converter():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port)
+    debug_mode = os.environ.get("FLASK_DEBUG") == "1"
+    app.run(debug=debug_mode, host="0.0.0.0", port=port)

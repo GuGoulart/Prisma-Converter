@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prisma — Ferramentas de PDF</title>
     <meta name="description" content="Mesclar, dividir, proteger e misturar PDFs facilmente.">
+    <meta property="og:title" content="Prisma — Ferramentas de PDF">
+    <meta property="og:description" content="Mesclar, dividir, proteger e misturar PDFs facilmente.">
+    <meta property="og:type" content="website">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -162,7 +166,7 @@
             height: 32px;
             overflow: hidden;
             display: flex;
-            background: var(--surface);
+            background: var(--accent);
             border-bottom: 1px solid var(--border);
             position: relative;
             z-index: 50;
@@ -170,7 +174,7 @@
 
         .storm-icon {
             position: absolute;
-            color: var(--accent);
+            color: #000;
             opacity: 0.15;
             animation: drift linear infinite;
         }
@@ -274,6 +278,7 @@
                         Você pode clicar várias vezes para ir adicionando mais arquivos.</p>
                     <form action="/api/pdf/mesclar" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <div>
                             <label for="mergeInput" class="btn-escolher">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -316,6 +321,7 @@
                     </p>
                     <form action="/api/pdf/dividir" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <div>
                             <label for="splitInput" class="btn-escolher">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -360,6 +366,7 @@
                     </p>
                     <form action="/api/pdf/proteger" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <div>
                             <label for="protectInput" class="btn-escolher">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -394,6 +401,7 @@
                     <p class="pdf-tool-desc">Remova a senha de um PDF criptografado (necessita da senha original).</p>
                     <form action="/api/pdf/desproteger" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <div>
                             <label for="unprotectInput" class="btn-escolher">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"

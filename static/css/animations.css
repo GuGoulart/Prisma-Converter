@@ -1,0 +1,275 @@
+/* ── Marquee ── */
+.marquee-bar {
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    background: var(--accent);
+    color: var(--bg);
+    padding: 8px 0;
+    white-space: nowrap;
+    position: relative;
+    z-index: 50
+}
+
+.marquee-track {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    animation: scroll-left 80s linear infinite
+}
+
+.marquee-track span {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    padding: 0 15px
+}
+
+@keyframes scroll-left {
+    0% {
+        transform: translateX(0)
+    }
+
+    100% {
+        transform: translateX(-100%)
+    }
+}
+
+/* ── Drawer overlay (mobile) ── */
+.drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 150;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease
+}
+
+.drawer-overlay.ativo {
+    opacity: 1;
+    pointer-events: auto
+}
+
+.mobile-nav {
+    display: none
+}
+
+.sidebar-fechar {
+    display: none
+}
+
+@keyframes pulse-dot {
+
+    0%,
+    100% {
+        opacity: 1
+    }
+
+    50% {
+        opacity: .3
+    }
+}
+
+.sidebar-rotas-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px
+}
+
+.rota-grupo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, .02);
+    border: 1px solid var(--border);
+    transition: background .2s
+}
+
+.rota-grupo:hover {
+    background: rgba(200, 255, 0, .03)
+}
+
+.rota-origem {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    letter-spacing: .08em;
+    flex-shrink: 0;
+    min-width: 34px;
+    text-align: center
+}
+
+.rota-seta {
+    color: var(--muted);
+    font-size: 10px;
+    flex-shrink: 0
+}
+
+.rota-destinos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px
+}
+
+.rota-tag {
+    font-family: var(--mono);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    padding: 1px 4px;
+    border: 1px solid rgba(255, 255, 255, .08);
+    color: var(--muted2);
+    transition: all .2s
+}
+
+.rota-tag.pdf {
+    color: var(--col-pdf);
+    border-color: rgba(239, 68, 68, .2)
+}
+
+.rota-tag.xlsx {
+    color: var(--col-xlsx);
+    border-color: rgba(34, 197, 94, .2)
+}
+
+.rota-tag.csv {
+    color: var(--col-csv);
+    border-color: rgba(234, 179, 8, .2)
+}
+
+.rota-tag.docx {
+    color: var(--col-docx);
+    border-color: rgba(59, 130, 246, .2)
+}
+
+.rota-tag.ppt {
+    color: var(--col-ppt);
+    border-color: rgba(249, 115, 22, .2)
+}
+
+.rota-tag.pptx {
+    color: var(--col-pptx);
+    border-color: rgba(249, 115, 22, .2)
+}
+
+.rota-tag.png {
+    color: var(--col-png);
+    border-color: rgba(168, 85, 247, .2)
+}
+
+.rota-tag.jpg {
+    color: var(--col-jpg);
+    border-color: rgba(168, 85, 247, .2)
+}
+
+.sidebar-criador {
+    display: flex;
+    flex-direction: column;
+    gap: 6px
+}
+
+.criador-nome {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted2)
+}
+
+.criador-github {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: .04em;
+    transition: color .2s
+}
+
+.criador-github:hover {
+    color: var(--accent)
+}
+
+.btn-tema-icon {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted2);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-tema-icon:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(200, 255, 0, .05);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px)
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0)
+    }
+}
+
+/* ── Spinner ── */
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 0, 0, .15);
+    border-top-color: #0a0a0a;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    flex-shrink: 0
+}
+
+.botao:not(.botao-conv) .spinner {
+    border-color: rgba(255, 255, 255, .15);
+    border-top-color: var(--text)
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+/* ── Rodapé ── */
+/* ── PDF loader overlay ── */
+.pdf-loader-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .06em;
+    transition: opacity .3s ease;
+    pointer-events: none
+}
+
+/* ── Tablet ── */
+@media(max-width:1100px) {

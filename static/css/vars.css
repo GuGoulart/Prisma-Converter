@@ -1,0 +1,215 @@
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box
+}
+
+/* ================================
+   Reset
+================================ */
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --border: #222222;
+    --border2: #2e2e2e;
+    --accent: #c8ff00;
+    --accent2: #ff3b3b;
+    --text: #f5f5f5;
+    --muted: #555555;
+    --muted2: #888888;
+    --preview-bg: #141414;
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'Space Mono', monospace;
+
+    --col-pdf: #ef4444;
+    --col-xlsx: #22c55e;
+    --col-xls: #22c55e;
+    --col-csv: #eab308;
+    --col-docx: #3b82f6;
+    --col-doc: #3b82f6;
+    --col-ppt: #f97316;
+    --col-pptx: #f97316;
+    --col-png: #a855f7;
+    --col-jpg: #a855f7;
+    --col-jpeg: #a855f7;
+}
+
+[data-theme="light"] {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --border: #e5e5e5;
+    --border2: #d4d4d4;
+    --accent: #84a700;
+    --accent2: #e02424;
+    --text: #171717;
+    --muted: #737373;
+    --muted2: #a3a3a3;
+    --preview-bg: #f4f4f5;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text);
+    overflow-x: hidden;
+}
+
+html,
+body {
+    height: 100%
+}
+
+body {
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text);
+    overflow-x: hidden
+}
+
+.badge-pdf {
+    background: var(--col-pdf) !important;
+    color: #fff !important
+}
+
+.badge-xlsx {
+    background: var(--col-xlsx) !important;
+    color: #000 !important
+}
+
+.badge-xls {
+    background: var(--col-xls) !important;
+    color: #000 !important
+}
+
+.badge-csv {
+    background: var(--col-csv) !important;
+    color: #000 !important
+}
+
+.badge-docx {
+    background: var(--col-docx) !important;
+    color: #fff !important
+}
+
+.badge-doc {
+    background: var(--col-doc) !important;
+    color: #fff !important
+}
+
+.badge-ppt {
+    background: var(--col-ppt) !important;
+    color: #fff !important
+}
+
+.badge-pptx {
+    background: var(--col-pptx) !important;
+    color: #fff !important
+}
+
+.badge-png {
+    background: var(--col-png) !important;
+    color: #fff !important
+}
+
+.badge-jpg {
+    background: var(--col-jpg) !important;
+    color: #fff !important
+}
+
+.badge-jpeg {
+    background: var(--col-jpeg) !important;
+    color: #fff !important
+}
+
+.badge-text-pdf {
+    color: var(--col-pdf) !important
+}
+
+.badge-text-xlsx {
+    color: var(--col-xlsx) !important
+}
+
+.badge-text-csv {
+    color: var(--col-csv) !important
+}
+
+.badge-text-docx {
+    color: var(--col-docx) !important
+}
+
+.badge-text-ppt {
+    color: var(--col-ppt) !important
+}
+
+.badge-text-pptx {
+    color: var(--col-pptx) !important
+}
+
+.badge-text-png {
+    color: var(--col-png) !important
+}
+
+.badge-text-jpg {
+    color: var(--col-jpg) !important
+}
+
+.sidebar-motor-office {
+    color: #3b82f6
+}
+
+.sidebar-motor-libreoffice {
+    color: #22c55e
+}
+
+.bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: -1
+}
+
+.toast {
+    position: fixed;
+    bottom: 60px;
+    right: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent);
+    color: #0a0a0a;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    padding: 12px 20px;
+    z-index: 300;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity .3s, transform .3s;
+    pointer-events: none
+}
+
+.toast.visivel {
+    opacity: 1;
+    transform: translateY(0)
+}
+
