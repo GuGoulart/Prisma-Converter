@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,9 @@
     <meta name="description" content="Mesclar, dividir, proteger e misturar PDFs facilmente.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         .pdf-tool-grid {
@@ -16,6 +19,7 @@
             gap: 24px;
             margin-top: 32px;
         }
+
         .pdf-tool-card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -27,14 +31,17 @@
             min-width: 0;
             transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
         }
+
         .pdf-tool-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             border-color: var(--accent);
         }
+
         [data-theme="dark"] .pdf-tool-card:hover {
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
+
         .pdf-tool-title {
             font-family: var(--mono);
             font-size: 16px;
@@ -44,12 +51,16 @@
             align-items: center;
             gap: 8px;
         }
+
         .pdf-tool-desc {
             font-size: 14px;
             color: var(--muted);
             line-height: 1.5;
         }
-        .pdf-tool-card input[type="file"], .pdf-tool-card input[type="password"], .pdf-tool-card input[type="text"] {
+
+        .pdf-tool-card input[type="file"],
+        .pdf-tool-card input[type="password"],
+        .pdf-tool-card input[type="text"] {
             background: var(--bg);
             border: 1px solid var(--border2);
             padding: 8px;
@@ -60,7 +71,7 @@
             box-sizing: border-box;
             font-size: 13px;
         }
-        
+
         /* Oculta visualmente o input de arquivo mantendo foco e validação */
         .hidden-file-input {
             width: 0.1px;
@@ -86,6 +97,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
+
         .btn-escolher:hover {
             border-color: var(--accent);
             color: var(--accent);
@@ -102,7 +114,7 @@
             display: inline-block;
             vertical-align: middle;
         }
-        
+
         .pdf-tool-card input[type="file"]::file-selector-button {
             background: var(--surface);
             border: 1px solid var(--border2);
@@ -116,15 +128,17 @@
             font-weight: 600;
             transition: all 0.2s;
         }
-        
+
         .pdf-tool-card input[type="file"]::file-selector-button:hover {
             border-color: var(--accent);
             color: var(--accent);
             background: rgba(200, 255, 0, 0.05);
         }
+
         .pdf-tool-card button {
             margin-top: auto;
         }
+
         .pdf-tool-card select {
             background: var(--bg);
             border: 1px solid var(--border2);
@@ -141,349 +155,451 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
         @media (max-width: 768px) {
-            .pdf-tool-grid { grid-template-columns: 1fr; }
+            .pdf-tool-grid {
+                grid-template-columns: 1fr;
+            }
         }
-        
     </style>
 </head>
+
 <body>
 
-<div class="bg-grid"></div>
+    <div class="bg-grid"></div>
 
-<div class="drawer-overlay" id="drawerOverlay"></div>
+    <div class="drawer-overlay" id="drawerOverlay"></div>
 
-<!-- Barra animada no topo -->
-<div class="marquee-bar">
-    <div class="marquee-track">
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+    <!-- Barra animada no topo -->
+    <div class="marquee-bar">
+        <div class="marquee-track">
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        </div>
+        <div class="marquee-track">
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+            <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span
+                class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span
+                class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span
+                class="sep">—</span><span>JPG</span><span class="sep">—</span>
+        </div>
     </div>
-    <div class="marquee-track">
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
-        <span>PDF</span><span class="sep">—</span><span>DOCX</span><span class="sep">—</span><span>XLSX</span><span class="sep">—</span><span>CSV</span><span class="sep">—</span><span>PPT</span><span class="sep">—</span><span>PPTX</span><span class="sep">—</span><span>PNG</span><span class="sep">—</span><span>JPG</span><span class="sep">—</span>
+
+    <!-- Nav mobile -->
+    <div class="mobile-nav">
+        <span class="mobile-logo">PRISMA</span>
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
     </div>
-</div>
 
-<!-- Nav mobile -->
-<div class="mobile-nav">
-    <span class="mobile-logo">PRISMA</span>
-    <button class="mobile-menu-btn" id="menuBtn" aria-label="Menu">
-        <span></span><span></span><span></span>
-    </button>
-</div>
+    <div class="layout">
 
-<div class="layout">
+        <!-- ── SIDEBAR ───────────────────────────────────────── -->
+        <aside class="sidebar" id="sidebar">
 
-    <!-- ── SIDEBAR ───────────────────────────────────────── -->
-    <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-mark">PRISMA</span>
+            </div>
 
-        <div class="sidebar-logo">
-            <span class="logo-mark">PRISMA</span>
-        </div>
+            <div class="sidebar-linha"></div>
 
-        <div class="sidebar-linha"></div>
+            <div class="sidebar-info" style="gap: 8px;">
+                <p class="sidebar-label">Menu</p>
+                <a href="/" class="nav-link">Conversor de arquivos</a>
+                <a href="/ferramentas-pdf" class="nav-link nav-active">Ferramentas PDF</a>
+            </div>
 
-        <div class="sidebar-info" style="gap: 8px;">
-            <p class="sidebar-label">Menu</p>
-            <a href="/" class="nav-link">Conversor de arquivos</a>
-            <a href="/ferramentas-pdf" class="nav-link nav-active">Ferramentas PDF</a>
-        </div>
-
-        <div class="sidebar-linha"></div>
+            <div class="sidebar-linha"></div>
 
 
 
-        <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
-            <p class="sidebar-label" style="margin-bottom: 0;">Tema</p>
-            <button id="themeToggle" class="btn-tema-icon" aria-label="Alternar Tema">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                    <path d="M12 7 A 5 5 0 0 1 12 17 Z" fill="currentColor" />
-                    <path d="M12 7 A 5 5 0 0 0 12 17" />
-                    <line x1="12" y1="1" x2="12" y2="4" />
-                    <line x1="12" y1="20" x2="12" y2="23" />
-                    <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
-                    <line x1="4.22" y1="19.78" x2="6.34" y2="17.66" />
-                    <line x1="1" y1="12" x2="4" y2="12" />
-                </svg>
-            </button>
-        </div>
+            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
+                <p class="sidebar-label" style="margin-bottom: 0;">Tema</p>
+                <button id="themeToggle" class="btn-tema-icon" aria-label="Alternar Tema">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round">
+                        <path d="M12 7 A 5 5 0 0 1 12 17 Z" fill="currentColor" />
+                        <path d="M12 7 A 5 5 0 0 0 12 17" />
+                        <line x1="12" y1="1" x2="12" y2="4" />
+                        <line x1="12" y1="20" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
+                        <line x1="4.22" y1="19.78" x2="6.34" y2="17.66" />
+                        <line x1="1" y1="12" x2="4" y2="12" />
+                    </svg>
+                </button>
+            </div>
 
-        <div class="sidebar-linha github-mobile"></div>
-        
-        <div class="sidebar-info github-mobile" style="margin-top: auto; align-items: center; justify-content: center; padding-top: 12px;">
-            <a href="https://github.com/GuGoulart" target="_blank" rel="noopener noreferrer" class="nav-link" style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11px;">
+            <a href="https://github.com/GuGoulart" target="_blank" rel="noopener noreferrer"
+                class="sidebar-github-mobile">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+                    <path
+                        d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
                 </svg>
-                Made by Gustavo Goulart
+                <span>Made by Gustavo Goulart</span>
             </a>
-        </div>
-    </aside>
 
-    <!-- ── MAIN ───────────────────────────────────────────── -->
-    <main class="main">
+            <div class="sidebar-linha github-mobile"></div>
 
-        <header class="header-main">
-            <h1 class="titulo-principal">Ferramentas de <em>PDF</em></h1>
-            <p class="titulo-sub">Utilitários poderosos para processamento rápido e local de documentos PDF.</p>
-        </header>
+            <div class="sidebar-info github-mobile"
+                style="margin-top: auto; align-items: center; justify-content: center; padding-top: 12px;">
+                <a href="https://github.com/GuGoulart" target="_blank" rel="noopener noreferrer" class="nav-link"
+                    style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+                    </svg>
+                    Made by Gustavo Goulart
+                </a>
+            </div>
+        </aside>
 
-        <!-- Erro -->
-        {% if erro %}
-        <div class="erro-box" style="margin-top: 24px;">
-            <span class="erro-cod">ERR</span>
-            <span class="erro-msg">{{ erro }}</span>
-        </div>
-        {% endif %}
+        <!-- ── MAIN ───────────────────────────────────────────── -->
+        <main class="main">
 
-        <div class="pdf-tool-grid">
-            
-            <!-- Mesclar PDF -->
-            <div class="pdf-tool-card">
-                <div class="pdf-tool-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-                    Mesclar PDFs
+            <header class="header-main">
+                <h1 class="titulo-principal">Ferramentas de <em>PDF</em></h1>
+                <p class="titulo-sub">Utilitários poderosos para processamento rápido e local de documentos PDF.</p>
+            </header>
+
+            <!-- Erro -->
+            {% if erro %}
+            <div class="erro-box" style="margin-top: 24px;">
+                <span class="erro-cod">ERR</span>
+                <span class="erro-msg">{{ erro }}</span>
+            </div>
+            {% endif %}
+
+            <div class="pdf-tool-grid">
+
+                <!-- Mesclar PDF -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                        Mesclar PDFs
+                    </div>
+                    <p class="pdf-tool-desc">Selecione vários arquivos PDF e junte-os em um único documento contínuo.
+                        Você pode clicar várias vezes para ir adicionando mais arquivos.</p>
+                    <form action="/api/pdf/mesclar" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <div>
+                            <label for="mergeInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivos
+                            </label>
+                            <input type="file" name="arquivos" id="mergeInput" multiple accept=".pdf" required
+                                class="hidden-file-input">
+                        </div>
+                        <div id="mergeListContainer"
+                            style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
+                            <span id="mergeEmptyMsg"
+                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum
+                                arquivo selecionado</span>
+                        </div>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Mesclar e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
                 </div>
-                <p class="pdf-tool-desc">Selecione vários arquivos PDF e junte-os em um único documento contínuo. Você pode clicar várias vezes para ir adicionando mais arquivos.</p>
-                <form action="/api/pdf/mesclar" method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:12px;height:100%">
-                    <div>
-                        <label for="mergeInput" class="btn-escolher">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            Escolher Arquivos
-                        </label>
-                        <input type="file" name="arquivos" id="mergeInput" multiple accept=".pdf" required class="hidden-file-input">
+
+                <!-- Dividir PDF -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                            <circle cx="6" cy="6" r="3"></circle>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                            <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                            <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                        </svg>
+                        Dividir PDF
                     </div>
-                    <div id="mergeListContainer" style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
-                        <span id="mergeEmptyMsg" style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum arquivo selecionado</span>
+                    <p class="pdf-tool-desc">Separe cada página de um PDF em arquivos independentes (entregues em ZIP).
+                    </p>
+                    <form action="/api/pdf/dividir" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <div>
+                            <label for="splitInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="splitFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="splitInput" accept=".pdf" required
+                                class="hidden-file-input">
+                        </div>
+                        <select name="modo" id="splitModo">
+                            <option value="individual">Página por página</option>
+                            <option value="fixo">A cada X páginas</option>
+                            <option value="custom">Intervalos específicos</option>
+                        </select>
+                        <p id="splitInfo"
+                            style="font-size: 11px; color: var(--muted); margin-top: -8px; line-height: 1.4;">Cria um
+                            arquivo separado para cada página do seu PDF original.</p>
+                        <input type="text" name="parametro" id="splitParametro" placeholder="Ex: 2"
+                            style="display:none;">
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Dividir e baixar ZIP</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Proteger PDF -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        Proteger PDF
                     </div>
-                    <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                        <span>Mesclar e baixar</span><span class="botao-arr">↓</span>
-                    </button>
-                </form>
+                    <p class="pdf-tool-desc">Adicione uma senha forte para criptografar e restringir a abertura do PDF.
+                    </p>
+                    <form action="/api/pdf/proteger" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <div>
+                            <label for="protectInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="protectFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="protectInput" accept=".pdf" required
+                                class="hidden-file-input">
+                        </div>
+                        <input type="password" name="senha" placeholder="Senha desejada" required>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Proteger e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Desproteger PDF -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                        </svg>
+                        Desproteger PDF
+                    </div>
+                    <p class="pdf-tool-desc">Remova a senha de um PDF criptografado (necessita da senha original).</p>
+                    <form action="/api/pdf/desproteger" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <div>
+                            <label for="unprotectInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="unprotectFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="unprotectInput" accept=".pdf" required
+                                title="PDF Criptografado" class="hidden-file-input">
+                        </div>
+                        <input type="password" name="senha" placeholder="Senha do PDF" required>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Desproteger e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
             </div>
 
-            <!-- Dividir PDF -->
-            <div class="pdf-tool-card">
-                <div class="pdf-tool-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
-                    Dividir PDF
-                </div>
-                <p class="pdf-tool-desc">Separe cada página de um PDF em arquivos independentes (entregues em ZIP).</p>
-                <form action="/api/pdf/dividir" method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:12px;height:100%">
-                    <div>
-                        <label for="splitInput" class="btn-escolher">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            Escolher Arquivo
-                        </label>
-                        <span class="file-name-display" id="splitFileName">Nenhum arquivo selecionado</span>
-                        <input type="file" name="arquivo" id="splitInput" accept=".pdf" required class="hidden-file-input">
-                    </div>
-                    <select name="modo" id="splitModo">
-                        <option value="individual">Página por página</option>
-                        <option value="fixo">A cada X páginas</option>
-                        <option value="custom">Intervalos específicos</option>
-                    </select>
-                    <p id="splitInfo" style="font-size: 11px; color: var(--muted); margin-top: -8px; line-height: 1.4;">Cria um arquivo separado para cada página do seu PDF original.</p>
-                    <input type="text" name="parametro" id="splitParametro" placeholder="Ex: 2" style="display:none;">
-                    <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                        <span>Dividir e baixar ZIP</span><span class="botao-arr">↓</span>
-                    </button>
-                </form>
-            </div>
+        </main>
+    </div><!-- /layout -->
 
-            <!-- Proteger PDF -->
-            <div class="pdf-tool-card">
-                <div class="pdf-tool-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    Proteger PDF
-                </div>
-                <p class="pdf-tool-desc">Adicione uma senha forte para criptografar e restringir a abertura do PDF.</p>
-                <form action="/api/pdf/proteger" method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:12px;height:100%">
-                    <div>
-                        <label for="protectInput" class="btn-escolher">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            Escolher Arquivo
-                        </label>
-                        <span class="file-name-display" id="protectFileName">Nenhum arquivo selecionado</span>
-                        <input type="file" name="arquivo" id="protectInput" accept=".pdf" required class="hidden-file-input">
-                    </div>
-                    <input type="password" name="senha" placeholder="Senha desejada" required>
-                    <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                        <span>Proteger e baixar</span><span class="botao-arr">↓</span>
-                    </button>
-                </form>
-            </div>
+    <footer class="rodape">
+        <span class="rodape-marca">Prisma © 2026</span>
+        <span class="rodape-sep">|</span>
+        <a href="https://github.com/GuGoulart" target="_blank" rel="noopener noreferrer"
+            class="rodape-link github-desktop"
+            style="display:inline-flex; align-items:center; gap:6px; margin-left: 8px;">
+            <span class="rodape-marca" style="color: inherit;">Made by Gustavo Goulart</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                    d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+            </svg>
+        </a>
+    </footer>
 
-            <!-- Desproteger PDF -->
-            <div class="pdf-tool-card">
-                <div class="pdf-tool-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path></svg>
-                    Desproteger PDF
-                </div>
-                <p class="pdf-tool-desc">Remova a senha de um PDF criptografado (necessita da senha original).</p>
-                <form action="/api/pdf/desproteger" method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:12px;height:100%">
-                    <div>
-                        <label for="unprotectInput" class="btn-escolher">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                            Escolher Arquivo
-                        </label>
-                        <span class="file-name-display" id="unprotectFileName">Nenhum arquivo selecionado</span>
-                        <input type="file" name="arquivo" id="unprotectInput" accept=".pdf" required title="PDF Criptografado" class="hidden-file-input">
-                    </div>
-                    <input type="password" name="senha" placeholder="Senha do PDF" required>
-                    <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                        <span>Desproteger e baixar</span><span class="botao-arr">↓</span>
-                    </button>
-                </form>
-            </div>
+    <script>
+        // Theme toggle basic logic for this page
+        const themeToggle = document.getElementById('themeToggle');
+        const root = document.documentElement;
+        let isLight = localStorage.getItem('theme') === 'light';
 
-        </div>
+        if (isLight) root.setAttribute('data-theme', 'light');
 
-    </main>
-</div><!-- /layout -->
-
-<footer class="rodape">
-    <span class="rodape-marca">Prisma © 2026</span>
-    <span class="rodape-sep">|</span>
-    <a href="https://github.com/GuGoulart" target="_blank" rel="noopener noreferrer" class="rodape-link github-desktop" style="display:inline-flex; align-items:center; gap:6px; margin-left: 8px;">
-        <span class="rodape-marca" style="color: inherit;">Made by Gustavo Goulart</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-        </svg>
-    </a>
-</footer>
-
-<script>
-    // Theme toggle basic logic for this page
-    const themeToggle = document.getElementById('themeToggle');
-    const root = document.documentElement;
-    let isLight = localStorage.getItem('theme') === 'light';
-    
-    if (isLight) root.setAttribute('data-theme', 'light');
-    
-    themeToggle.addEventListener('click', () => {
-        isLight = !isLight;
-        if (isLight) {
-            root.setAttribute('data-theme', 'light');
-            localStorage.setItem('theme', 'light');
-        } else {
-            root.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'dark');
-        }
-    });
-
-    const menuBtn = document.getElementById('menuBtn');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('drawerOverlay');
-
-    menuBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('aberta');
-        overlay.classList.toggle('ativo');
-        menuBtn.classList.toggle('ativo');
-        document.body.style.overflow = sidebar.classList.contains('aberta') ? 'hidden' : '';
-    });
-
-    overlay.addEventListener('click', () => {
-        sidebar.classList.remove('aberta');
-        overlay.classList.remove('ativo');
-        menuBtn.classList.remove('ativo');
-        document.body.style.overflow = '';
-    });
-
-    // Timeout para ocultar o erro após 5 segundos
-    setTimeout(() => {
-        const erroBox = document.querySelector('.erro-box');
-        if (erroBox) {
-            erroBox.style.opacity = '0';
-            setTimeout(() => erroBox.style.display = 'none', 300);
-        }
-    }, 5000);
-
-    // Lógica para acumular arquivos no input de Mesclar PDFs
-    const dt = new DataTransfer();
-    const mergeInput = document.getElementById('mergeInput');
-    const mergeListContainer = document.getElementById('mergeListContainer');
-    const mergeEmptyMsg = document.getElementById('mergeEmptyMsg');
-
-    mergeInput.addEventListener('change', function() {
-        for (let file of this.files) {
-            dt.items.add(file);
-        }
-        this.files = dt.files;
-        
-        // Limpar mensagens antigas
-        const olds = mergeListContainer.querySelectorAll('.merge-item');
-        olds.forEach(o => o.remove());
-
-        if (dt.files.length > 0) {
-            if (mergeEmptyMsg) mergeEmptyMsg.style.display = 'none';
-        }
-
-        for(let file of dt.files) {
-            let div = document.createElement('div');
-            div.className = 'merge-item';
-            div.textContent = '📄 ' + file.name;
-            div.style.fontSize = '12px';
-            div.style.color = 'var(--text)';
-            div.style.background = 'var(--surface)';
-            div.style.padding = '4px 8px';
-            div.style.borderRadius = '4px';
-            mergeListContainer.appendChild(div);
-        }
-    });
-    // Lógica para modo de divisão de PDF
-    const splitModo = document.getElementById('splitModo');
-    const splitParametro = document.getElementById('splitParametro');
-    const splitInfo = document.getElementById('splitInfo');
-    
-    if (splitModo && splitParametro && splitInfo) {
-        splitModo.addEventListener('change', (e) => {
-            const v = e.target.value;
-            if (v === 'individual') {
-                splitParametro.style.display = 'none';
-                splitParametro.required = false;
-                splitInfo.textContent = 'Cria um arquivo separado para cada página do seu PDF original.';
-            } else if (v === 'fixo') {
-                splitParametro.style.display = 'block';
-                splitParametro.placeholder = 'Cortar a cada quantas páginas? Ex: 2';
-                splitParametro.required = true;
-                splitInfo.textContent = 'Agrupa o PDF em blocos do tamanho que você escolher (ex: se digitar 3, corta a cada 3 páginas).';
-            } else if (v === 'custom') {
-                splitParametro.style.display = 'block';
-                splitParametro.placeholder = 'Páginas específicas. Ex: 1-2, 5, 7-10';
-                splitParametro.required = true;
-                splitInfo.textContent = 'Você escolhe as partes exatas. Ex: "1-5" (pega as pág. 1 a 5), ou "3, 8-10" (pega a pág. 3 separada, e da 8 a 10 juntas).';
+        themeToggle.addEventListener('click', () => {
+            isLight = !isLight;
+            if (isLight) {
+                root.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                root.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'dark');
             }
         });
-    }
 
-    // Lógica para atualização do nome do arquivo nos botões customizados
-    function setupFileInput(inputId, displayId) {
-        const input = document.getElementById(inputId);
-        const display = document.getElementById(displayId);
-        if (input && display) {
-            input.addEventListener('change', function() {
-                if (this.files && this.files.length > 0) {
-                    display.textContent = this.files[0].name;
-                    display.style.color = 'var(--text)';
-                } else {
-                    display.textContent = 'Nenhum arquivo selecionado';
-                    display.style.color = 'var(--muted)';
+        const menuBtn = document.getElementById('menuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('drawerOverlay');
+
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('aberta');
+            overlay.classList.toggle('ativo');
+            menuBtn.classList.toggle('ativo');
+            document.body.style.overflow = sidebar.classList.contains('aberta') ? 'hidden' : '';
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('aberta');
+            overlay.classList.remove('ativo');
+            menuBtn.classList.remove('ativo');
+            document.body.style.overflow = '';
+        });
+
+        // Timeout para ocultar o erro após 5 segundos
+        setTimeout(() => {
+            const erroBox = document.querySelector('.erro-box');
+            if (erroBox) {
+                erroBox.style.opacity = '0';
+                setTimeout(() => erroBox.style.display = 'none', 300);
+            }
+        }, 5000);
+
+        // Lógica para acumular arquivos no input de Mesclar PDFs
+        const dt = new DataTransfer();
+        const mergeInput = document.getElementById('mergeInput');
+        const mergeListContainer = document.getElementById('mergeListContainer');
+        const mergeEmptyMsg = document.getElementById('mergeEmptyMsg');
+
+        mergeInput.addEventListener('change', function () {
+            for (let file of this.files) {
+                dt.items.add(file);
+            }
+            this.files = dt.files;
+
+            // Limpar mensagens antigas
+            const olds = mergeListContainer.querySelectorAll('.merge-item');
+            olds.forEach(o => o.remove());
+
+            if (dt.files.length > 0) {
+                if (mergeEmptyMsg) mergeEmptyMsg.style.display = 'none';
+            }
+
+            for (let file of dt.files) {
+                let div = document.createElement('div');
+                div.className = 'merge-item';
+                div.textContent = '📄 ' + file.name;
+                div.style.fontSize = '12px';
+                div.style.color = 'var(--text)';
+                div.style.background = 'var(--surface)';
+                div.style.padding = '4px 8px';
+                div.style.borderRadius = '4px';
+                mergeListContainer.appendChild(div);
+            }
+        });
+        // Lógica para modo de divisão de PDF
+        const splitModo = document.getElementById('splitModo');
+        const splitParametro = document.getElementById('splitParametro');
+        const splitInfo = document.getElementById('splitInfo');
+
+        if (splitModo && splitParametro && splitInfo) {
+            splitModo.addEventListener('change', (e) => {
+                const v = e.target.value;
+                if (v === 'individual') {
+                    splitParametro.style.display = 'none';
+                    splitParametro.required = false;
+                    splitInfo.textContent = 'Cria um arquivo separado para cada página do seu PDF original.';
+                } else if (v === 'fixo') {
+                    splitParametro.style.display = 'block';
+                    splitParametro.placeholder = 'Cortar a cada quantas páginas? Ex: 2';
+                    splitParametro.required = true;
+                    splitInfo.textContent = 'Agrupa o PDF em blocos do tamanho que você escolher (ex: se digitar 3, corta a cada 3 páginas).';
+                } else if (v === 'custom') {
+                    splitParametro.style.display = 'block';
+                    splitParametro.placeholder = 'Páginas específicas. Ex: 1-2, 5, 7-10';
+                    splitParametro.required = true;
+                    splitInfo.textContent = 'Você escolhe as partes exatas. Ex: "1-5" (pega as pág. 1 a 5), ou "3, 8-10" (pega a pág. 3 separada, e da 8 a 10 juntas).';
                 }
             });
         }
-    }
 
-    setupFileInput('splitInput', 'splitFileName');
-    setupFileInput('protectInput', 'protectFileName');
-    setupFileInput('unprotectInput', 'unprotectFileName');
+        // Lógica para atualização do nome do arquivo nos botões customizados
+        function setupFileInput(inputId, displayId) {
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+            if (input && display) {
+                input.addEventListener('change', function () {
+                    if (this.files && this.files.length > 0) {
+                        display.textContent = this.files[0].name;
+                        display.style.color = 'var(--text)';
+                    } else {
+                        display.textContent = 'Nenhum arquivo selecionado';
+                        display.style.color = 'var(--muted)';
+                    }
+                });
+            }
+        }
+
+        setupFileInput('splitInput', 'splitFileName');
+        setupFileInput('protectInput', 'protectFileName');
+        setupFileInput('unprotectInput', 'unprotectFileName');
 
 
-</script>
+    </script>
 </body>
+
 </html>
