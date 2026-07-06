@@ -1,9 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
-    
-    // ── Tema Claro / Escuro ───────────────────────────────────
+
+    // ── Tema Claro / Escurooooo ───────────────────────────────────
     const themeToggleBtn = document.getElementById("themeToggle");
     const currentTheme = localStorage.getItem("theme") || "dark";
-    
+
     if (currentTheme === "light") {
         document.documentElement.setAttribute("data-theme", "light");
     }
@@ -21,12 +21,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── Upload box ────────────────────────────────────────────
 
-    const uploadBox    = document.getElementById("uploadBox");
-    const inputFile    = document.getElementById("arquivo");
+    const uploadBox = document.getElementById("uploadBox");
+    const inputFile = document.getElementById("arquivo");
     const uploadTitulo = document.getElementById("uploadTitulo");
-    const uploadDesc   = document.getElementById("uploadDesc");
-    const uploadIcone  = document.getElementById("uploadIcone");
-    const uploadForm   = document.getElementById("uploadForm");
+    const uploadDesc = document.getElementById("uploadDesc");
+    const uploadIcone = document.getElementById("uploadIcone");
+    const uploadForm = document.getElementById("uploadForm");
 
     uploadBox?.addEventListener("click", (e) => {
         if (e.target.tagName !== "INPUT") inputFile.click();
@@ -36,22 +36,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function atualizarUploadUI(autoSubmit = false) {
         if (!inputFile?.files?.length) return;
-        const f   = inputFile.files[0];
+        const f = inputFile.files[0];
         const ext = f.name.split(".").pop().toLowerCase();
         const tam = formatarTamanho(f.size);
         uploadIcone.innerHTML = `<span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.1em;">.${ext}</span>`;
         uploadTitulo.textContent = f.name;
-        uploadDesc.textContent   = `${ext.toUpperCase()} · ${tam}`;
+        uploadDesc.textContent = `${ext.toUpperCase()} · ${tam}`;
         uploadBox.style.borderColor = "var(--accent)";
         uploadBox.querySelectorAll(".corner").forEach(c => {
             c.style.borderColor = "var(--accent)";
-            c.style.opacity     = "1";
+            c.style.opacity = "1";
         });
         if (autoSubmit && uploadForm) {
             const btn = document.getElementById("btnEnviar");
             if (btn) {
-                btn.disabled   = true;
-                btn.innerHTML  = `<span>Enviando...</span><div class="spinner"></div>`;
+                btn.disabled = true;
+                btn.innerHTML = `<span>Enviando...</span><div class="spinner"></div>`;
             }
             uploadForm.submit();
         }
@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
     uploadForm?.addEventListener("submit", () => {
         const btn = document.getElementById("btnEnviar");
         if (!btn || btn.disabled) return;
-        btn.disabled  = true;
+        btn.disabled = true;
         btn.innerHTML = `<span>Enviando...</span><div class="spinner"></div>`;
     });
 
@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── Orientação ────────────────────────────────────────────
 
-    const orientacaoWrap   = document.getElementById("orientacaoWrap");
+    const orientacaoWrap = document.getElementById("orientacaoWrap");
     const orientacaoHidden = document.getElementById("orientacaoHidden");
 
     document.querySelectorAll('input[name="_ori"]').forEach(radio => {
@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function atualizarPreview(destino) {
         if (!pastaUUID) return;
         const viewer = document.getElementById("previewViewer");
-        const sub    = document.getElementById("previewSub");
+        const sub = document.getElementById("previewSub");
         if (!viewer) return;
 
         // Spinner imediato
@@ -151,8 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (destino === "png" || destino === "jpg") {
                 const url = `/preview-convert/${pastaUUID}/${destino}`;
                 await new Promise((resolve, reject) => {
-                    const img   = new Image();
-                    img.onload  = resolve;
+                    const img = new Image();
+                    img.onload = resolve;
                     img.onerror = () => reject(new Error("Falha ao carregar imagem"));
                     img.src = url;
                 });
@@ -230,10 +230,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── Form de conversão — progresso + cookie poll ───────────
 
     document.getElementById("converterForm")?.addEventListener("submit", () => {
-        const btn           = document.getElementById("btnConverter");
-        const btnOutro      = document.getElementById("btnOutro");
-        const progressWrap  = document.getElementById("progressWrap");
-        const progressBar   = document.getElementById("progressBar");
+        const btn = document.getElementById("btnConverter");
+        const btnOutro = document.getElementById("btnOutro");
+        const progressWrap = document.getElementById("progressWrap");
+        const progressBar = document.getElementById("progressBar");
         const progressLabel = document.getElementById("progressLabel");
         if (!btn) return;
 
@@ -247,23 +247,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         ti.value = token;
 
-        btn.disabled  = true;
+        btn.disabled = true;
         btn.innerHTML = `<span>Processando...</span><div class="spinner"></div>`;
         progressWrap.classList.add("ativo");
         progressLabel.textContent = "0%";
 
         const fases = [
-            { pct: 15, label: "Lendo arquivo...",  delay: 300   },
-            { pct: 35, label: "Convertendo...",    delay: 1200  },
-            { pct: 60, label: "Processando...",    delay: 2800  },
-            { pct: 80, label: "Finalizando...",    delay: 5000  },
-            { pct: 88, label: "Quase pronto...",   delay: 8000  },
+            { pct: 15, label: "Lendo arquivo...", delay: 300 },
+            { pct: 35, label: "Convertendo...", delay: 1200 },
+            { pct: 60, label: "Processando...", delay: 2800 },
+            { pct: 80, label: "Finalizando...", delay: 5000 },
+            { pct: 88, label: "Quase pronto...", delay: 8000 },
         ];
         fases.forEach(({ pct, label, delay }) => {
             setTimeout(() => {
                 if (btn.disabled) {
-                    progressBar.style.width    = pct + "%";
-                    progressLabel.textContent  = label;
+                    progressBar.style.width = pct + "%";
+                    progressLabel.textContent = label;
                 }
             }, delay);
         });
@@ -275,10 +275,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (concluido) {
                 clearInterval(poll);
                 document.cookie = `downloadToken=${token}; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-                progressBar.style.width   = "100%";
+                progressBar.style.width = "100%";
                 progressLabel.textContent = "Concluído!";
                 setTimeout(() => {
-                    btn.disabled  = false;
+                    btn.disabled = false;
                     btn.innerHTML = `<span>Converter e baixar</span><span class="botao-arr">↓</span>`;
                     progressWrap.classList.remove("ativo");
                     progressBar.style.width = "0%";
@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             clearInterval(poll);
             if (btn.disabled) {
-                btn.disabled  = false;
+                btn.disabled = false;
                 btn.innerHTML = `<span>Converter e baixar</span><span class="botao-arr">↓</span>`;
                 progressWrap.classList.remove("ativo");
             }
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── Atalhos de teclado ────────────────────────────────────
 
     document.addEventListener("keydown", (e) => {
-        const tag     = document.activeElement?.tagName;
+        const tag = document.activeElement?.tagName;
         const emInput = ["INPUT", "TEXTAREA", "SELECT"].includes(tag);
 
         if (e.key.toLowerCase() === "k" && !e.ctrlKey && !e.metaKey && !emInput)
@@ -331,9 +331,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ── Drawer mobile (toggle com hambúrguer) ─────────────────
 
-    const menuBtn   = document.getElementById("menuBtn");
-    const sidebar   = document.getElementById("sidebar");
-    const overlay   = document.getElementById("drawerOverlay");
+    const menuBtn = document.getElementById("menuBtn");
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("drawerOverlay");
 
     function toggleDrawer() {
         const aberta = sidebar?.classList.contains("aberta");
@@ -375,7 +375,7 @@ function mostrarToast(msg) {
 }
 
 function formatarTamanho(b) {
-    if (b < 1024)       return b + " B";
-    if (b < 1_048_576)  return (b / 1024).toFixed(1) + " KB";
+    if (b < 1024) return b + " B";
+    if (b < 1_048_576) return (b / 1024).toFixed(1) + " KB";
     return (b / 1_048_576).toFixed(1) + " MB";
 }
