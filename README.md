@@ -11,9 +11,9 @@
 
 ## O que é
 
-O **Prisma Converter** é uma aplicação web completa para conversão de arquivos e manipulação avançada de PDFs. Originalmente concebido para rodar de forma 100% local (focado na privacidade total, sem envio de dados para terceiros), o projeto hoje também conta com uma versão online otimizada para demonstração e uso em nuvem.
+O **Prisma Converter** é uma **Aplicação Web (SaaS)** desenhada para conversão universal de arquivos e manipulação avançada de PDFs diretamente no navegador. Focado em velocidade e segurança em nuvem, ele permite que usuários façam transformações complexas (como PDF para XLSX, ou juntar múltiplos PDFs) sem instalar absolutamente nada.
 
-A ideia é simples: arraste um arquivo, escolha a ferramenta, clique no botão e baixe seu arquivo. Rápido, seguro e sem propagandas.
+A ideia é simples: acesse o site, arraste um arquivo, escolha a ferramenta, clique no botão e baixe seu arquivo processado. Rápido, seguro e sem propagandas.
 
 ---
 
@@ -86,12 +86,14 @@ Além da conversão de formatos, o Prisma conta com ferramentas de manipulação
 
 ---
 
-## Passo a passo — Como rodar localmente
+## Instalação para Desenvolvedores (Ambiente Local)
+
+Embora o Prisma seja focado para rodar em servidores Web/Cloud (SaaS), se você é um desenvolvedor e deseja rodar o projeto localmente para contribuir ou testar, siga os passos abaixo:
 
 ### Pré-requisitos
 - **Python 3.10 ou superior**
 - **Git** instalado na máquina
-- **Microsoft Office** ou **LibreOffice** (Opcional, exigido apenas para formatar conversões de textos/slides).
+- **Microsoft Office** ou **LibreOffice** (Opcional, exigido apenas para formatar conversões de textos/slides no seu ambiente local).
 
 ### 1. Clone o repositório
 ```bash
