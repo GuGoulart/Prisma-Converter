@@ -43,6 +43,9 @@
     --col-png: #a855f7;
     --col-jpg: #a855f7;
     --col-jpeg: #a855f7;
+
+    --nav-mobile-bg: rgba(10, 10, 10, 0.9);
+    --sidebar-mobile-bg: rgba(10, 10, 10, 0.92);
 }
 
 [data-theme="light"] {
@@ -56,6 +59,9 @@
     --muted: #737373;
     --muted2: #a3a3a3;
     --preview-bg: #f4f4f5;
+
+    --nav-mobile-bg: rgba(250, 250, 250, 0.9);
+    --sidebar-mobile-bg: rgba(250, 250, 250, 0.92);
 }
 
 html,
@@ -1483,14 +1489,14 @@ body {
         left: 0;
         right: 0;
         height: 50px;
-        background: rgba(10, 10, 10, 0.9);
+        background: var(--nav-mobile-bg);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border-bottom: 1px solid var(--border);
         padding: 0 20px;
         align-items: center;
         justify-content: space-between;
-        z-index: 90
+        z-index: 160
     }
 
     .mobile-logo {
@@ -1552,7 +1558,7 @@ body {
         height: 100vh;
         z-index: 200;
         border-right: 1px solid var(--border2);
-        background: rgba(10, 10, 10, 0.92);
+        background: var(--sidebar-mobile-bg);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         transition: left .3s cubic-bezier(.4, 0, .2, 1);

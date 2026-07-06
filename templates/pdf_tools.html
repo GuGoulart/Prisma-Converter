@@ -159,14 +159,16 @@
         }
         
         @keyframes drift {
-            from { transform: translateX(100vw) rotate(0deg); }
-            to { transform: translateX(-50px) rotate(360deg); }
+            from { left: 100%; transform: rotate(0deg); }
+            to { left: -50px; transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
 
 <div class="bg-grid"></div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
 
 <!-- Tempestade de Símbolos no Topo -->
 <div class="symbol-storm" id="stormContainer"></div>
