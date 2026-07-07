@@ -58,15 +58,18 @@
             align-items: center;
             justify-content: space-between;
         }
+
         .pdf-tool-title-left {
             display: flex;
             align-items: center;
             gap: 8px;
         }
+
         .tool-badges {
             display: flex;
             gap: 4px;
         }
+
         .tool-badge {
             font-size: 10px;
             padding: 4px 8px;
@@ -74,9 +77,9 @@
             font-weight: 800;
             letter-spacing: 1px;
             text-transform: uppercase;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 6px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
         }
 
@@ -280,7 +283,8 @@
 
             <header class="header-main">
                 <h1 class="titulo-principal">Ferramentas <em>Avançadas</em></h1>
-                <p class="titulo-sub">Utilitários poderosos para processamento rápido e local de documentos e imagens.</p>
+                <p class="titulo-sub">Utilitários poderosos para processamento rápido e local de documentos e imagens.
+                </p>
             </header>
 
             <!-- Erro -->
@@ -298,7 +302,8 @@
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
                                 <line x1="12" y1="18" x2="12" y2="12"></line>
@@ -345,7 +350,8 @@
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
                                 <circle cx="6" cy="6" r="3"></circle>
                                 <circle cx="6" cy="18" r="3"></circle>
                                 <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
@@ -398,7 +404,8 @@
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
@@ -439,7 +446,8 @@
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
                             </svg>
@@ -472,14 +480,15 @@
                             <span>Desproteger e baixar</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
-                    </div>
+                </div>
 
                 <!-- Comprimir PDF -->
                 <div class="pdf-tool-card">
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
                                 <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
                                 <path d="M12 12v9"></path>
                                 <path d="m8 17 4 4 4-4"></path>
@@ -490,7 +499,8 @@
                             <span class="tool-badge badge-pdf">PDF</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Reduza o tamanho do seu arquivo PDF mantendo a qualidade. Ideal para envio por email.</p>
+                    <p class="pdf-tool-desc">Reduza o tamanho do seu arquivo PDF mantendo a qualidade. Ideal para envio
+                        por email.</p>
                     <form action="/api/pdf/comprimir" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -519,7 +529,8 @@
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
                                 <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
                                 <line x1="16" y1="8" x2="2" y2="22"></line>
                                 <line x1="17.5" y1="15" x2="9" y2="6.5"></line>
@@ -560,7 +571,8 @@
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                                 <circle cx="8.5" cy="8.5" r="1.5"></circle>
                                 <polyline points="21 15 16 10 5 21"></polyline>
@@ -600,7 +612,8 @@
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <path d="M14 2v6h6"></path>
                                 <line x1="9" y1="15" x2="15" y2="15"></line>
@@ -642,7 +655,8 @@
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                                 <circle cx="12" cy="11" r="3"></circle>
                             </svg>
@@ -654,7 +668,8 @@
                             <span class="tool-badge badge-webp">WEBP</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Remova o fundo de imagens automaticamente. A primeira vez pode demorar mais.
+                    <p class="pdf-tool-desc">Remova o fundo de imagens automaticamente. A primeira vez pode demorar
+                        mais.
                     </p>
                     <form action="/api/img/remover-fundo" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
@@ -670,8 +685,8 @@
                                 Escolher Arquivo
                             </label>
                             <span class="file-name-display" id="rembgFileName">Nenhum arquivo selecionado</span>
-                            <input type="file" name="arquivo" id="rembgInput" accept=".jpg,.jpeg,.png,.webp,.heic" required
-                                class="hidden-file-input">
+                            <input type="file" name="arquivo" id="rembgInput" accept=".jpg,.jpeg,.png,.webp,.heic"
+                                required class="hidden-file-input">
                         </div>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
                             <span>Remover Fundo</span><span class="botao-arr">↓</span>
@@ -684,8 +699,10 @@
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)">
-                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2">
+                                </path>
                                 <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                                 <path d="M9 14h6"></path>
                                 <path d="M9 18h6"></path>
@@ -699,7 +716,8 @@
                             <span class="tool-badge badge-json">JSON</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Junte vários arquivos CSV, XLSX ou JSON em um só arquivo (empilhamento vertical).
+                    <p class="pdf-tool-desc">Junte vários arquivos CSV, XLSX ou JSON em um só arquivo (empilhamento
+                        vertical).
                     </p>
                     <form action="/api/data/mesclar-planilhas" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
@@ -714,8 +732,8 @@
                                 </svg>
                                 Escolher Arquivos
                             </label>
-                            <input type="file" name="arquivos" id="mergeDataInput" multiple accept=".csv,.xlsx,.xls,.json" required
-                                class="hidden-file-input">
+                            <input type="file" name="arquivos" id="mergeDataInput" multiple
+                                accept=".csv,.xlsx,.xls,.json" required class="hidden-file-input">
                         </div>
                         <div id="mergeDataListContainer"
                             style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
@@ -736,9 +754,9 @@
 
             </div>
 
-            </div>
+    </div>
 
-        </main>
+    </main>
     </div><!-- /layout -->
 
     <footer class="rodape">
@@ -888,7 +906,7 @@
         const mergeDataListContainer = document.getElementById('mergeDataListContainer');
         const mergeDataEmptyMsg = document.getElementById('mergeDataEmptyMsg');
 
-        if(mergeDataInput) {
+        if (mergeDataInput) {
             mergeDataInput.addEventListener('change', function () {
                 for (let file of this.files) {
                     dtData.items.add(file);
