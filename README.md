@@ -1,12 +1,3 @@
----
-title: Prisma
-emoji: 🚀
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
-
 # PRISMA
 
 > Você pensa. O Prisma faz.
@@ -136,14 +127,15 @@ O servidor será exposto localmente. Acesse `http://127.0.0.1:5000` no seu naveg
 
 ---
 
-## Deploy em Produção (Render / Heroku)
+## Deploy em Produção (Google Cloud Run)
 
-Se você decidir publicar a aplicação na web, lembre-se: plataformas como o Render utilizam o servidor Gunicorn operando múltiplos processos (workers) ao mesmo tempo para suportar muitos acessos.
+Se você decidir publicar a aplicação na web de forma profissional:
+O projeto já está 100% Dockerizado e otimizado para o **Google Cloud Run**.
 
-Para evitar que o "token de acesso" do usuário mude durante a navegação, ocasionando o erro de **Token Inválido**, é mandatório definir a chave no painel:
-1. No seu servidor, vá até o menu **Environment Variables**.
-2. Adicione uma variável com **Key:** `SECRET_KEY` e defina um valor longo e aleatório.
-*(Observação: Caso essa etapa seja esquecida, o aplicativo fará fallback automático para uma chave estática interna, preservando o fluxo sem quebrar o uso do usuário final).*
+Para garantir a segurança das sessões (`Token Inválido` ou expiração cruzada):
+1. No console do Cloud Run, vá na aba **Variáveis de Ambiente e Segredos**.
+2. Adicione a variável `SECRET_KEY` e defina um valor longo e aleatório.
+*(Observação: Caso essa etapa seja esquecida, o aplicativo fará fallback automático para uma chave estática interna).*
 
 ---
 
