@@ -32,5 +32,13 @@ USER appuser
 ENV PORT=8080
 EXPOSE 8080
 
+# Previne deadlocks e uso excessivo de memória em libs C++ (OpenCV, NumPy, ONNX)
+ENV OMP_NUM_THREADS=1
+ENV OPENBLAS_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+ENV VECLIB_MAXIMUM_THREADS=1
+ENV NUMEXPR_NUM_THREADS=1
+
 # Roda com gunicorn (produção) em vez do servidor de dev do Flask
-CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 app:app
+# IMPORTANTE: Sem --threads para evitar deadlocks com OpenCV/ONNXRuntime
+CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 app:app
