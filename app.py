@@ -21,7 +21,7 @@ app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 
 UPLOAD_FOLDER   = "uploads"
 DOWNLOAD_FOLDER = "downloads"
-MAX_MB          = 50
+MAX_MB          = 15
 TIMEOUT_CONV    = 120
 TIMEOUT_PREVIEW = 40
 
@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 
 _conversoes_ativas = 0
 _lock_conv         = Lock()
-MAX_PARALELAS      = 3
+MAX_PARALELAS      = 1
 
 LIMITES_POR_TIPO = {
     "pdf":  MAX_MB * 1024 * 1024,

@@ -33,4 +33,4 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Roda com gunicorn (produção) em vez do servidor de dev do Flask
-CMD gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 app:app
+CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 app:app
