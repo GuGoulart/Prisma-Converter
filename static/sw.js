@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prisma-cache-v2';
+const CACHE_NAME = 'prisma-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/style.css',
@@ -36,12 +36,24 @@ self.addEventListener('fetch', event => {
   }
   
   event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
-      .catch(() => {
-          if (event.request.mode === 'navigate') {
+    fetch(event.request)
+      .then(response => {
+          // Atualiza o cache com a nova versão
+          if (response && response.status === 200 && response.type === 'basic') {
+              const responseToCache = response.clone();
+              caches.open(CACHE_NAME).then(cache => {
+                  cache.put(event.request, responseToCache);
+              });
+          }
+          return response;
+      })
+      .catch(() => caches.match(event.request))
+      .then(response => {
+          // Se não houver rede nem cache, retorna a página inicial para navegações
+          if (!response && event.request.mode === 'navigate') {
               return caches.match('/');
           }
+          return response;
       })
   );
 });

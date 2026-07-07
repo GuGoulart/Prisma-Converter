@@ -1,3 +1,4 @@
+import pdfplumber
 import os
 import re as _re
 import csv
@@ -5,8 +6,8 @@ import uuid
 import shutil
 import subprocess
 import fitz
-import pandas as pd
-from pdf2docx import Converter as PDF2DOCXConverter
+import io
+import zipfile
 from PIL import Image
 
 try:
@@ -17,35 +18,11 @@ except ImportError:
     _TEM_WIN32 = False
 
 try:
-    import chardet # type: ignore
-    _TEM_CHARDET = True
-except ImportError:
-    _TEM_CHARDET = False
-
-try:
-    import pdfplumber # type: ignore
-    _TEM_PDFPLUMBER = True
-except ImportError:
-    _TEM_PDFPLUMBER = False
-
-try:
-    import pytesseract
-    _TEM_PYTESSERACT = True
-except ImportError:
-    _TEM_PYTESSERACT = False
-
-try:
-    from rembg import remove as rembg_remove
-    _TEM_REMBG = True
-except ImportError:
-    _TEM_REMBG = False
-
-try:
+    # pyrefly: ignore [missing-import]
     from pillow_heif import register_heif_opener
     register_heif_opener()
-    _TEM_HEIF = True
 except ImportError:
-    _TEM_HEIF = False
+    pass
 
 
 # ─── Motor ───────────────────────────────────────────────────
@@ -69,7 +46,7 @@ if _TEM_WIN32:    MOTOR = "office"
 elif SOFFICE:     MOTOR = "libreoffice"
 else:             MOTOR = None
 
-print(f"[Prisma] Motor: {MOTOR or 'NENHUM'} | pdfplumber: {_TEM_PDFPLUMBER}")
+print(f"[Prisma] Motor: {MOTOR or 'NENHUM'}")
 
 
 # ─── Conversões disponíveis ───────────────────────────────────
@@ -98,15 +75,19 @@ def obter_motor():               return MOTOR
 def detectar_encoding(caminho: str) -> str:
     with open(caminho, "rb") as f: raw = f.read(4)
     if raw.startswith(b"\xef\xbb\xbf"):                             return "utf-8-sig"
-    if raw.startswith(b"\xff\xfe") or raw.startswith(b"\xfe\xff"): return "utf-16"
-    if _TEM_CHARDET:
-        with open(caminho, "rb") as f: r = chardet.detect(f.read(50_000))
-        return r.get("encoding") or "utf-8"
-    for enc in ("utf-8", "utf-8-sig", "latin-1", "cp1252"):
-        try:
-            with open(caminho, encoding=enc) as f: f.read(1000)
-            return enc
-        except: continue
+    if raw.startswith(b"\xff\xfe") or raw.startswith(b"\xfe\xff"):  return "utf-16"
+    try:
+        import chardet
+        with open(caminho, "rb") as f:
+            b = f.read(10000)
+            res = chardet.detect(b)
+            return res["encoding"] or "utf-8"
+    except ImportError:
+        for enc in ("utf-8", "utf-8-sig", "latin-1", "cp1252"):
+            try:
+                with open(caminho, encoding=enc) as f: f.read(1000)
+                return enc
+            except: continue
     return "utf-8"
 
 
@@ -157,7 +138,9 @@ def _preparar_xlsx_para_pdf(caminho: str, orientacao: str = "retrato"):
 # ─── CSV ↔ XLSX ───────────────────────────────────────────────
 
 
-def _carregar_csv(caminho, enc) -> pd.DataFrame:
+def _carregar_csv(caminho, enc):
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     try:
         with open(caminho, 'r', encoding=enc, errors='replace') as f:
             amostra = f.read(4096)
@@ -173,6 +156,8 @@ def csv_para_xlsx(entrada, saida):
     df.fillna("").to_excel(saida, index=False, engine="openpyxl")
 
 def xlsx_para_csv(entrada, saida):
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     df = pd.read_excel(entrada, engine="openpyxl")
     df.fillna("").to_csv(saida, index=False, encoding="utf-8-sig")
 
@@ -282,6 +267,8 @@ def _office_ppt_para_pdf(entrada, saida):
 # ─── PDF → DOCX ───────────────────────────────────────────────
 
 def pdf_para_docx(entrada, saida):
+    try: from pdf2docx import Converter as PDF2DOCXConverter
+    except ImportError: raise RuntimeError("pdf2docx não instalado.")
     cv = PDF2DOCXConverter(entrada)
     try:    cv.convert(saida)
     finally: cv.close()
@@ -385,9 +372,12 @@ def _office_pptx_para_ppt(entrada, saida):
 
 # ─── PDF → tabela (3 estratégias) ────────────────────────────
 
-def pdf_extrair_dataframe(entrada: str) -> pd.DataFrame:
-    if not _TEM_PDFPLUMBER:
-        raise RuntimeError("pdfplumber não instalado. Execute: pip install pdfplumber")
+def pdf_extrair_dataframe(entrada: str):
+    try:
+        import pdfplumber
+        import pandas as pd
+    except ImportError:
+        raise RuntimeError("pdfplumber ou pandas não instalados.")
 
     # 1. Bordas visíveis
     dados = _tentar_extrair(entrada, "lines")
@@ -428,7 +418,9 @@ def _tentar_extrair(entrada: str, estrategia: str) -> list:
     return todas
 
 
-def _normalizar(linhas: list) -> pd.DataFrame:
+def _normalizar(linhas: list):
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     linhas = [r for r in linhas if any(c for c in r if c and str(c).strip())]
     if not linhas: return pd.DataFrame({"Conteúdo": []})
     max_cols = max(len(r) for r in linhas)
@@ -442,6 +434,8 @@ def _normalizar(linhas: list) -> pd.DataFrame:
 
 def _extrair_por_posicao_palavras(entrada: str):
     """Detecta colunas pela posição X das palavras — funciona para relatórios sem bordas."""
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     todas_linhas = []
 
     with pdfplumber.open(entrada) as pdf:
@@ -502,7 +496,9 @@ def _extrair_por_posicao_palavras(entrada: str):
     return df
 
 
-def _fallback_texto(entrada: str) -> pd.DataFrame:
+def _fallback_texto(entrada: str):
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     linhas_raw = []
     with pdfplumber.open(entrada) as pdf:
         for page in pdf.pages:
@@ -556,31 +552,22 @@ def jpg_para_png(entrada, saida):
 # ─── DOCX/XLSX → Imagem (via PDF) ────────────────────────────
 
 def _pdf_para_imagem_completo(pdf_path: str, saida: str, fmt: str = "png"):
-    """Renderiza todas as páginas empilhadas verticalmente."""
-    import io
+    """Renderiza todas as páginas e empacota em um arquivo .zip para evitar Out-of-Memory (OOM)."""
+    import io, zipfile
     doc = fitz.open(pdf_path)
     try:
-        if doc.page_count == 1:
-            pix = doc[0].get_pixmap(matrix=fitz.Matrix(2, 2))
-            if fmt == "jpg":
-                img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
-                img.save(saida, "JPEG", quality=92)
-            else:
-                pix.save(saida)
-        else:
-            paginas_img = []
-            for page in doc:
+        with zipfile.ZipFile(saida, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for i, page in enumerate(doc):
                 pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
-                paginas_img.append(img)
-            larg  = max(i.width  for i in paginas_img)
-            alt   = sum(i.height for i in paginas_img) + 10 * (len(paginas_img) - 1)
-            tela  = Image.new("RGB", (larg, alt), (240, 240, 240))
-            y = 0
-            for img in paginas_img:
-                tela.paste(img, (0, y)); y += img.height + 10
-            if fmt == "jpg": tela.save(saida, "JPEG", quality=92)
-            else:            tela.save(saida, "PNG")
+                img_name = f"pagina_{i+1:03d}.{fmt}"
+                
+                if fmt in ("jpg", "webp", "heic"):
+                    img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
+                    img_io = io.BytesIO()
+                    img.save(img_io, "JPEG" if fmt == "jpg" else fmt.upper(), quality=92)
+                    zipf.writestr(img_name, img_io.getvalue())
+                else:
+                    zipf.writestr(img_name, pix.tobytes("png"))
     finally:
         doc.close()
 
@@ -591,6 +578,7 @@ def _via_pdf_para_img(entrada: str, saida: str, origem_ext: str, fmt: str):
         if origem_ext in ("docx", "doc"):   docx_para_pdf(entrada, temp_pdf)
         elif origem_ext in ("xlsx", "xls"): xlsx_para_pdf(entrada, temp_pdf)
         elif origem_ext in ("csv",):        csv_para_pdf(entrada, temp_pdf)
+        elif origem_ext in ("json",):       json_para_pdf(entrada, temp_pdf)
         elif origem_ext in ("ppt",):        ppt_para_pdf(entrada, temp_pdf)
         elif origem_ext in ("pptx",):       ppt_para_pdf(entrada, temp_pdf)
         else: raise ValueError(f"Origem '{origem_ext}' não suportada para imagem.")
@@ -602,14 +590,38 @@ def _via_pdf_para_img(entrada: str, saida: str, origem_ext: str, fmt: str):
 
 def docx_para_png(entrada, saida): _via_pdf_para_img(entrada, saida, "docx", "png")
 def docx_para_jpg(entrada, saida): _via_pdf_para_img(entrada, saida, "docx", "jpg")
+def docx_para_webp(entrada, saida): _via_pdf_para_img(entrada, saida, "docx", "webp")
+def docx_para_heic(entrada, saida): _via_pdf_para_img(entrada, saida, "docx", "heic")
+
 def xlsx_para_png(entrada, saida): _via_pdf_para_img(entrada, saida, "xlsx", "png")
 def xlsx_para_jpg(entrada, saida): _via_pdf_para_img(entrada, saida, "xlsx", "jpg")
+def xlsx_para_webp(entrada, saida): _via_pdf_para_img(entrada, saida, "xlsx", "webp")
+def xlsx_para_heic(entrada, saida): _via_pdf_para_img(entrada, saida, "xlsx", "heic")
+
 def csv_para_png(entrada, saida):  _via_pdf_para_img(entrada, saida, "csv", "png")
 def csv_para_jpg(entrada, saida):  _via_pdf_para_img(entrada, saida, "csv", "jpg")
+def csv_para_webp(entrada, saida): _via_pdf_para_img(entrada, saida, "csv", "webp")
+def csv_para_heic(entrada, saida): _via_pdf_para_img(entrada, saida, "csv", "heic")
+
+def json_para_png(entrada, saida):  _via_pdf_para_img(entrada, saida, "json", "png")
+def json_para_jpg(entrada, saida):  _via_pdf_para_img(entrada, saida, "json", "jpg")
+def json_para_webp(entrada, saida): _via_pdf_para_img(entrada, saida, "json", "webp")
+def json_para_heic(entrada, saida): _via_pdf_para_img(entrada, saida, "json", "heic")
+
 def ppt_para_png(entrada, saida):  _via_pdf_para_img(entrada, saida, "ppt", "png")
 def ppt_para_jpg(entrada, saida):  _via_pdf_para_img(entrada, saida, "ppt", "jpg")
+def ppt_para_webp(entrada, saida): _via_pdf_para_img(entrada, saida, "ppt", "webp")
+def ppt_para_heic(entrada, saida): _via_pdf_para_img(entrada, saida, "ppt", "heic")
+
 def pptx_para_png(entrada, saida): _via_pdf_para_img(entrada, saida, "pptx", "png")
 def pptx_para_jpg(entrada, saida): _via_pdf_para_img(entrada, saida, "pptx", "jpg")
+def pptx_para_webp(entrada, saida): _via_pdf_para_img(entrada, saida, "pptx", "webp")
+def pptx_para_heic(entrada, saida): _via_pdf_para_img(entrada, saida, "pptx", "heic")
+
+def pdf_para_png(entrada, saida):  _pdf_para_imagem_completo(entrada, saida, fmt="png")
+def pdf_para_jpg(entrada, saida):  _pdf_para_imagem_completo(entrada, saida, fmt="jpg")
+def pdf_para_webp(entrada, saida): _pdf_para_imagem_completo(entrada, saida, fmt="webp")
+def pdf_para_heic(entrada, saida): _pdf_para_imagem_completo(entrada, saida, fmt="heic")
 
 
 # ─── Conversão genérica via PDF intermediário ─────────────────
@@ -638,19 +650,27 @@ def _via_pdf(entrada, saida, origem_ext, destino_ext):
 
 # ─── JSON ↔ CSV/XLSX ──────────────────────────────────────────────
 def json_para_csv(entrada, saida):
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     df = pd.read_json(entrada)
     df.fillna("").to_csv(saida, index=False, encoding="utf-8-sig")
 
 def csv_para_json(entrada, saida):
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     enc = detectar_encoding(entrada)
     df = _carregar_csv(entrada, enc)
     df.fillna("").to_json(saida, orient="records", force_ascii=False, indent=2)
 
 def json_para_xlsx(entrada, saida):
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     df = pd.read_json(entrada)
     df.fillna("").to_excel(saida, index=False, engine="openpyxl")
 
 def xlsx_para_json(entrada, saida):
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     df = pd.read_excel(entrada, engine="openpyxl")
     df.fillna("").to_json(saida, orient="records", force_ascii=False, indent=2)
 
@@ -665,8 +685,11 @@ def json_para_pdf(entrada, saida, orientacao="retrato"):
             except: pass
 
 # ─── Removedor de Fundo ─────────────────────────────────────────
-def remover_fundo_imagem(entrada, saida):
-    if not _TEM_REMBG: raise RuntimeError("rembg não instalado.")
+def remover_fundo_imagem(entrada: str, saida: str):
+    try:
+        from rembg import remove as rembg_remove
+    except ImportError:
+        raise RuntimeError("rembg não instalado.")
     with open(entrada, "rb") as i, open(saida, "wb") as o:
         input_data = i.read()
         output_data = rembg_remove(input_data)
@@ -674,6 +697,8 @@ def remover_fundo_imagem(entrada, saida):
 
 # ─── Mesclar Planilhas ──────────────────────────────────────────
 def mesclar_planilhas(arquivos: list, saida: str, formato: str = "xlsx"):
+    try: import pandas as pd
+    except ImportError: raise RuntimeError("pandas não instalado")
     dfs = []
     for arquivo in arquivos:
         ext = arquivo.split(".")[-1].lower()
@@ -697,15 +722,19 @@ def mesclar_planilhas(arquivos: list, saida: str, formato: str = "xlsx"):
         df_final.to_excel(saida, index=False, engine="openpyxl")
 
 # ─── OCR ───────────────────────────────────────────────
-def imagem_para_txt_ocr(entrada, saida):
-    if not _TEM_PYTESSERACT: raise RuntimeError("pytesseract não instalado.")
-    img = Image.open(entrada)
+def imagem_para_txt_ocr(entrada: str, saida: str):
+    # pyrefly: ignore [missing-import]
+    try: import pytesseract
+    except ImportError: raise RuntimeError("pytesseract não instalado.")
+    img = Image.open(entrada).convert("RGB")
     texto = pytesseract.image_to_string(img, lang="por+eng")
     with open(saida, "w", encoding="utf-8") as f:
         f.write(texto)
 
-def pdf_para_txt_ocr(entrada, saida):
-    if not _TEM_PYTESSERACT: raise RuntimeError("pytesseract não instalado.")
+def pdf_para_txt_ocr(entrada: str, saida: str):
+    # pyrefly: ignore [missing-import]
+    try: import pytesseract
+    except ImportError: raise RuntimeError("pytesseract não instalado.")
     doc = fitz.open(entrada)
     texto_total = []
     try:
@@ -724,6 +753,10 @@ def pdf_para_txt_ocr(entrada, saida):
 def imagem_para_webp(entrada, saida):
     img = Image.open(entrada).convert("RGBA")
     img.save(saida, "WEBP", quality=92)
+
+def imagem_para_heic(entrada, saida):
+    img = Image.open(entrada).convert("RGB")
+    img.save(saida, "HEIC", quality=92)
 
 def heic_para_png(entrada, saida):
     img = Image.open(entrada).convert("RGBA")
@@ -759,6 +792,8 @@ _MAPA_DE_PDF = {
     "csv":  pdf_para_csv,
     "png":  pdf_para_png,
     "jpg":  pdf_para_jpg,
+    "webp": pdf_para_webp,
+    "heic": pdf_para_heic,
 }
 
 # Funções wrapper para conversões via PDF
@@ -798,6 +833,8 @@ _MAPA = {
     ("csv",  "pdf"):  csv_para_pdf,
     ("csv",  "png"):  csv_para_png,
     ("csv",  "jpg"):  csv_para_jpg,
+    ("csv",  "webp"): csv_para_webp,
+    ("csv",  "heic"): csv_para_heic,
     ("csv",  "docx"): csv_para_docx,
     ("csv",  "pptx"): csv_para_pptx,
     ("csv",  "json"): csv_para_json,
@@ -806,6 +843,8 @@ _MAPA = {
     ("xlsx", "pdf"):  xlsx_para_pdf,
     ("xlsx", "png"):  xlsx_para_png,
     ("xlsx", "jpg"):  xlsx_para_jpg,
+    ("xlsx", "webp"): xlsx_para_webp,
+    ("xlsx", "heic"): xlsx_para_heic,
     ("xlsx", "docx"): xlsx_para_docx,
     ("xlsx", "pptx"): xlsx_para_pptx,
     ("xlsx", "json"): xlsx_para_json,
@@ -813,12 +852,18 @@ _MAPA = {
     ("json", "csv"):  json_para_csv,
     ("json", "xlsx"): json_para_xlsx,
     ("json", "pdf"):  json_para_pdf,
+    ("json", "png"):  json_para_png,
+    ("json", "jpg"):  json_para_jpg,
+    ("json", "webp"): json_para_webp,
+    ("json", "heic"): json_para_heic,
     # PDF
     ("pdf",  "docx"): pdf_para_docx,
     ("pdf",  "pptx"): pdf_para_pptx,
     ("pdf",  "ppt"):  pdf_para_ppt,
     ("pdf",  "png"):  pdf_para_png,
     ("pdf",  "jpg"):  pdf_para_jpg,
+    ("pdf",  "webp"): pdf_para_webp,
+    ("pdf",  "heic"): pdf_para_heic,
     ("pdf",  "xlsx"): pdf_para_xlsx,
     ("pdf",  "csv"):  pdf_para_csv,
     ("pdf",  "txt"):  pdf_para_txt_ocr,
@@ -826,6 +871,8 @@ _MAPA = {
     ("docx", "pdf"):  docx_para_pdf,
     ("docx", "png"):  docx_para_png,
     ("docx", "jpg"):  docx_para_jpg,
+    ("docx", "webp"): docx_para_webp,
+    ("docx", "heic"): docx_para_heic,
     ("docx", "xlsx"): docx_para_xlsx,
     ("docx", "csv"):  docx_para_csv,
     ("docx", "pptx"): docx_para_pptx,
@@ -836,6 +883,8 @@ _MAPA = {
     ("ppt",  "csv"):  ppt_para_csv,
     ("ppt",  "png"):  ppt_para_png,
     ("ppt",  "jpg"):  ppt_para_jpg,
+    ("ppt",  "webp"): ppt_para_webp,
+    ("ppt",  "heic"): ppt_para_heic,
     ("ppt",  "pptx"): ppt_para_pptx,
     # PPTX
     ("pptx", "pdf"):  ppt_para_pdf,
@@ -844,37 +893,49 @@ _MAPA = {
     ("pptx", "csv"):  pptx_para_csv,
     ("pptx", "png"):  pptx_para_png,
     ("pptx", "jpg"):  pptx_para_jpg,
+    ("pptx", "webp"): pptx_para_webp,
+    ("pptx", "heic"): pptx_para_heic,
     ("pptx", "ppt"):  pptx_para_ppt,
     # PNG
     ("png",  "pdf"):  imagem_para_pdf,
     ("png",  "jpg"):  png_para_jpg,
+    ("png",  "webp"): imagem_para_webp,
+    ("png",  "heic"): imagem_para_heic,
     ("png",  "docx"): png_para_docx,
     ("png",  "pptx"): png_para_pptx,
-    ("png",  "webp"): imagem_para_webp,
     ("png",  "txt"):  imagem_para_txt_ocr,
     # JPG
     ("jpg",  "pdf"):  imagem_para_pdf,
     ("jpg",  "png"):  jpg_para_png,
+    ("jpg",  "webp"): imagem_para_webp,
+    ("jpg",  "heic"): imagem_para_heic,
     ("jpg",  "docx"): jpg_para_docx,
     ("jpg",  "pptx"): jpg_para_pptx,
-    ("jpg",  "webp"): imagem_para_webp,
     ("jpg",  "txt"):  imagem_para_txt_ocr,
     # JPEG (alias)
     ("jpeg", "pdf"):  imagem_para_pdf,
     ("jpeg", "png"):  jpg_para_png,
+    ("jpeg", "webp"): imagem_para_webp,
+    ("jpeg", "heic"): imagem_para_heic,
     ("jpeg", "docx"): jpg_para_docx,
     ("jpeg", "pptx"): jpg_para_pptx,
-    ("jpeg", "webp"): imagem_para_webp,
     ("jpeg", "txt"):  imagem_para_txt_ocr,
     # WEBP
     ("webp", "pdf"):  imagem_para_pdf,
     ("webp", "png"):  jpg_para_png,
     ("webp", "jpg"):  png_para_jpg,
+    ("webp", "heic"): imagem_para_heic,
+    ("webp", "docx"): webp_para_docx,
+    ("webp", "pptx"): webp_para_pptx,
+    ("webp", "txt"):  imagem_para_txt_ocr,
     # HEIC
     ("heic", "pdf"):  imagem_para_pdf,
     ("heic", "png"):  heic_para_png,
     ("heic", "jpg"):  heic_para_jpg,
     ("heic", "webp"): imagem_para_webp,
+    ("heic", "docx"): heic_para_docx,
+    ("heic", "pptx"): heic_para_pptx,
+    ("heic", "txt"):  imagem_para_txt_ocr,
 }
 
 _ACEITA_ORIENTACAO = {("xlsx","pdf"), ("xls","pdf"), ("csv","pdf"), ("json","pdf")}

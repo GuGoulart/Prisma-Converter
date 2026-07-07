@@ -12,7 +12,6 @@ import sys
 from dotenv import load_dotenv
 
 import os, re, secrets, shutil, time, uuid, logging, threading, traceback
-import pandas as pd
 
 load_dotenv()
 
@@ -97,6 +96,7 @@ def gerar_preview_tabela(caminho: str, extensao: str, limite: int = None):
     limite=N    → máx N linhas.
     """
     try:
+        import pandas as pd
         if extensao == "csv":
             enc = detectar_encoding(caminho)
             df  = pd.read_csv(
@@ -547,8 +547,8 @@ def preview_tabela(pasta_uuid, destino):
         alvo     = cache
         alvo_ext = destino
 
-    # Sem limite de linhas — mostra tudo
-    tabela = gerar_preview_tabela(alvo, alvo_ext, limite=None)
+    # Limite máximo de 100 linhas para não travar a memória/navegador
+    tabela = gerar_preview_tabela(alvo, alvo_ext, limite=100)
 
     if tabela:
         return Response(tabela, content_type="text/html")
@@ -701,7 +701,12 @@ def converter():
     try:
         base       = re.sub(r'[^\w\-_. ]', '_',
                             os.path.splitext(secure_filename(nome_original))[0]).strip() or "arquivo"
-        nome_saida = f"{base}.{destino}"
+        
+        if destino in ("png", "jpg", "jpeg", "webp", "heic") and origem not in ("png", "jpg", "jpeg", "webp", "heic"):
+            nome_saida = f"{base}_{destino.upper()}s.zip"
+        else:
+            nome_saida = f"{base}.{destino}"
+            
         saida      = os.path.join(DOWNLOAD_FOLDER, f"{uuid.uuid4().hex}_{nome_saida}")
 
         err = [None]; done = threading.Event()

@@ -28,9 +28,10 @@ RUN useradd -m appuser && \
 
 USER appuser
 
-# Render/Railway definem a variável PORT automaticamente
-ENV PORT=8080
-EXPOSE 8080
+# Hugging Face Spaces (e Render/Railway) definem ou usam a porta 7860/8080.
+# O HF Spaces obriga a expor a 7860 por padrão no Docker.
+ENV PORT=7860
+EXPOSE 7860
 
 # Previne deadlocks e uso excessivo de memória em libs C++ (OpenCV, NumPy, ONNX)
 ENV OMP_NUM_THREADS=1

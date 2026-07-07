@@ -43,6 +43,9 @@
     --col-png: #a855f7;
     --col-jpg: #a855f7;
     --col-jpeg: #a855f7;
+    --col-json: #06b6d4;
+    --col-heic: #ec4899;
+    --col-webp: #009688;
 }
 
 [data-theme="light"] {
@@ -132,17 +135,26 @@ body {
 }
 
 .badge-json {
-    background: color-mix(in srgb, #ffb74d 15%, transparent) !important;
-    border: 1px solid color-mix(in srgb, #ffb74d 40%, transparent) !important;
-    color: #ffb74d !important;
-    text-shadow: 0 0 10px color-mix(in srgb, #ffb74d 40%, transparent) !important;
+    background: color-mix(in srgb, var(--col-json) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-json) 40%, transparent) !important;
+    color: var(--col-json) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-json) 40%, transparent) !important;
 }
 
+.badge-heic {
+    background: color-mix(in srgb, var(--col-heic) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-heic) 40%, transparent) !important;
+    color: var(--col-heic) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-heic) 40%, transparent) !important;
+}
+
+
+
 .badge-webp {
-    background: color-mix(in srgb, #009688 15%, transparent) !important;
-    border: 1px solid color-mix(in srgb, #009688 40%, transparent) !important;
-    color: #009688 !important;
-    text-shadow: 0 0 10px color-mix(in srgb, #009688 40%, transparent) !important;
+    background: color-mix(in srgb, var(--col-webp) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-webp) 40%, transparent) !important;
+    color: var(--col-webp) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-webp) 40%, transparent) !important;
 }
 
 .badge-heic {
