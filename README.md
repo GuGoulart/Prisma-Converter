@@ -37,7 +37,7 @@ A ideia é simples: acesse o site, arraste um arquivo, escolha a ferramenta, cli
 
 ### Como foi feito
 
-O backend é um servidor Flask com rotas organizadas para upload, geração de prévias em tempo real, conversões e ferramentas PDF. A inteligência principal mora no `converter.py`, atuando como uma verdadeira **fábrica de conversão universal**. Ele detecta de forma autônoma o motor disponível (Office da Microsoft ou LibreOffice) e utiliza um hub (`_via_pdf`) para encadear conversões complexas nos bastidores (exemplo: `PNG → PDF → DOCX`). Já as manipulações exclusivas de PDF (como dividir páginas, juntar arquivos, e trancar com senha) estão isoladas no `pdf_tools.py`.
+O backend é um servidor Flask com rotas organizadas para upload, geração de prévias em tempo real, conversões e ferramentas PDF. A inteligência principal mora no pacote modular `core/` (via `core.converter`), atuando como uma verdadeira **fábrica de conversão universal**. Ele detecta de forma autônoma o motor disponível (Office da Microsoft ou LibreOffice) e utiliza um hub (`_via_pdf`) para encadear conversões complexas nos bastidores (exemplo: `PNG → PDF → DOCX`). Já as manipulações exclusivas de PDF (como dividir páginas, juntar arquivos, e trancar com senha) estão isoladas no módulo `core.pdf_tools`.
 
 O frontend é HTML/CSS/JS puro, sem a pesada cadeia de build do React ou dependências como Tailwind. O design foi concebido com uma forte estética sharp e técnica: dark mode elegante, bordas totalmente retas (0px radius), tipografia monospace para dados técnicos, grid de fundo paramétrico translúcido, menus modais com efeito de *glassmorphism* (`backdrop-filter`) e feedbacks interativos precisos com CSS animations.
 
@@ -57,7 +57,7 @@ Interface carrega opções dinamicamente e gera a PRÉVIA do conteúdo
         ↓
 Usuário escolhe o destino ou ferramenta (juntar, dividir, senha)
         ↓
-Flask aciona converter.py ou pdf_tools.py usando controle de Rate Limiting
+Flask aciona os utilitários do pacote `core` (`converter.py` ou `pdf_tools.py`) usando controle de Rate Limiting
         ↓
 Arquivo finalizado é servido para download (stream direto)
         ↓
@@ -148,8 +148,8 @@ Sendo uma aplicação que lida com arquivos muitas vezes pessoais ou de trabalho
 - **Bloqueio Hardcoded:** Arquivos suspeitos (`.bat`, `.sh`, `.py`, `.php`, `.vbs`) são rejeitados no ato.
 - **Sanitização Universal:** O nome original de todo e qualquer arquivo submetido é formatado através do `secure_filename`, impedindo injeções de diretório em Linux/Windows.
 - **Filtros Dinâmicos de Peso:** CSVs são barrados acima de 5MB (impedindo travamento via consumo desenfreado do Pandas na memória ram) enquanto PDFs possuem tolerância de 50MB.
-- **Incineração Imediata:** Assim que a conversão finaliza, a função *decorator* `@after_this_request` varre os bytes do arquivo de entrada e de saída imediatamente. Em paralelo, a *thread* do `cleanup.py` desperta para expurgar pastas temporárias que os usuários tenham abandonado no meio da conversão.
-- **Proteção Anti-Spam:** Sistema interno de Rate Limiting que rastreia IPs e Lock Mutex Threading que trava o backend em 3 processos simultâneos. Isso defende a memória do servidor caso dezenas de usuários cliquem em converter planilhas gigantes no mesmo segundo.
+- **Incineração Imediata:** Assim que a conversão finaliza, a função *decorator* `@after_this_request` varre os bytes do arquivo de entrada e de saída imediatamente. Em paralelo, a *thread* do pacote modular `core` (`cleanup.py`) desperta para expurgar pastas temporárias que os usuários tenham abandonado no meio da conversão.
+- **Proteção Anti-Spam Universal:** Sistema interno de Rate Limiting que rastreia IPs, aplicado a **todas as rotas da API interna**. Em conjunto, o Lock Mutex Threading trava o backend em 3 processos simultâneos. Isso blinda completamente a arquitetura contra ataques DDoS e defende a memória do servidor caso dezenas de usuários cliquem em converter planilhas gigantes no mesmo segundo.
 
 ---
 
