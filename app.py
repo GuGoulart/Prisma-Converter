@@ -1,13 +1,13 @@
 from flask import (Flask, render_template, request, send_file,
                    session, after_this_request, abort, Response)
-from converter import obter_conversoes, converter_arquivo, obter_motor, detectar_encoding, remover_fundo_imagem, mesclar_planilhas
-from pdf_tools import mesclar_pdfs, dividir_pdf, proteger_pdf, desproteger_pdf, comprimir_pdf, adicionar_marca_dagua, extrair_imagens_pdf, manipular_paginas_pdf
+from core.converter import obter_conversoes, converter_arquivo, obter_motor, detectar_encoding, remover_fundo_imagem, mesclar_planilhas
+from core.pdf_tools import mesclar_pdfs, dividir_pdf, proteger_pdf, desproteger_pdf, comprimir_pdf, adicionar_marca_dagua, extrair_imagens_pdf, manipular_paginas_pdf
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from collections import defaultdict
 from threading import Lock
-from security import gerar_csrf, validar_csrf, verificar_rate_limit, validar_nome, validar_magic, rate_limit_required
-from cleanup import iniciar_limpeza
+from core.security import gerar_csrf, validar_csrf, verificar_rate_limit, validar_nome, validar_magic, rate_limit_required
+from core.cleanup import iniciar_limpeza
 import sys
 from dotenv import load_dotenv
 
