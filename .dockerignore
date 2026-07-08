@@ -1,11 +1,31 @@
-venv/
-__pycache__/
-*.pyc
-.env
+# Git e CI/CD
 .git/
 .gitignore
+.github/
+
+# Ambiente Virtual
+venv/
+env/
+.venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Arquivos de Sistema e IDE
+.env
+.vscode/
+.idea/
+.DS_Store
+
+# Temporários
 uploads/*
 downloads/*
 !uploads/.gitkeep
 !downloads/.gitkeep
+
+# Docs
 README.md
+Dockerfile

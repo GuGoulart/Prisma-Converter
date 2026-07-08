@@ -26,6 +26,7 @@ __pycache__/
 .idea/
 *.code-workspace
 
-# Windows
+# Sistema Operacional
 Thumbs.db
 desktop.ini
+.DS_Store
