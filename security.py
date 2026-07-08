@@ -16,6 +16,16 @@ def verificar_rate_limit(ip):
         _contagem_ip[ip].append(agora)
         return True
 
+def rate_limit_required(f):
+    from functools import wraps
+    from flask import request, jsonify, render_template
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not verificar_rate_limit(request.remote_addr):
+            return "Muitas requisições. Aguarde um momento.", 429
+        return f(*args, **kwargs)
+    return decorated_function
+
 def gerar_csrf():
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(32)

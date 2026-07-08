@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from collections import defaultdict
 from threading import Lock
-from security import gerar_csrf, validar_csrf, verificar_rate_limit, validar_nome, validar_magic
+from security import gerar_csrf, validar_csrf, verificar_rate_limit, validar_nome, validar_magic, rate_limit_required
 from cleanup import iniciar_limpeza
 import sys
 from dotenv import load_dotenv
@@ -185,6 +185,7 @@ def ferramentas_pdf_page():
     return render_template("pdf_tools.html")
 
 @app.route("/api/pdf/mesclar", methods=["POST"])
+@rate_limit_required
 def api_mesclar():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
@@ -215,6 +216,7 @@ def api_mesclar():
         return render_template("pdf_tools.html", erro=str(e)), 400
 
 @app.route("/api/pdf/dividir", methods=["POST"])
+@rate_limit_required
 def api_dividir():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
@@ -242,6 +244,7 @@ def api_dividir():
         return render_template("pdf_tools.html", erro=str(e)), 400
 
 @app.route("/api/pdf/proteger", methods=["POST"])
+@rate_limit_required
 def api_proteger():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
@@ -267,6 +270,7 @@ def api_proteger():
         return render_template("pdf_tools.html", erro=str(e)), 400
 
 @app.route("/api/pdf/desproteger", methods=["POST"])
+@rate_limit_required
 def api_desproteger():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
@@ -293,6 +297,7 @@ def api_desproteger():
 
 
 @app.route("/api/pdf/comprimir", methods=["POST"])
+@rate_limit_required
 def api_comprimir():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
@@ -317,6 +322,7 @@ def api_comprimir():
         return render_template("pdf_tools.html", erro=str(e)), 400
 
 @app.route("/api/pdf/marca-dagua", methods=["POST"])
+@rate_limit_required
 def api_marca_dagua():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
@@ -342,6 +348,7 @@ def api_marca_dagua():
         return render_template("pdf_tools.html", erro=str(e)), 400
 
 @app.route("/api/pdf/extrair-imagens", methods=["POST"])
+@rate_limit_required
 def api_extrair_imagens():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
@@ -366,6 +373,7 @@ def api_extrair_imagens():
         return render_template("pdf_tools.html", erro=str(e)), 400
 
 @app.route("/api/pdf/manipular-paginas", methods=["POST"])
+@rate_limit_required
 def api_manipular_paginas():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
@@ -393,6 +401,7 @@ def api_manipular_paginas():
         return render_template("pdf_tools.html", erro=str(e)), 400
 
 @app.route("/api/img/remover-fundo", methods=["POST"])
+@rate_limit_required
 def api_remover_fundo():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
@@ -417,6 +426,7 @@ def api_remover_fundo():
         return render_template("index.html", erro=str(e)), 400
 
 @app.route("/api/data/mesclar-planilhas", methods=["POST"])
+@rate_limit_required
 def api_mesclar_planilhas():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return 'Token inválido', 403
