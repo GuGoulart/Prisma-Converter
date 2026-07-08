@@ -1,0 +1,30 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Baixando Código
+        uses: actions/checkout@v4
+
+      - name: 🔐 Autenticando no Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: ⚙️ Configurando SDK do Google
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: 🚀 Lançando para o Cloud Run
+        run: |
+          gcloud run deploy prisma \
+            --source . \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --memory 2Gi \
+            --quiet
