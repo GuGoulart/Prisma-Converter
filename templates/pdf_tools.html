@@ -519,6 +519,14 @@
                             <input type="file" name="arquivo" id="compressInput" accept=".pdf" required
                                 class="hidden-file-input">
                         </div>
+                        <div style="display:flex; flex-direction:column; gap:6px;">
+                            <label style="font-size:0.85rem; font-weight:500; color:var(--text-muted)">Nível de Compressão:</label>
+                            <select name="nivel" class="input-select" style="padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); outline:none; font-family:inherit;">
+                                <option value="baixa">Baixa (Sem perda de qualidade)</option>
+                                <option value="media" selected>Média (Equilíbrio)</option>
+                                <option value="alta">Alta (Máxima redução)</option>
+                            </select>
+                        </div>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
                             <span>Comprimir e baixar</span><span class="botao-arr">↓</span>
                         </button>

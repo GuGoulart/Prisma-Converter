@@ -170,6 +170,11 @@ def favicon():
 
 # ── Rotas ─────────────────────────────────────────────────────
 
+@app.context_processor
+def inject_globals():
+    from core.converter import CONVERSOES
+    return dict(todas_conversoes=CONVERSOES)
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -188,7 +193,7 @@ def ferramentas_pdf_page():
 @rate_limit_required
 def api_mesclar():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     arquivos = request.files.getlist("arquivos")
     if not arquivos or len(arquivos) < 2:
@@ -219,7 +224,7 @@ def api_mesclar():
 @rate_limit_required
 def api_dividir():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
     if not f: return "Selecione um arquivo", 400
@@ -247,7 +252,7 @@ def api_dividir():
 @rate_limit_required
 def api_proteger():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
     senha = request.form.get("senha")
@@ -273,7 +278,7 @@ def api_proteger():
 @rate_limit_required
 def api_desproteger():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
     senha = request.form.get("senha")
@@ -300,9 +305,10 @@ def api_desproteger():
 @rate_limit_required
 def api_comprimir():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
+    nivel = request.form.get("nivel", "media")
     if not f: return "Selecione um arquivo", 400
     
     uid = criar_pasta()
@@ -312,7 +318,7 @@ def api_comprimir():
     
     saida = os.path.join(pp, "comprimido.pdf")
     try:
-        comprimir_pdf(entrada, saida)
+        comprimir_pdf(entrada, saida, nivel=nivel)
         @after_this_request
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
@@ -325,7 +331,7 @@ def api_comprimir():
 @rate_limit_required
 def api_marca_dagua():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
     texto = request.form.get("texto")
@@ -351,7 +357,7 @@ def api_marca_dagua():
 @rate_limit_required
 def api_extrair_imagens():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
     if not f: return "Selecione um arquivo", 400
@@ -376,7 +382,7 @@ def api_extrair_imagens():
 @rate_limit_required
 def api_manipular_paginas():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
     if not f: return "Selecione um arquivo", 400
@@ -404,7 +410,7 @@ def api_manipular_paginas():
 @rate_limit_required
 def api_remover_fundo():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
     if not f: return "Selecione um arquivo", 400
@@ -429,7 +435,7 @@ def api_remover_fundo():
 @rate_limit_required
 def api_mesclar_planilhas():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return 'Token inválido', 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     arquivos = request.files.getlist("arquivos")
     formato = request.form.get("formato", "xlsx")

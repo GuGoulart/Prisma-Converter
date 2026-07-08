@@ -112,100 +112,17 @@
             <div class="sidebar-info">
                 <p class="sidebar-label">Conversões</p>
                 <div class="sidebar-rotas-grid">
+                    {% for origem, destinos in todas_conversoes.items() %}
                     <div class="rota-grupo">
-                        <span class="rota-origem badge-csv">CSV</span>
+                        <span class="rota-origem badge-{{ origem }}">{{ origem | upper }}</span>
                         <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag xlsx">XLSX</span><span
-                                class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span
-                                class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span
-                                class="rota-tag pptx">PPTX</span><span class="rota-tag json">JSON</span><span
-                                class="rota-tag webp">WEBP</span><span class="rota-tag heic">HEIC</span></span>
+                        <span class="rota-destinos">
+                            {% for dest in destinos %}
+                            <span class="rota-tag {{ dest }}">{{ dest | upper }}</span>
+                            {% endfor %}
+                        </span>
                     </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-xlsx">XLSX</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag csv">CSV</span><span
-                                class="rota-tag pdf">PDF</span><span class="rota-tag png">PNG</span><span
-                                class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span
-                                class="rota-tag pptx">PPTX</span><span class="rota-tag json">JSON</span><span
-                                class="rota-tag webp">WEBP</span><span class="rota-tag heic">HEIC</span></span>
-                    </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-json">JSON</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag csv">CSV</span><span
-                                class="rota-tag xlsx">XLSX</span><span class="rota-tag pdf">PDF</span><span
-                                class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span
-                                class="rota-tag webp">WEBP</span><span class="rota-tag heic">HEIC</span></span>
-                    </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-pdf">PDF</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag docx">DOCX</span><span
-                                class="rota-tag pptx">PPTX</span><span class="rota-tag ppt">PPT</span><span
-                                class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span
-                                class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span
-                                class="rota-tag webp">WEBP</span><span class="rota-tag heic">HEIC</span></span>
-                    </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-docx">DOCX</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
-                                class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span
-                                class="rota-tag xlsx">XLSX</span><span class="rota-tag csv">CSV</span><span
-                                class="rota-tag pptx">PPTX</span><span class="rota-tag webp">WEBP</span><span
-                                class="rota-tag heic">HEIC</span></span>
-                    </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-ppt">PPT</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
-                                class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span
-                                class="rota-tag csv">CSV</span><span class="rota-tag png">PNG</span><span
-                                class="rota-tag jpg">JPG</span><span class="rota-tag pptx">PPTX</span><span
-                                class="rota-tag webp">WEBP</span><span class="rota-tag heic">HEIC</span></span>
-                    </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-pptx">PPTX</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
-                                class="rota-tag docx">DOCX</span><span class="rota-tag xlsx">XLSX</span><span
-                                class="rota-tag csv">CSV</span><span class="rota-tag png">PNG</span><span
-                                class="rota-tag jpg">JPG</span><span class="rota-tag ppt">PPT</span><span
-                                class="rota-tag webp">WEBP</span><span class="rota-tag heic">HEIC</span></span>
-                    </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-png">PNG</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
-                                class="rota-tag jpg">JPG</span><span class="rota-tag docx">DOCX</span><span
-                                class="rota-tag pptx">PPTX</span><span class="rota-tag webp">WEBP</span><span
-                                class="rota-tag heic">HEIC</span></span>
-                    </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-jpg">JPG</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
-                                class="rota-tag png">PNG</span><span class="rota-tag docx">DOCX</span><span
-                                class="rota-tag pptx">PPTX</span><span class="rota-tag webp">WEBP</span><span
-                                class="rota-tag heic">HEIC</span></span>
-                    </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-webp">WEBP</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
-                                class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span
-                                class="rota-tag docx">DOCX</span><span class="rota-tag pptx">PPTX</span><span
-                                class="rota-tag heic">HEIC</span></span>
-                    </div>
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-heic">HEIC</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos"><span class="rota-tag pdf">PDF</span><span
-                                class="rota-tag png">PNG</span><span class="rota-tag jpg">JPG</span><span
-                                class="rota-tag webp">WEBP</span><span class="rota-tag docx">DOCX</span><span
-                                class="rota-tag pptx">PPTX</span></span>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
 

@@ -52,21 +52,23 @@ print(f"[Prisma] Motor: {MOTOR or 'NENHUM'}")
 # ─── Conversões disponíveis ───────────────────────────────────
 
 CONVERSOES = {
-    "csv":  ["xlsx", "pdf", "png", "jpg", "docx", "pptx", "json"],
-    "xlsx": ["csv",  "pdf", "png", "jpg", "docx", "pptx", "json"],
-    "json": ["csv",  "xlsx", "pdf"],
-    "pdf":  ["docx", "pptx", "ppt", "png", "jpg", "xlsx", "csv", "txt"],
-    "docx": ["pdf",  "png", "jpg", "xlsx", "csv", "pptx"],
-    "ppt":  ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "pptx"],
-    "pptx": ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "ppt"],
-    "png":  ["pdf",  "jpg", "webp", "docx", "pptx", "txt"],
-    "jpg":  ["pdf",  "png", "webp", "docx", "pptx", "txt"],
-    "jpeg": ["pdf",  "png", "webp", "docx", "pptx", "txt"],
-    "webp": ["pdf",  "png", "jpg"],
-    "heic": ["pdf",  "png", "jpg", "webp"],
+    "csv":  ["xlsx", "pdf", "png", "jpg", "docx", "pptx", "json", "webp", "heic"],
+    "xlsx": ["csv",  "pdf", "png", "jpg", "docx", "pptx", "json", "webp", "heic"],
+    "json": ["csv",  "xlsx", "pdf", "png", "jpg", "webp", "heic"],
+    "pdf":  ["docx", "pptx", "ppt", "png", "jpg", "webp", "heic", "xlsx", "csv", "txt"],
+    "docx": ["pdf",  "png", "jpg", "webp", "heic", "xlsx", "csv", "pptx"],
+    "ppt":  ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "webp", "heic", "pptx"],
+    "pptx": ["pdf",  "docx", "xlsx", "csv", "png", "jpg", "webp", "heic", "ppt"],
+    "png":  ["pdf",  "jpg", "webp", "heic", "docx", "pptx", "txt"],
+    "jpg":  ["pdf",  "png", "webp", "heic", "docx", "pptx", "txt"],
+    "webp": ["pdf",  "png", "jpg", "heic", "docx", "pptx", "txt"],
+    "heic": ["pdf",  "png", "jpg", "webp", "docx", "pptx", "txt"],
 }
 
-def obter_conversoes(extensao): return CONVERSOES.get(extensao.lower(), [])
+def obter_conversoes(extensao):
+    ext = extensao.lower()
+    if ext == "jpeg": ext = "jpg"
+    return CONVERSOES.get(ext, [])
 def obter_motor():               return MOTOR
 
 

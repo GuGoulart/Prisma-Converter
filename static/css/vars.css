@@ -45,7 +45,8 @@
     --col-jpeg: #a855f7;
     --col-json: #06b6d4;
     --col-heic: #ec4899;
-    --col-webp: #009688;
+    --col-webp: #0f766e;
+    --col-txt: #6b7280;
 }
 
 [data-theme="light"] {
@@ -148,8 +149,6 @@ body {
     text-shadow: 0 0 10px color-mix(in srgb, var(--col-heic) 40%, transparent) !important;
 }
 
-
-
 .badge-webp {
     background: color-mix(in srgb, var(--col-webp) 15%, transparent) !important;
     border: 1px solid color-mix(in srgb, var(--col-webp) 40%, transparent) !important;
@@ -157,11 +156,11 @@ body {
     text-shadow: 0 0 10px color-mix(in srgb, var(--col-webp) 40%, transparent) !important;
 }
 
-.badge-heic {
-    background: color-mix(in srgb, #9c27b0 15%, transparent) !important;
-    border: 1px solid color-mix(in srgb, #9c27b0 40%, transparent) !important;
-    color: #9c27b0 !important;
-    text-shadow: 0 0 10px color-mix(in srgb, #9c27b0 40%, transparent) !important;
+.badge-txt {
+    background: color-mix(in srgb, var(--col-txt) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-txt) 40%, transparent) !important;
+    color: var(--col-txt) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-txt) 40%, transparent) !important;
 }
 
 .badge-text-pdf {
@@ -194,6 +193,22 @@ body {
 
 .badge-text-jpg {
     color: var(--col-jpg) !important
+}
+
+.badge-text-webp {
+    color: var(--col-webp) !important
+}
+
+.badge-text-heic {
+    color: var(--col-heic) !important
+}
+
+.badge-text-json {
+    color: var(--col-json) !important
+}
+
+.badge-text-txt {
+    color: var(--col-txt) !important
 }
 
 .sidebar-motor-office {

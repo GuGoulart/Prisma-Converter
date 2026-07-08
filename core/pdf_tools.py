@@ -124,12 +124,60 @@ def desproteger_pdf(arquivo_entrada: str, senha: str, caminho_saida: str):
     doc.close()
 
 
-def comprimir_pdf(arquivo_entrada: str, caminho_saida: str):
+def comprimir_pdf(arquivo_entrada: str, caminho_saida: str, nivel: str = "media"):
     """
-    Comprime o PDF reduzindo objetos redundantes e imagens.
+    Comprime o PDF reduzindo objetos redundantes e recomprimindo imagens.
+    Níveis suportados: 'baixa', 'media', 'alta'.
     """
+    import io
+    try:
+        from PIL import Image
+    except ImportError:
+        Image = None
+
     doc = fitz.open(arquivo_entrada)
-    doc.save(caminho_saida, garbage=4, deflate=True)
+
+    if nivel in ("media", "alta") and Image is not None:
+        quality = 40 if nivel == "alta" else 75
+        max_dim = 1200 if nivel == "alta" else 2000
+
+        xrefs_processados = set()
+        
+        for i in range(len(doc)):
+            for img in doc.get_page_images(i):
+                xref = img[0]
+                if xref in xrefs_processados:
+                    continue
+                xrefs_processados.add(xref)
+                
+                try:
+                    pix = fitz.Pixmap(doc, xref)
+                    if pix.n >= 4:
+                        pix = fitz.Pixmap(fitz.csRGB, pix)
+                    
+                    img_bytes = pix.tobytes("png")
+                    pil_img = Image.open(io.BytesIO(img_bytes))
+                    
+                    if pil_img.mode in ("RGBA", "P", "CMYK"):
+                        pil_img = pil_img.convert("RGB")
+                    
+                    w, h = pil_img.size
+                    if w > max_dim or h > max_dim:
+                        ratio = min(max_dim/w, max_dim/h)
+                        novo_w, novo_h = int(w * ratio), int(h * ratio)
+                        pil_img = pil_img.resize((novo_w, novo_h), Image.Resampling.LANCZOS)
+                        
+                    img_io = io.BytesIO()
+                    pil_img.save(img_io, format="JPEG", quality=quality, optimize=True)
+                    new_bytes = img_io.getvalue()
+                    
+                    doc.update_stream(xref, new_bytes)
+                    new_w, new_h = pil_img.size
+                    doc.update_object(xref, f"<< /Type /XObject /Subtype /Image /Width {new_w} /Height {new_h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode >>")
+                except Exception:
+                    pass
+
+    doc.save(caminho_saida, garbage=4, deflate=True, clean=True, linear=True)
     doc.close()
 
 
