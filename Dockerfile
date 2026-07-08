@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# Instala LibreOffice (headless) e dependências do sistema
+# Instala LibreOffice (headless), Tesseract OCR e dependências do sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice \
     libreoffice-writer \
@@ -8,6 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice-impress \
     fonts-dejavu \
     fonts-liberation \
+    tesseract-ocr \
+    tesseract-ocr-por \
+    tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
