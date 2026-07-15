@@ -108,6 +108,7 @@
             color: var(--text);
             font-family: var(--font);
             width: 100%;
+            min-width: 0;
             box-sizing: border-box;
             font-size: 13px;
         }
@@ -196,14 +197,6 @@
             .pdf-tool-grid {
                 grid-template-columns: 1fr;
             }
-            .symbol-storm {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 28px;
-                z-index: 91;
-            }
         }
 
         .symbol-storm {
@@ -226,7 +219,7 @@
 
         @keyframes drift {
             from {
-                transform: translateX(100vw) rotate(0deg);
+                transform: translateX(100%) rotate(0deg);
             }
 
             to {
@@ -814,18 +807,20 @@
 
         const menuBtn = document.getElementById('menuBtn');
         const sidebar = document.getElementById('sidebar');
-        const overlay = document.createElement('div');
-        overlay.className = 'drawer-overlay';
-        document.body.appendChild(overlay);
+        const overlay = document.getElementById('drawerOverlay');
 
         menuBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('show');
+            sidebar.classList.toggle('aberta');
+            overlay.classList.toggle('ativo');
+            menuBtn.classList.toggle('ativo');
+            document.body.style.overflow = sidebar.classList.contains('aberta') ? 'hidden' : '';
         });
 
         overlay.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('show');
+            sidebar.classList.remove('aberta');
+            overlay.classList.remove('ativo');
+            menuBtn.classList.remove('ativo');
+            document.body.style.overflow = '';
         });
 
         // Timeout para ocultar o erro após 5 segundos
