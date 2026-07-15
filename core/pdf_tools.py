@@ -63,8 +63,11 @@ def dividir_pdf(arquivo_entrada: str, caminho_saida_zip: str, modo: str = "indiv
                         if 0 <= pg < total_paginas:
                             intervalos.append((pg, pg))
                     except: pass
-            if not intervalos: # fallback
-                intervalos = [(i, i) for i in range(total_paginas)]
+            if not intervalos:
+                # CONV-004: avisa o usuário em vez de fallback silencioso
+                raise ValueError(
+                    "Nenhum intervalo válido encontrado. Use o formato '1-3, 5, 7-10'."
+                )
                 
         else: # individual
             intervalos = [(i, i) for i in range(total_paginas)]
@@ -179,6 +182,13 @@ def comprimir_pdf(arquivo_entrada: str, caminho_saida: str, nivel: str = "media"
 
     doc.save(caminho_saida, garbage=4, deflate=True, clean=True, linear=True)
     doc.close()
+
+    # CONV-002: se o arquivo comprimido for maior ou igual ao original, retornar o original
+    tamanho_original = os.path.getsize(arquivo_entrada)
+    tamanho_comprimido = os.path.getsize(caminho_saida)
+    if tamanho_comprimido >= tamanho_original:
+        import shutil
+        shutil.copy2(arquivo_entrada, caminho_saida)
 
 
 def adicionar_marca_dagua(arquivo_entrada: str, texto: str, caminho_saida: str):

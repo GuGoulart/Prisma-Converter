@@ -1,3 +1,21 @@
+// ── Variáveis de sessão (injetadas via data-* no body) ────────
+// SEG-008: eliminados scripts inline — nenhum código Jinja2 no .js
+const _bd = document.body ? document.body.dataset : {};
+const origemArquivo = _bd.origem         || '';
+const pastaUUID     = _bd.pastaUuid      || '';   // camelCase: data-pasta-uuid → pastaUuid
+const previewInicial = _bd.previewInicial || '';
+const previewTipo    = _bd.previewTipo    || '';
+const tabelaInicial  = _bd.tabelaInicial  === 'true';
+
+// ── Service Worker ────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('[SW] registrado', reg.scope))
+            .catch(err => console.error('[SW] erro', err));
+    });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // ── Tema Claro / Escuro ───────────────────────────────────
@@ -107,7 +125,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Mostra/oculta painel de orientação
             if (orientacaoWrap) {
-                const planilha = ["xlsx", "xls", "csv"].includes(origemArquivo);
+                // UX-002: json também suporta orientação de PDF
+                const planilha = ["xlsx", "xls", "csv", "json"].includes(origemArquivo);
                 orientacaoWrap.classList.toggle("visivel", planilha && destino === "pdf");
             }
 
@@ -118,7 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Orientação no carregamento inicial
     if (pastaUUID && origemArquivo && orientacaoWrap) {
         const primDest = document.querySelector('input[name="destino"]:checked')?.value;
-        if (["xlsx", "xls", "csv"].includes(origemArquivo) && primDest === "pdf") {
+        // UX-002: inclui json
+        if (["xlsx", "xls", "csv", "json"].includes(origemArquivo) && primDest === "pdf") {
             orientacaoWrap.classList.add("visivel");
         }
     }

@@ -45,7 +45,12 @@ _MAGIC = {
     "ppt":  [b"\xd0\xcf\x11\xe0"], "doc": [b"\xd0\xcf\x11\xe0"], "xls": [b"\xd0\xcf\x11\xe0"],
     "png":  [b"\x89PNG"],
     "jpg":  [b"\xff\xd8\xff"], "jpeg": [b"\xff\xd8\xff"],
-    "csv":  None,
+    # Formatos com validação especial (ver validar_magic abaixo)
+    "webp": "special",
+    "heic": "special",
+    "json": "special",
+    "csv":  None,   # texto puro — sem magic bytes confiáveis
+    "txt":  None,   # texto puro
 }
 
 def validar_nome(nome):
@@ -54,8 +59,42 @@ def validar_nome(nome):
 
 def validar_magic(caminho, ext):
     m = _MAGIC.get(ext)
-    if m is None: return True
+
+    # Sem validação definida (CSV, TXT, formatos desconhecidos)
+    if m is None:
+        return True
+
+    # Validações especiais por formato
+    if m == "special":
+        try:
+            with open(caminho, "rb") as f:
+                header = f.read(16)
+        except OSError:
+            return False
+
+        if ext == "webp":
+            # WEBP: bytes 0-3 = "RIFF", bytes 8-11 = "WEBP"
+            return len(header) >= 12 and header[:4] == b"RIFF" and header[8:12] == b"WEBP"
+
+        if ext == "heic":
+            # HEIC/HEIF: box 'ftyp' nos bytes 4-8
+            return len(header) >= 8 and header[4:8] == b"ftyp"
+
+        if ext == "json":
+            # JSON deve começar com { ou [ (após possível BOM/espaço)
+            try:
+                with open(caminho, "r", encoding="utf-8", errors="ignore") as f:
+                    first = f.read(4096).lstrip()
+                return bool(first) and first[0] in ("{", "[")
+            except OSError:
+                return False
+
+        return True  # fallback para "special" desconhecidos
+
+    # Validação padrão por magic bytes (comparação de prefixo)
     try:
-        with open(caminho, "rb") as f: h = f.read(8)
+        with open(caminho, "rb") as f:
+            h = f.read(8)
         return any(h.startswith(x) for x in m)
-    except: return False
+    except OSError:
+        return False

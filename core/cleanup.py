@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 def limpar_residuos_loop(upload_folder, download_folder):
     limite = 15 * 60
     while True:
-        time.sleep(900)
+        time.sleep(300)  # PERF-005: verifica a cada 5 min (era 15 min)
         agora = time.time()
         for pasta in [upload_folder, download_folder]:
             if not os.path.exists(pasta):

@@ -286,3 +286,8 @@
 
 /* ── Tablet ── */
 @media(max-width:1100px) {
+    .sidebar {
+        width: 200px;
+        padding: 24px 14px
+    }
+}

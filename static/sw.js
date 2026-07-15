@@ -30,8 +30,12 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  // Ignore API requests and file downloads
-  if (event.request.url.includes('/api/') || event.request.url.includes('/download/')) {
+
+  // PERF-006: Ignora rotas dinâmicas (sessão Flask) e de API/download
+  const url = new URL(event.request.url);
+  const rotasDinamicas = ['/', '/upload', '/converter', '/preview'];
+  const isDinamica = rotasDinamicas.some(r => url.pathname === r || url.pathname.startsWith('/preview/'));
+  if (isDinamica || url.pathname.includes('/api/') || url.pathname.includes('/download/')) {
       return;
   }
   

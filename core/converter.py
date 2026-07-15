@@ -1,13 +1,12 @@
 import pdfplumber
-import os
+import os, subprocess, tempfile, zipfile, shutil, logging, io
 import re as _re
 import csv
 import uuid
-import shutil
-import subprocess
+
+log = logging.getLogger(__name__)
+
 import fitz
-import io
-import zipfile
 from PIL import Image
 
 try:
@@ -46,7 +45,7 @@ if _TEM_WIN32:    MOTOR = "office"
 elif SOFFICE:     MOTOR = "libreoffice"
 else:             MOTOR = None
 
-print(f"[Prisma] Motor: {MOTOR or 'NENHUM'}")
+log.info(f"[Prisma] Motor: {MOTOR or 'NENHUM'}")
 
 
 # ─── Conversões disponíveis ───────────────────────────────────
@@ -75,21 +74,33 @@ def obter_motor():               return MOTOR
 # ─── Encoding ────────────────────────────────────────────────
 
 def detectar_encoding(caminho: str) -> str:
-    with open(caminho, "rb") as f: raw = f.read(4)
-    if raw.startswith(b"\xef\xbb\xbf"):                             return "utf-8-sig"
-    if raw.startswith(b"\xff\xfe") or raw.startswith(b"\xfe\xff"):  return "utf-16"
+    # PERF-007: lê arquivo uma única vez (BOM + chardet juntos)
+    try:
+        with open(caminho, "rb") as f:
+            raw = f.read(10004)  # 4 bytes BOM + 10000 bytes para chardet
+    except OSError:
+        return "utf-8"
+
+    # Detecta BOM
+    if raw[:3] == b"\xef\xbb\xbf":                            return "utf-8-sig"
+    if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):               return "utf-16"
+
+    # Usa chardet sobre os primeiros 10000 bytes
     try:
         import chardet
-        with open(caminho, "rb") as f:
-            b = f.read(10000)
-            res = chardet.detect(b)
-            return res["encoding"] or "utf-8"
+        res = chardet.detect(raw[:10000])
+        if res and res.get("encoding"):
+            return res["encoding"]
     except ImportError:
-        for enc in ("utf-8", "utf-8-sig", "latin-1", "cp1252"):
-            try:
-                with open(caminho, encoding=enc) as f: f.read(1000)
-                return enc
-            except: continue
+        pass
+
+    # Fallback: tenta decodificar com encodings comuns
+    for enc in ("utf-8", "utf-8-sig", "latin-1", "cp1252"):
+        try:
+            raw[:1000].decode(enc)
+            return enc
+        except (UnicodeDecodeError, LookupError):
+            continue
     return "utf-8"
 
 

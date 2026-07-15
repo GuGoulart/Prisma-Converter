@@ -1,5 +1,6 @@
 from flask import (Flask, render_template, request, send_file,
-                   session, after_this_request, abort, Response)
+                   session, after_this_request, abort, Response,
+                   redirect, url_for, jsonify)
 from core.converter import obter_conversoes, converter_arquivo, obter_motor, detectar_encoding, remover_fundo_imagem, mesclar_planilhas
 from core.pdf_tools import mesclar_pdfs, dividir_pdf, proteger_pdf, desproteger_pdf, comprimir_pdf, adicionar_marca_dagua, extrair_imagens_pdf, manipular_paginas_pdf
 from werkzeug.utils import secure_filename
@@ -32,6 +33,7 @@ os.makedirs(UPLOAD_FOLDER,   exist_ok=True)
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 contador_conversoes = 0
+_lock_contador      = Lock()  # QC-005: protege o contador contra race conditions
 
 logging.basicConfig(
     stream=sys.stdout, level=logging.INFO,
@@ -71,9 +73,39 @@ def cabecalhos_seguranca(response):
     response.headers["X-Frame-Options"]         = "SAMEORIGIN"
     response.headers["X-XSS-Protection"]        = "1; mode=block"
     response.headers["Referrer-Policy"]          = "no-referrer"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    response.headers["Content-Security-Policy"]   = "default-src 'self'; script-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"
+    response.headers["Permissions-Policy"]       = "camera=(), microphone=(), geolocation=()"
+    # SEG-009: HSTS apenas em produção (evita travar HTTP em desenvolvimento local)
+    if os.environ.get("PORT") and not app.debug:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    # SEG-008: removido unsafe-inline — scripts e estilos inline migrados para data attributes + arquivos externos
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self'; "
+        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"
+    )
     return response
+
+
+# SEG-007: Sanitiza mensagens de erro — nunca expõe str(e) bruto ao usuário
+_ERROS_CONHECIDOS = {
+    "password": "Senha incorreta ou arquivo não está protegido.",
+    "encrypted": "O arquivo está criptografado. Forneça a senha correta.",
+    "no objects": "O PDF parece estar corrompido ou vazio.",
+    "not a pdf": "O arquivo enviado não é um PDF válido.",
+    "bad decrypt": "Senha incorreta.",
+    "permission": "O PDF não permite esta operação.",
+    "cannot open": "Não foi possível abrir o arquivo.",
+    "zero-size": "O arquivo está vazio.",
+}
+
+def _erro_seguro(e: Exception) -> str:
+    """Retorna mensagem amigável sem expor detalhes internos."""
+    msg = str(e).lower()
+    for chave, amigavel in _ERROS_CONHECIDOS.items():
+        if chave in msg:
+            return amigavel
+    return "Ocorreu um erro ao processar o arquivo. Verifique se ele está corrompido ou tente novamente."
 
 
 
@@ -138,13 +170,16 @@ iniciar_limpeza(UPLOAD_FOLDER, DOWNLOAD_FOLDER)
 
 # ── Context processor ─────────────────────────────────────────
 
+# QC-001: Único context_processor unificado — o anterior estava duplicado (o segundo sobrescrevia o primeiro)
 @app.context_processor
 def inject_globals():
+    from core.converter import CONVERSOES
     return dict(
         contador=contador_conversoes,
         historico=session.get("historico", []),
         motor=obter_motor(),
         csrf_token=gerar_csrf(),
+        todas_conversoes=CONVERSOES,
     )
 
 @app.errorhandler(413)
@@ -162,7 +197,8 @@ def erro_interno_servidor(e):
 
 @app.route('/health')
 def health_check():
-    return {"status": "ok"}, 200
+    # BACK-003: usa jsonify explicitamente para consistência
+    return jsonify({"status": "ok"}), 200
 
 @app.route('/favicon.ico')
 def favicon():
@@ -170,16 +206,9 @@ def favicon():
 
 # ── Rotas ─────────────────────────────────────────────────────
 
-@app.context_processor
-def inject_globals():
-    from core.converter import CONVERSOES
-    return dict(todas_conversoes=CONVERSOES)
-
 @app.route("/")
 def home():
     return render_template("index.html")
-
-from flask import redirect, url_for
 
 @app.route("/ferramentas-pdf")
 def redirect_ferramentas():
@@ -216,9 +245,12 @@ def api_mesclar():
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        return send_file(saida, as_attachment=True, download_name="Prisma_Mesclado.pdf")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Mesclado.pdf")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     except Exception as e:
-        return render_template("pdf_tools.html", erro=str(e)), 400
+        log.warning(f"api_mesclar error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/pdf/dividir", methods=["POST"])
 @rate_limit_required
@@ -244,9 +276,12 @@ def api_dividir():
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        return send_file(saida, as_attachment=True, download_name="Prisma_Dividido.zip")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Dividido.zip")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     except Exception as e:
-        return render_template("pdf_tools.html", erro=str(e)), 400
+        log.warning(f"api_dividir error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/pdf/proteger", methods=["POST"])
 @rate_limit_required
@@ -270,9 +305,12 @@ def api_proteger():
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        return send_file(saida, as_attachment=True, download_name="Prisma_Protegido.pdf")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Protegido.pdf")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     except Exception as e:
-        return render_template("pdf_tools.html", erro=str(e)), 400
+        log.warning(f"api_proteger error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/pdf/desproteger", methods=["POST"])
 @rate_limit_required
@@ -296,9 +334,12 @@ def api_desproteger():
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        return send_file(saida, as_attachment=True, download_name="Prisma_Desprotegido.pdf")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Desprotegido.pdf")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     except Exception as e:
-        return render_template("pdf_tools.html", erro=str(e)), 400
+        log.warning(f"api_desproteger error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 
 @app.route("/api/pdf/comprimir", methods=["POST"])
@@ -323,9 +364,12 @@ def api_comprimir():
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        return send_file(saida, as_attachment=True, download_name="Prisma_Comprimido.pdf")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Comprimido.pdf")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     except Exception as e:
-        return render_template("pdf_tools.html", erro=str(e)), 400
+        log.warning(f"api_comprimir error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/pdf/marca-dagua", methods=["POST"])
 @rate_limit_required
@@ -349,9 +393,12 @@ def api_marca_dagua():
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        return send_file(saida, as_attachment=True, download_name="Prisma_Marcado.pdf")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Marcado.pdf")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     except Exception as e:
-        return render_template("pdf_tools.html", erro=str(e)), 400
+        log.warning(f"api_marca_dagua error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/pdf/extrair-imagens", methods=["POST"])
 @rate_limit_required
@@ -374,9 +421,12 @@ def api_extrair_imagens():
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        return send_file(saida, as_attachment=True, download_name="Prisma_Imagens_PDF.zip")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Imagens_PDF.zip")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     except Exception as e:
-        return render_template("pdf_tools.html", erro=str(e)), 400
+        log.warning(f"api_extrair_imagens error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/pdf/manipular-paginas", methods=["POST"])
 @rate_limit_required
@@ -402,9 +452,12 @@ def api_manipular_paginas():
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        return send_file(saida, as_attachment=True, download_name="Prisma_Paginas_Manipuladas.pdf")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Paginas_Manipuladas.pdf")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     except Exception as e:
-        return render_template("pdf_tools.html", erro=str(e)), 400
+        log.warning(f"api_manipular_paginas error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/img/remover-fundo", methods=["POST"])
 @rate_limit_required
@@ -427,9 +480,12 @@ def api_remover_fundo():
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        return send_file(saida, as_attachment=True, download_name="Prisma_Sem_Fundo.png")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Sem_Fundo.png")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
     except Exception as e:
-        return render_template("index.html", erro=str(e)), 400
+        log.warning(f"api_remover_fundo error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/data/mesclar-planilhas", methods=["POST"])
 @rate_limit_required
@@ -645,7 +701,8 @@ def upload():
             preview_tipo = "imagem"
 
         elif ext in ("csv", "xlsx", "xls", "json"):
-            tabela_html = gerar_preview_tabela(cam, ext, limite=None)
+            # PERF-003: limite=500 evita OOM com arquivos CSV muito grandes
+            tabela_html = gerar_preview_tabela(cam, ext, limite=500)
 
         else:
             # DOCX/PPT/PPTX: tenta gerar PDF de prévia em background
@@ -678,7 +735,7 @@ def upload():
 
 @app.route("/converter", methods=["POST"])
 def converter():
-    global _conversoes_ativas, contador_conversoes
+    global _conversoes_ativas
     ip = request.remote_addr
 
     if not verificar_rate_limit(ip):
@@ -752,7 +809,9 @@ def converter():
             except: pass
             return resp
 
-        contador_conversoes += 1
+        # QC-005: usa lock para incremento thread-safe do contador
+        with _lock_contador:
+            contador_conversoes += 1
         log.info(f"OK: {nome_original} | {origem.upper()}→{destino.upper()} | {ip}")
 
         if "historico" not in session:
@@ -768,16 +827,19 @@ def converter():
         session.modified = True
 
         resp = send_file(saida, as_attachment=True, download_name=nome_saida)
+        resp.headers["Cache-Control"] = "no-store"  # DL-002
         if download_token:
+            # SEG-011: Secure=True em produção (PORT definida = Cloud Run)
+            is_secure = bool(os.environ.get("PORT"))
             resp.set_cookie("downloadToken", download_token,
-                            max_age=60, samesite="Lax")
+                            max_age=60, samesite="Lax", secure=is_secure)
         return resp
 
     except Exception as e:
         log.error(f"Conversão error — {traceback.format_exc()}")
         try: shutil.rmtree(pp, ignore_errors=True)
         except: pass
-        return render_template("index.html", erro=str(e))
+        return render_template("index.html", erro=_erro_seguro(e))
     finally:
         with _lock_conv:
             _conversoes_ativas -= 1

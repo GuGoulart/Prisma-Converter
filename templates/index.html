@@ -24,7 +24,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
-<body>
+<body
+    data-origem="{{ origem if origem else '' }}"
+    data-pasta-uuid="{{ session.get('pasta_upload', '') }}"
+    data-preview-inicial="{{ preview_url if preview_url else '' }}"
+    data-preview-tipo="{{ preview_tipo if preview_tipo else '' }}"
+    data-tabela-inicial="{{ 'true' if tabela_html else 'false' }}"
+>
 
     <div class="bg-grid"></div>
 
@@ -363,24 +369,7 @@
         </a>
     </footer>
 
-    <!-- Variáveis para o JS -->
-    <script>
-        const origemArquivo = "{{ origem if origem else '' }}";
-        const pastaUUID = "{{ session.get('pasta_upload', '') }}";
-        const previewInicial = "{{ preview_url if preview_url else '' }}";
-        const previewTipo = "{{ preview_tipo if preview_tipo else '' }}";
-        const tabelaInicial = "{{ 'true' if tabela_html else 'false' }}" === "true";
-    </script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('SW registrado', reg))
-                    .catch(err => console.error('SW erro', err));
-            });
-        }
-    </script>
 </body>
 
 </html>
