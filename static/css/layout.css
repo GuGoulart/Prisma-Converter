@@ -526,15 +526,15 @@
         bottom: 0;
         left: -270px;
         width: 260px;
-        height: 100vh;
+        height: 100%;
+        max-height: 100vh;
         z-index: 200;
         border-right: 1px solid var(--border2);
-        background: rgba(10, 10, 10, 0.92);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        background: rgba(10, 10, 10, 0.97);
         transition: left .3s cubic-bezier(.4, 0, .2, 1);
         padding: 20px 24px 32px;
-        overflow-y: auto
+        overflow-y: auto;
+        overflow-x: hidden
     }
 
     .sidebar.aberta {
