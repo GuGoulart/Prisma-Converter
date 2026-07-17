@@ -736,6 +736,7 @@ def upload():
 @app.route("/converter", methods=["POST"])
 def converter():
     global _conversoes_ativas
+    global contador_conversoes
     ip = request.remote_addr
 
     if not verificar_rate_limit(ip):
