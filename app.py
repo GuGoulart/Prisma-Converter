@@ -212,6 +212,10 @@ def favicon():
 
 @app.route("/")
 def home():
+    return render_template("home.html")
+
+@app.route("/conversor")
+def conversor_page():
     return render_template("index.html")
 
 @app.route("/ferramentas-pdf")
