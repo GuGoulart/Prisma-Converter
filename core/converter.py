@@ -697,16 +697,12 @@ def json_para_pdf(entrada, saida, orientacao="retrato"):
             try: os.remove(temp)
             except: pass
 
-# ─── Removedor de Fundo ─────────────────────────────────────────
-def remover_fundo_imagem(entrada: str, saida: str):
-    try:
-        from rembg import remove as rembg_remove
-    except ImportError:
-        raise RuntimeError("rembg não instalado.")
-    with open(entrada, "rb") as i, open(saida, "wb") as o:
-        input_data = i.read()
-        output_data = rembg_remove(input_data)
-        o.write(output_data)
+
+
+# ─── Mídia ──────────────────────────────────────────────────────
+def mp4_para_mp3_conv(entrada: str, saida: str):
+    from core.media_tools import mp4_para_mp3
+    mp4_para_mp3(entrada, saida)
 
 # ─── Mesclar Planilhas ──────────────────────────────────────────
 def mesclar_planilhas(arquivos: list, saida: str, formato: str = "xlsx"):
@@ -949,6 +945,8 @@ _MAPA = {
     ("heic", "docx"): heic_para_docx,
     ("heic", "pptx"): heic_para_pptx,
     ("heic", "txt"):  imagem_para_txt_ocr,
+    # MP4
+    ("mp4",  "mp3"):  mp4_para_mp3_conv,
 }
 
 _ACEITA_ORIENTACAO = {("xlsx","pdf"), ("xls","pdf"), ("csv","pdf"), ("json","pdf")}

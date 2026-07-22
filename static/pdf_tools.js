@@ -1,4 +1,4 @@
-﻿/**
+/**
  * pdf_tools.js — Script externo para a página de Ferramentas Avançadas
  * SEG-008: Migrado do inline <script> do pdf_tools.html para eliminar unsafe-inline no CSP
  */
@@ -130,7 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFileInput('watermarkInput',  'watermarkFileName');
     setupFileInput('extractInput',    'extractFileName');
     setupFileInput('manipulateInput', 'manipulateFileName');
-    setupFileInput('rembgInput',      'rembgFileName');
+    setupFileInput('mp4Input',        'mp4FileName');
+    setupFileInput('qrLerInput',      'qrLerFileName');
+    setupFileInput('paletaInput',     'paletaFileName');
 
     // ── Mesclar Planilhas: acumular arquivos ──────────────────
     const dtData = new DataTransfer();
@@ -149,6 +151,81 @@ document.addEventListener('DOMContentLoaded', () => {
             div.textContent = 'D ' + file.name;
             div.style.cssText = 'font-size:12px;color:var(--text);background:var(--surface);padding:4px 8px;border-radius:4px;';
             mergeDataListContainer?.appendChild(div);
+        }
+    });
+
+    // ── Leitor de QR Code (AJAX) ──────────────────────────────
+    const qrLerForm = document.getElementById('qrLerForm');
+    const qrLerResultado = document.getElementById('qrLerResultado');
+    const qrLerBtn = document.getElementById('qrLerBtn');
+
+    qrLerForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fileInput = document.getElementById('qrLerInput');
+        if (!fileInput?.files?.length) return;
+
+        const formData = new FormData(qrLerForm);
+        qrLerBtn.disabled = true;
+        qrLerBtn.querySelector('span:first-child').textContent = 'Lendo...';
+
+        try {
+            const resp = await fetch('/api/qr/ler', { method: 'POST', body: formData });
+            const data = await resp.json();
+
+            if (data.erro) {
+                qrLerResultado.innerHTML = `<span style="color:var(--accent2)">${data.erro}</span>`;
+            } else {
+                let html = '';
+                for (const c of data.codigos) {
+                    html += `<div style="margin-bottom:6px"><span style="color:var(--accent);font-weight:700">[${c.tipo}]</span> <span style="color:var(--text);cursor:pointer" title="Clique para copiar" onclick="navigator.clipboard.writeText('${c.dados.replace(/'/g, "\\'")}')"> ${c.dados}</span></div>`;
+                }
+                qrLerResultado.innerHTML = html;
+            }
+            qrLerResultado.style.display = 'block';
+        } catch (err) {
+            qrLerResultado.innerHTML = '<span style="color:var(--accent2)">Erro de conexão.</span>';
+            qrLerResultado.style.display = 'block';
+        } finally {
+            qrLerBtn.disabled = false;
+            qrLerBtn.querySelector('span:first-child').textContent = 'Ler QR Code';
+        }
+    });
+
+    // ── Extrator de Paleta de Cores (AJAX) ────────────────────
+    const paletaForm = document.getElementById('paletaForm');
+    const paletaResultado = document.getElementById('paletaResultado');
+    const paletaBtn = document.getElementById('paletaBtn');
+
+    paletaForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fileInput = document.getElementById('paletaInput');
+        if (!fileInput?.files?.length) return;
+
+        const formData = new FormData(paletaForm);
+        paletaBtn.disabled = true;
+        paletaBtn.querySelector('span:first-child').textContent = 'Extraindo...';
+
+        try {
+            const resp = await fetch('/api/img/paleta', { method: 'POST', body: formData });
+            const data = await resp.json();
+
+            if (data.erro) {
+                paletaResultado.innerHTML = `<span style="color:var(--accent2)">${data.erro}</span>`;
+            } else {
+                let html = '<div class="paleta-swatches">';
+                for (const c of data.paleta) {
+                    html += `<div class="paleta-swatch" style="background:${c.hex}" title="${c.hex} — ${c.percentual}%" onclick="navigator.clipboard.writeText('${c.hex}')"><span class="paleta-swatch-label">${c.hex}</span></div>`;
+                }
+                html += '</div>';
+                paletaResultado.innerHTML = html;
+            }
+            paletaResultado.style.display = 'block';
+        } catch (err) {
+            paletaResultado.innerHTML = '<span style="color:var(--accent2)">Erro de conexão.</span>';
+            paletaResultado.style.display = 'block';
+        } finally {
+            paletaBtn.disabled = false;
+            paletaBtn.querySelector('span:first-child').textContent = 'Extrair Cores';
         }
     });
 

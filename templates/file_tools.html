@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma — Modificar Arquivos</title>
+    <meta name="description" content="Comprima, criptografe, calcule hash e renomeie seus arquivos. Gratuito e rápido.">
+    <meta property="og:title" content="Prisma — Modificar Arquivos">
+    <meta property="og:description" content="Comprimir, ZIP com senha, criptografia AES-256 e mais. Processe seus arquivos com segurança.">
+    <meta property="og:type" content="website">
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#090a0f">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .pdf-tool-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .pdf-tool-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .pdf-tool-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-color: var(--accent);
+        }
+
+        [data-theme="dark"] .pdf-tool-card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .pdf-tool-title {
+            font-family: var(--mono);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .pdf-tool-title-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-badges {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tool-badge {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border2);
+            color: var(--muted);
+            box-shadow: none;
+            text-shadow: none;
+            transition: all 0.2s ease;
+        }
+
+        [data-theme="light"] .tool-badge {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        .pdf-tool-card:hover .tool-badge {
+            box-shadow: none !important;
+            border-color: color-mix(in srgb, var(--accent) 50%, transparent) !important;
+            color: var(--accent) !important;
+            background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+        }
+
+        .pdf-tool-desc {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .pdf-tool-card input[type="file"],
+        .pdf-tool-card input[type="password"],
+        .pdf-tool-card input[type="text"],
+        .pdf-tool-card input[type="number"] {
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            padding: 8px;
+            border-radius: 0;
+            color: var(--text);
+            font-family: var(--font);
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+
+        .hidden-file-input {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+
+        .btn-escolher {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 0;
+            font-size: 13px;
+            font-family: var(--font);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-escolher:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .file-name-display {
+            font-size: 12px;
+            color: var(--muted);
+            margin-left: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .pdf-tool-card select {
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            padding: 8px;
+            border-radius: 6px;
+            color: var(--text);
+            font-family: var(--font);
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 13px;
+            appearance: none;
+        }
+
+        .pdf-tool-card button {
+            margin-top: auto;
+        }
+
+        @media (max-width: 768px) {
+            .pdf-tool-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .badge-zip {
+            color: #a78bfa !important;
+            border-color: color-mix(in srgb, #a78bfa 35%, transparent) !important;
+            background: color-mix(in srgb, #a78bfa 10%, transparent) !important;
+        }
+
+        .badge-enc {
+            color: #fbbf24 !important;
+            border-color: color-mix(in srgb, #fbbf24 35%, transparent) !important;
+            background: color-mix(in srgb, #fbbf24 10%, transparent) !important;
+        }
+
+        .badge-hash {
+            color: #22d3ee !important;
+            border-color: color-mix(in srgb, #22d3ee 35%, transparent) !important;
+            background: color-mix(in srgb, #22d3ee 10%, transparent) !important;
+        }
+
+        .badge-all {
+            color: var(--accent) !important;
+            border-color: color-mix(in srgb, var(--accent) 35%, transparent) !important;
+            background: color-mix(in srgb, var(--accent) 10%, transparent) !important;
+        }
+
+        /* Hash result display */
+        .hash-resultado {
+            display: none;
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            padding: 12px;
+            font-family: var(--mono);
+            font-size: 11px;
+            word-break: break-all;
+            line-height: 1.8;
+        }
+
+        .hash-resultado .hash-label {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .hash-resultado .hash-value {
+            color: var(--text);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .hash-resultado .hash-value:hover {
+            color: var(--accent);
+        }
+
+        .symbol-storm {
+            width: 100%;
+            height: 36px;
+            overflow: hidden;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .symbol-storm {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 30px;
+                z-index: 91;
+            }
+        }
+
+        /* Central Optical Guide Line */
+        .kinetic-rail-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                color-mix(in srgb, var(--accent) 25%, transparent) 15%, 
+                color-mix(in srgb, var(--accent) 60%, transparent) 50%, 
+                color-mix(in srgb, var(--accent) 25%, transparent) 85%, 
+                transparent 100%);
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        /* Kinetic Pulse Beams */
+        .kinetic-pulse-beam {
+            position: absolute;
+            top: 50%;
+            height: 2px;
+            width: 140px;
+            background: linear-gradient(90deg, transparent, var(--accent), #ffffff, var(--accent), transparent);
+            transform: translateY(-50%);
+            border-radius: 2px;
+            filter: drop-shadow(0 0 8px var(--accent));
+            animation: pulseTravel 4s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+            z-index: 2;
+        }
+
+        .kinetic-pulse-beam-rev {
+            position: absolute;
+            top: 50%;
+            height: 1px;
+            width: 100px;
+            background: linear-gradient(90deg, transparent, var(--muted), transparent);
+            transform: translateY(-50%);
+            opacity: 0.6;
+            animation: pulseTravelRev 6s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+            z-index: 2;
+        }
+
+        @keyframes pulseTravel {
+            0% { left: -140px; }
+            100% { left: calc(100% + 140px); }
+        }
+
+        @keyframes pulseTravelRev {
+            0% { right: -100px; }
+            100% { right: calc(100% + 100px); }
+        }
+
+        /* Dynamic Vector Nodes Container */
+        .kinetic-nodes-track {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .kinetic-vector-node {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            opacity: 0.65;
+            animation: vectorNodeFlow linear infinite;
+        }
+
+        .kinetic-vector-node svg {
+            width: 16px;
+            height: 16px;
+            stroke-width: 1.5px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        @keyframes vectorNodeFlow {
+            from { left: 105%; }
+            to { left: -10%; }
+        }
+
+        /* Specialized Kinetic Node Behaviors */
+        .node-compress {
+            animation-name: vectorNodeFlow, nodeMorphCompress;
+            animation-duration: 7s, 2s;
+            animation-iteration-count: infinite, infinite;
+            animation-timing-function: linear, ease-in-out;
+        }
+
+        .node-encrypt {
+            animation-name: vectorNodeFlow, nodeMorphLock;
+            animation-duration: 9s, 2.5s;
+            animation-iteration-count: infinite, infinite;
+            animation-timing-function: linear, ease-in-out;
+        }
+
+        .node-hash {
+            animation-name: vectorNodeFlow, nodeMorphHash;
+            animation-duration: 6s, 1.5s;
+            animation-iteration-count: infinite, infinite;
+            animation-timing-function: linear, ease-in-out;
+        }
+
+        @keyframes nodeMorphCompress {
+            0%, 100% { transform: translateY(-50%) scaleX(1); color: var(--text); }
+            50% { transform: translateY(-50%) scaleX(0.4); color: var(--accent); }
+        }
+
+        @keyframes nodeMorphLock {
+            0%, 100% { transform: translateY(-50%) rotate(0deg); color: var(--text); }
+            50% { transform: translateY(-50%) rotate(25deg); color: var(--accent); }
+        }
+
+        @keyframes nodeMorphHash {
+            0%, 100% { transform: translateY(-50%) scale(1); opacity: 0.6; }
+            50% { transform: translateY(-50%) scale(1.3); opacity: 1; color: var(--accent); }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-grid"></div>
+
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- Tempestade de Símbolos no Topo -->
+    <div class="symbol-storm" id="stormContainer"></div>
+
+    <!-- Nav mobile -->
+    <div class="mobile-nav">
+        <span class="mobile-logo">PRISMA</span>
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+
+    <div class="layout">
+
+        <!-- ── SIDEBAR ───────────────────────────────────────── -->
+        <aside class="sidebar" id="sidebar">
+
+            <div class="sidebar-logo">
+                <span class="logo-mark">PRISMA</span>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info" style="gap: 8px;">
+                <p class="sidebar-label">Menu</p>
+                <a href="/" class="nav-link">Conversor de arquivos</a>
+                <a href="/ferramentas-avancadas" class="nav-link">Ferramentas Avançadas</a>
+                <a href="/modificar-arquivos" class="nav-link nav-active">Modificar Arquivos</a>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
+                <p class="sidebar-label" style="margin-bottom: 0;">Tema</p>
+                <button id="themeToggle" class="btn-tema-icon" aria-label="Alternar Tema">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round">
+                        <path d="M12 7 A 5 5 0 0 1 12 17 Z" fill="currentColor" />
+                        <path d="M12 7 A 5 5 0 0 0 12 17" />
+                        <line x1="12" y1="1" x2="12" y2="4" />
+                        <line x1="12" y1="20" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="6.34" y2="6.34" />
+                        <line x1="4.22" y1="19.78" x2="6.34" y2="17.66" />
+                        <line x1="1" y1="12" x2="4" y2="12" />
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN ───────────────────────────────────────────── -->
+        <main class="main">
+
+            <header class="header-main">
+                <h1 class="titulo-principal">Modificar <em>Arquivos</em></h1>
+                <p class="titulo-sub">Comprima, proteja com senha, criptografe e manipule seus arquivos com segurança.
+                </p>
+            </header>
+
+            <!-- Erro -->
+            {% if erro %}
+            <div class="erro-box" style="margin-top: 24px;">
+                <span class="erro-cod">ERR</span>
+                <span class="erro-msg">{{ erro }}</span>
+            </div>
+            {% endif %}
+
+            <div class="pdf-tool-grid">
+
+                <!-- Comprimir Arquivos -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Comprimir Arquivos
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-zip">ZIP</span>
+                            <span class="tool-badge badge-all">TAR.GZ</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Selecione vários arquivos e comprima-os em um único ZIP ou TAR.GZ.</p>
+                    <form action="/api/file/comprimir" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="comprimirInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivos
+                            </label>
+                            <input type="file" name="arquivos" id="comprimirInput" multiple required
+                                class="hidden-file-input">
+                        </div>
+                        <div id="comprimirListContainer"
+                            style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
+                            <span id="comprimirEmptyMsg"
+                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum
+                                arquivo selecionado</span>
+                        </div>
+                        <select name="formato">
+                            <option value="zip">ZIP</option>
+                            <option value="tar.gz">TAR.GZ</option>
+                        </select>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Comprimir e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- ZIP com Senha -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            ZIP com Senha
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-enc">AES-256</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Crie um arquivo ZIP protegido com criptografia AES-256. Ideal para enviar dados sensíveis.</p>
+                    <form action="/api/file/zip-senha" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="zipSenhaInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivos
+                            </label>
+                            <input type="file" name="arquivos" id="zipSenhaInput" multiple required
+                                class="hidden-file-input">
+                        </div>
+                        <div id="zipSenhaListContainer"
+                            style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
+                            <span id="zipSenhaEmptyMsg"
+                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum
+                                arquivo selecionado</span>
+                        </div>
+                        <input type="password" name="senha" placeholder="Senha para proteger o ZIP" required>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Proteger e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Criptografar Arquivo -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            Criptografar Arquivo
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-enc">AES-256</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Criptografe qualquer arquivo com AES-256-CBC. Só quem tiver a senha poderá abrir.</p>
+                    <form action="/api/file/criptografar" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="criptoInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="criptoFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="criptoInput" required class="hidden-file-input">
+                        </div>
+                        <input type="password" name="senha" placeholder="Senha de criptografia" required>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Criptografar e baixar .enc</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Descriptografar Arquivo -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                            </svg>
+                            Descriptografar Arquivo
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-enc">.ENC</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Descriptografe arquivos .enc gerados pelo Prisma (necessita da senha original).</p>
+                    <form action="/api/file/descriptografar" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="decriptoInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo .enc
+                            </label>
+                            <span class="file-name-display" id="decriptoFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="decriptoInput" required class="hidden-file-input">
+                        </div>
+                        <input type="password" name="senha" placeholder="Senha usada na criptografia" required>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Descriptografar e baixar</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Calculadora de Hash -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <line x1="4" y1="9" x2="20" y2="9"></line>
+                                <line x1="4" y1="15" x2="20" y2="15"></line>
+                                <line x1="10" y1="3" x2="8" y2="21"></line>
+                                <line x1="16" y1="3" x2="14" y2="21"></line>
+                            </svg>
+                            Calculadora de Hash
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-hash">HASH</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Calcule MD5, SHA-1 e SHA-256 de qualquer arquivo. Útil para verificar integridade.</p>
+                    <form id="hashForm" style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="hashInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivo
+                            </label>
+                            <span class="file-name-display" id="hashFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="hashInput" required class="hidden-file-input">
+                        </div>
+                        <div class="hash-resultado" id="hashResultado"></div>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto" id="hashBtn">
+                            <span>Calcular Hash</span><span class="botao-arr">#</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Renomear em Lote -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Renomear em Lote
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-all">ZIP</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Renomeie vários arquivos de uma vez com um padrão. Use {n} para numeração sequencial.</p>
+                    <form action="/api/file/renomear-lote" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="renomearInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Arquivos
+                            </label>
+                            <input type="file" name="arquivos" id="renomearInput" multiple required
+                                class="hidden-file-input">
+                        </div>
+                        <div id="renomearListContainer"
+                            style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
+                            <span id="renomearEmptyMsg"
+                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum
+                                arquivo selecionado</span>
+                        </div>
+                        <input type="text" name="padrao" placeholder="Padrão: foto_{n}, relatorio_{n}" value="arquivo_{n}" required>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Renomear e baixar ZIP</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+
+    </div>
+
+    </main>
+    </div><!-- /layout -->
+
+    <footer class="rodape">
+        <span class="rodape-marca">Prisma © 2026</span>
+        <span class="rodape-sep">|</span>
+        <a href="https://github.com/GuGoulart" target="_blank" rel="noopener noreferrer" class="rodape-link"
+            style="display:inline-flex; align-items:center; gap:6px; margin-left: 8px;">
+            <span class="rodape-marca" style="color: inherit;">Made by Gustavo Goulart</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                    d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+            </svg>
+        </a>
+    </footer>
+
+    <script src="{{ url_for('static', filename='file_tools.js') }}"></script>
+</body>
+
+</html>

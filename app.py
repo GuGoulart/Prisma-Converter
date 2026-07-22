@@ -1,7 +1,7 @@
 from flask import (Flask, render_template, request, send_file,
                    session, after_this_request, abort, Response,
                    redirect, url_for, jsonify)
-from core.converter import obter_conversoes, converter_arquivo, obter_motor, detectar_encoding, remover_fundo_imagem, mesclar_planilhas
+from core.converter import obter_conversoes, converter_arquivo, obter_motor, detectar_encoding, mesclar_planilhas
 from core.pdf_tools import mesclar_pdfs, dividir_pdf, proteger_pdf, desproteger_pdf, comprimir_pdf, adicionar_marca_dagua, extrair_imagens_pdf, manipular_paginas_pdf
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -61,6 +61,10 @@ LIMITES_POR_TIPO = {
     "json": MAX_MB * 1024 * 1024,
     "webp": MAX_MB * 1024 * 1024,
     "heic": MAX_MB * 1024 * 1024,
+    "epub": MAX_MB * 1024 * 1024,
+    "mp4":  MAX_MB * 1024 * 1024,
+    "mp3":  MAX_MB * 1024 * 1024,
+    "enc":  MAX_MB * 1024 * 1024,
 }
 NOMES_LIMITES = {k: f"{MAX_MB} MB" for k in LIMITES_POR_TIPO}
 
@@ -459,33 +463,347 @@ def api_manipular_paginas():
         log.warning(f"api_manipular_paginas error: {e}")
         return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
-@app.route("/api/img/remover-fundo", methods=["POST"])
+@app.route("/api/media/mp4-para-mp3", methods=["POST"])
 @rate_limit_required
-def api_remover_fundo():
+def api_mp4_para_mp3():
     if not validar_csrf(request.form.get('csrf_token', '')):
         return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
+    if not f or not f.filename:
+        return render_template("pdf_tools.html", erro="Selecione um arquivo de vídeo MP4."), 400
+    
+    bitrate = request.form.get("bitrate", "192k")
+    if bitrate not in ("128k", "192k", "320k"):
+        bitrate = "192k"
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    nome_seguro = secure_filename(f.filename) or "video.mp4"
+    entrada = os.path.join(pp, nome_seguro)
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "audio.mp3")
+    try:
+        from core.media_tools import mp4_para_mp3
+        mp4_para_mp3(entrada, saida, bitrate=bitrate)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Audio.mp3")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        log.warning(f"api_mp4_para_mp3 error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
+
+@app.route("/api/qr/gerar", methods=["POST"])
+@rate_limit_required
+def api_gerar_qr():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
+
+    texto = request.form.get("texto", "").strip()
+    if not texto:
+        return render_template("pdf_tools.html", erro="Digite um texto ou URL para gerar o QR Code."), 400
+    
+    cor_frente = request.form.get("cor_frente", "#000000")
+    cor_fundo = request.form.get("cor_fundo", "#FFFFFF")
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    saida = os.path.join(pp, "qrcode.png")
+    try:
+        from core.qr_tools import gerar_qrcode
+        gerar_qrcode(texto, saida, cor_frente=cor_frente, cor_fundo=cor_fundo)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_QRCode.png")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        log.warning(f"api_gerar_qr error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
+
+@app.route("/api/qr/ler", methods=["POST"])
+@rate_limit_required
+def api_ler_qr():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return jsonify({"erro": "Token inválido. Recarregue a página."}), 403
+
+    f = request.files.get("arquivo")
+    if not f or not f.filename:
+        return jsonify({"erro": "Selecione uma imagem contendo um QR Code."}), 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    nome_seguro = secure_filename(f.filename) or "qrcode_img.png"
+    entrada = os.path.join(pp, nome_seguro)
+    f.save(entrada)
+    
+    try:
+        from core.qr_tools import ler_qrcode
+        resultados = ler_qrcode(entrada)
+        return jsonify({"codigos": resultados})
+    except Exception as e:
+        log.warning(f"api_ler_qr error: {e}")
+        return jsonify({"erro": _erro_seguro(e)}), 400
+    finally:
+        shutil.rmtree(pp, ignore_errors=True)
+
+@app.route("/api/img/paleta", methods=["POST"])
+@rate_limit_required
+def api_paleta_cores():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return jsonify({"erro": "Token inválido. Recarregue a página."}), 403
+
+    f = request.files.get("arquivo")
+    if not f or not f.filename:
+        return jsonify({"erro": "Selecione uma imagem para extrair a paleta de cores."}), 400
+    
+    n_cores = request.form.get("n_cores", "8")
+    try:
+        n_cores = min(max(int(n_cores), 3), 16)
+    except ValueError:
+        n_cores = 8
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    nome_seguro = secure_filename(f.filename) or "imagem.png"
+    entrada = os.path.join(pp, nome_seguro)
+    f.save(entrada)
+    
+    try:
+        from core.image_tools import extrair_paleta
+        paleta = extrair_paleta(entrada, n_cores=n_cores)
+        return jsonify({"paleta": paleta})
+    except Exception as e:
+        log.warning(f"api_paleta_cores error: {e}")
+        return jsonify({"erro": _erro_seguro(e)}), 400
+    finally:
+        shutil.rmtree(pp, ignore_errors=True)
+
+
+
+
+# ── Rotas: Modificar Arquivos ─────────────────────────────────────
+
+@app.route("/modificar-arquivos")
+def modificar_arquivos_page():
+    return render_template("file_tools.html")
+
+@app.route("/api/file/comprimir", methods=["POST"])
+@rate_limit_required
+def api_comprimir_arquivos():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+
+    arquivos = request.files.getlist("arquivos")
+    formato = request.form.get("formato", "zip")
+    if not arquivos or len(arquivos) < 1:
+        return "Selecione pelo menos 1 arquivo", 400
+    if formato not in ("zip", "tar.gz"):
+        formato = "zip"
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    caminhos = []
+    
+    for f in arquivos:
+        nome_seguro = secure_filename(f.filename)
+        caminho = os.path.join(pp, nome_seguro)
+        f.save(caminho)
+        caminhos.append(caminho)
+    
+    ext_saida = "tar.gz" if formato == "tar.gz" else "zip"
+    saida = os.path.join(pp, f"comprimido.{ext_saida}")
+    try:
+        from core.file_tools import comprimir_arquivos
+        comprimir_arquivos(caminhos, saida, formato=formato)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        resp = send_file(saida, as_attachment=True, download_name=f"Prisma_Comprimido.{ext_saida}")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        log.warning(f"api_comprimir_arquivos error: {e}")
+        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
+
+@app.route("/api/file/zip-senha", methods=["POST"])
+@rate_limit_required
+def api_zip_senha():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+
+    arquivos = request.files.getlist("arquivos")
+    senha = request.form.get("senha", "")
+    if not arquivos or len(arquivos) < 1:
+        return "Selecione pelo menos 1 arquivo", 400
+    if not senha:
+        return "A senha é obrigatória", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    caminhos = []
+    
+    for f in arquivos:
+        nome_seguro = secure_filename(f.filename)
+        caminho = os.path.join(pp, nome_seguro)
+        f.save(caminho)
+        caminhos.append(caminho)
+    
+    saida = os.path.join(pp, "protegido.zip")
+    try:
+        from core.file_tools import zip_com_senha
+        zip_com_senha(caminhos, saida, senha)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Protegido.zip")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        log.warning(f"api_zip_senha error: {e}")
+        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
+
+@app.route("/api/file/criptografar", methods=["POST"])
+@rate_limit_required
+def api_criptografar():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+
+    f = request.files.get("arquivo")
+    senha = request.form.get("senha", "")
     if not f: return "Selecione um arquivo", 400
+    if not senha: return "A senha é obrigatória", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    nome_seguro = secure_filename(f.filename)
+    entrada = os.path.join(pp, nome_seguro)
+    f.save(entrada)
+    
+    saida = os.path.join(pp, f"{nome_seguro}.enc")
+    try:
+        from core.file_tools import criptografar_arquivo
+        criptografar_arquivo(entrada, saida, senha)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        resp = send_file(saida, as_attachment=True, download_name=f"Prisma_{nome_seguro}.enc")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        log.warning(f"api_criptografar error: {e}")
+        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
+
+@app.route("/api/file/descriptografar", methods=["POST"])
+@rate_limit_required
+def api_descriptografar():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+
+    f = request.files.get("arquivo")
+    senha = request.form.get("senha", "")
+    nome_original = request.form.get("nome_original", "arquivo_descriptografado")
+    if not f: return "Selecione um arquivo", 400
+    if not senha: return "A senha é obrigatória", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    nome_seguro = secure_filename(f.filename)
+    entrada = os.path.join(pp, nome_seguro)
+    f.save(entrada)
+    
+    # Remover .enc do nome para restaurar o original
+    nome_dl = nome_seguro
+    if nome_dl.endswith(".enc"):
+        nome_dl = nome_dl[:-4]
+    else:
+        nome_dl = f"descriptografado_{nome_dl}"
+    
+    saida = os.path.join(pp, nome_dl)
+    try:
+        from core.file_tools import descriptografar_arquivo
+        descriptografar_arquivo(entrada, saida, senha)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        resp = send_file(saida, as_attachment=True, download_name=nome_dl)
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        log.warning(f"api_descriptografar error: {e}")
+        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
+
+@app.route("/api/file/hash", methods=["POST"])
+@rate_limit_required
+def api_calcular_hash():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return jsonify({"erro": "Token inválido."}), 403
+
+    f = request.files.get("arquivo")
+    if not f: return jsonify({"erro": "Selecione um arquivo"}), 400
     
     uid = criar_pasta()
     pp = pasta_path(uid)
     entrada = os.path.join(pp, secure_filename(f.filename))
     f.save(entrada)
     
-    saida = os.path.join(pp, "sem_fundo.png")
     try:
-        remover_fundo_imagem(entrada, saida)
+        from core.file_tools import calcular_hashes
+        hashes = calcular_hashes(entrada)
+        hashes["nome"] = f.filename
+        return jsonify(hashes)
+    except Exception as e:
+        log.warning(f"api_calcular_hash error: {e}")
+        return jsonify({"erro": _erro_seguro(e)}), 400
+    finally:
+        shutil.rmtree(pp, ignore_errors=True)
+
+@app.route("/api/file/renomear-lote", methods=["POST"])
+@rate_limit_required
+def api_renomear_lote():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+
+    arquivos = request.files.getlist("arquivos")
+    padrao = request.form.get("padrao", "arquivo_{n}")
+    if not arquivos or len(arquivos) < 1:
+        return "Selecione pelo menos 1 arquivo", 400
+    
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    caminhos = []
+    
+    for f in arquivos:
+        nome_seguro = secure_filename(f.filename)
+        caminho = os.path.join(pp, nome_seguro)
+        f.save(caminho)
+        caminhos.append(caminho)
+    
+    saida = os.path.join(pp, "renomeados.zip")
+    try:
+        from core.file_tools import renomear_em_lote
+        renomear_em_lote(caminhos, padrao, saida)
         @after_this_request
         def cleanup(response):
             threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
             return response
-        resp = send_file(saida, as_attachment=True, download_name="Prisma_Sem_Fundo.png")
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Renomeados.zip")
         resp.headers["Cache-Control"] = "no-store"
         return resp
     except Exception as e:
-        log.warning(f"api_remover_fundo error: {e}")
-        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
+        log.warning(f"api_renomear_lote error: {e}")
+        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/data/mesclar-planilhas", methods=["POST"])
 @rate_limit_required

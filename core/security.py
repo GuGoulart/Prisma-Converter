@@ -45,6 +45,9 @@ _MAGIC = {
     "ppt":  [b"\xd0\xcf\x11\xe0"], "doc": [b"\xd0\xcf\x11\xe0"], "xls": [b"\xd0\xcf\x11\xe0"],
     "png":  [b"\x89PNG"],
     "jpg":  [b"\xff\xd8\xff"], "jpeg": [b"\xff\xd8\xff"],
+    "mp4":  "special",
+    "mp3":  [b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"ID3"],
+    "enc":  None,  # arquivo criptografado, sem magic definido
     # Formatos com validação especial (ver validar_magic abaixo)
     "webp": "special",
     "heic": "special",
@@ -88,6 +91,10 @@ def validar_magic(caminho, ext):
                 return bool(first) and first[0] in ("{", "[")
             except OSError:
                 return False
+
+        if ext == "mp4":
+            # MP4/M4A: box 'ftyp' nos bytes 4-8
+            return len(header) >= 8 and header[4:8] == b"ftyp"
 
         return True  # fallback para "special" desconhecidos
 

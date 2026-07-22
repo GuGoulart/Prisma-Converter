@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -11,7 +11,7 @@
     <meta property="og:type" content="website">
 
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#c8ff00">
+    <meta name="theme-color" content="#090a0f">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
 
@@ -70,26 +70,36 @@
 
         .tool-badges {
             display: flex;
-            gap: 4px;
+            align-items: center;
+            gap: 6px;
         }
 
         .tool-badge {
+            font-family: var(--mono);
             font-size: 10px;
-            padding: 4px 8px;
-            border-radius: 0;
-            font-weight: 800;
-            letter-spacing: 1px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
             text-transform: uppercase;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 6px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
+            padding: 2px 7px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border2);
+            color: var(--muted);
+            box-shadow: none;
+            text-shadow: none;
+            transition: all 0.2s ease;
+        }
+
+        [data-theme="light"] .tool-badge {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.12);
         }
 
         .pdf-tool-card:hover .tool-badge {
-            box-shadow: 0 0 15px currentColor, inset 0 0 8px currentColor !important;
-            border-color: currentColor !important;
-            background: color-mix(in srgb, currentColor 25%, transparent) !important;
+            box-shadow: none !important;
+            border-color: color-mix(in srgb, var(--accent) 50%, transparent) !important;
+            color: var(--accent) !important;
+            background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
         }
 
         .pdf-tool-desc {
@@ -238,6 +248,77 @@
                 transform: translateX(-60px) rotate(360deg);
             }
         }
+
+        .badge-pdf {
+            color: #f87171 !important;
+            border-color: color-mix(in srgb, #f87171 35%, transparent) !important;
+            background: color-mix(in srgb, #f87171 10%, transparent) !important;
+        }
+        .badge-mp4 {
+            color: #818cf8 !important;
+            border-color: color-mix(in srgb, #818cf8 35%, transparent) !important;
+            background: color-mix(in srgb, #818cf8 10%, transparent) !important;
+        }
+        .badge-mp3 {
+            color: #34d399 !important;
+            border-color: color-mix(in srgb, #34d399 35%, transparent) !important;
+            background: color-mix(in srgb, #34d399 10%, transparent) !important;
+        }
+        .badge-qr {
+            color: #a78bfa !important;
+            border-color: color-mix(in srgb, #a78bfa 35%, transparent) !important;
+            background: color-mix(in srgb, #a78bfa 10%, transparent) !important;
+        }
+        .badge-png, .badge-jpg, .badge-webp {
+            color: #38bdf8 !important;
+            border-color: color-mix(in srgb, #38bdf8 35%, transparent) !important;
+            background: color-mix(in srgb, #38bdf8 10%, transparent) !important;
+        }
+        .badge-cor {
+            color: #f472b6 !important;
+            border-color: color-mix(in srgb, #f472b6 35%, transparent) !important;
+            background: color-mix(in srgb, #f472b6 10%, transparent) !important;
+        }
+        /* AJAX result containers */
+        .ajax-resultado {
+            display: none;
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            padding: 12px;
+            font-family: var(--mono);
+            font-size: 12px;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+        .paleta-swatches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .paleta-swatch {
+            width: 48px;
+            height: 48px;
+            border: 1px solid var(--border2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .paleta-swatch:hover {
+            transform: scale(1.15);
+        }
+        .paleta-swatch-label {
+            font-size: 8px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 1px 3px;
+            width: 100%;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -273,6 +354,7 @@
                 <p class="sidebar-label">Menu</p>
                 <a href="/" class="nav-link">Conversor de arquivos</a>
                 <a href="/ferramentas-avancadas" class="nav-link nav-active">Ferramentas Avançadas</a>
+                <a href="/modificar-arquivos" class="nav-link">Modificar Arquivos</a>
             </div>
 
             <div class="sidebar-linha"></div>
@@ -676,107 +758,166 @@
                     </form>
                 </div>
 
-                <!-- Remover Fundo da Imagem -->
+                <!-- Gerador de QR Code -->
                 <div class="pdf-tool-card">
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                 style="color:var(--accent)">
-                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                                <circle cx="12" cy="11" r="3"></circle>
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                                <rect x="17" y="17" width="4" height="4"></rect>
                             </svg>
-                            Remover Fundo (Imagem)
+                            Gerador de QR Code
                         </div>
                         <div class="tool-badges">
-                            <span class="tool-badge badge-png">PNG</span>
-                            <span class="tool-badge badge-jpg">JPG</span>
-                            <span class="tool-badge badge-webp">WEBP</span>
+                            <span class="tool-badge badge-qr">QR CODE</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Remova o fundo de imagens automaticamente. A primeira vez pode demorar
-                        mais.
-                    </p>
-                    <form action="/api/img/remover-fundo" method="POST" enctype="multipart/form-data"
+                    <p class="pdf-tool-desc">Digite um texto ou URL e gere uma imagem QR Code para download.</p>
+                    <form action="/api/qr/gerar" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <div>
-                            <label for="rembgInput" class="btn-escolher">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" style="margin-right: 6px;">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <polyline points="17 8 12 3 7 8" />
-                                    <line x1="12" y1="3" x2="12" y2="15" />
-                                </svg>
-                                Escolher Arquivo
-                            </label>
-                            <span class="file-name-display" id="rembgFileName">Nenhum arquivo selecionado</span>
-                            <input type="file" name="arquivo" id="rembgInput" accept=".jpg,.jpeg,.png,.webp,.heic"
-                                required class="hidden-file-input">
+                        <input type="text" name="texto" placeholder="Texto ou URL para o QR Code" required>
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <label style="font-size:12px;color:var(--muted);white-space:nowrap">Cor:</label>
+                            <input type="color" name="cor_frente" value="#000000" style="width:32px;height:28px;padding:0;border:1px solid var(--border2);cursor:pointer">
+                            <label style="font-size:12px;color:var(--muted);white-space:nowrap">Fundo:</label>
+                            <input type="color" name="cor_fundo" value="#FFFFFF" style="width:32px;height:28px;padding:0;border:1px solid var(--border2);cursor:pointer">
                         </div>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                            <span>Remover Fundo</span><span class="botao-arr">↓</span>
+                            <span>Gerar e baixar</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>
 
-                <!-- Mesclar Planilhas -->
+                <!-- Leitor de QR Code -->
                 <div class="pdf-tool-card">
                     <div class="pdf-tool-title">
                         <div class="pdf-tool-title-left">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                 style="color:var(--accent)">
-                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2">
-                                </path>
-                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                                <path d="M9 14h6"></path>
-                                <path d="M9 18h6"></path>
-                                <path d="M9 10h6"></path>
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
-                            Mesclar Planilhas
+                            Leitor de QR Code
                         </div>
                         <div class="tool-badges">
-                            <span class="tool-badge badge-csv">CSV</span>
-                            <span class="tool-badge badge-xlsx">XLSX</span>
-                            <span class="tool-badge badge-json">JSON</span>
+                            <span class="tool-badge badge-qr">QR CODE</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Junte vários arquivos CSV, XLSX ou JSON em um só arquivo (empilhamento
-                        vertical).
-                    </p>
-                    <form action="/api/data/mesclar-planilhas" method="POST" enctype="multipart/form-data"
-                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                    <p class="pdf-tool-desc">Envie uma imagem com QR Code e descubra o conteúdo codificado.</p>
+                    <form id="qrLerForm" style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <div>
-                            <label for="mergeDataInput" class="btn-escolher">
+                            <label for="qrLerInput" class="btn-escolher">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" style="margin-right: 6px;">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                     <polyline points="17 8 12 3 7 8" />
                                     <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
-                                Escolher Arquivos
+                                Escolher Imagem
                             </label>
-                            <input type="file" name="arquivos" id="mergeDataInput" multiple
-                                accept=".csv,.xlsx,.xls,.json" required class="hidden-file-input">
+                            <span class="file-name-display" id="qrLerFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="qrLerInput" accept=".png,.jpg,.jpeg,.webp" required
+                                class="hidden-file-input">
                         </div>
-                        <div id="mergeDataListContainer"
-                            style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
-                            <span id="mergeDataEmptyMsg"
-                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum
-                                arquivo selecionado</span>
-                        </div>
-                        <select name="formato" id="mergeDataFormato">
-                            <option value="xlsx">Salvar como XLSX</option>
-                            <option value="csv">Salvar como CSV</option>
-                            <option value="json">Salvar como JSON</option>
-                        </select>
-                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                            <span>Mesclar e baixar</span><span class="botao-arr">↓</span>
+                        <div class="ajax-resultado" id="qrLerResultado"></div>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto" id="qrLerBtn">
+                            <span>Ler QR Code</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>
+
+                <!-- MP4 → MP3 -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            MP4 → MP3
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-mp3">MP3</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Extraia o áudio de um vídeo MP4 e salve como MP3. Escolha a qualidade do áudio.</p>
+                    <form action="/api/media/mp4-para-mp3" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="mp4Input" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Vídeo
+                            </label>
+                            <span class="file-name-display" id="mp4FileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="mp4Input" accept=".mp4,.m4v,.mov" required
+                                class="hidden-file-input">
+                        </div>
+                        <select name="bitrate">
+                            <option value="128k">128 kbps (Menor tamanho)</option>
+                            <option value="192k" selected>192 kbps (Equilíbrio)</option>
+                            <option value="320k">320 kbps (Máxima qualidade)</option>
+                        </select>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Converter e baixar MP3</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Extrator de Paleta de Cores -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <circle cx="13.5" cy="6.5" r="2.5"></circle>
+                                <path d="M12 2a10 10 0 0 1 0 20 2 2 0 0 1 0-4 6 6 0 0 0 0-12z"></path>
+                            </svg>
+                            Paleta de Cores
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-cor">CORES</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Extraia as cores dominantes de uma imagem. Útil para designers e branding.</p>
+                    <form id="paletaForm" style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="paletaInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Imagem
+                            </label>
+                            <span class="file-name-display" id="paletaFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="paletaInput" accept=".png,.jpg,.jpeg,.webp" required
+                                class="hidden-file-input">
+                        </div>
+                        <div class="ajax-resultado" id="paletaResultado"></div>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto" id="paletaBtn">
+                            <span>Extrair Cores</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+
 
             </div>
 

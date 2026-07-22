@@ -1,0 +1,90 @@
+"""
+media_tools.py — Ferramentas de mídia (áudio/vídeo)
+Usa ffmpeg (do sistema ou via imageio-ffmpeg) para conversões de mídia.
+"""
+
+import os
+import shutil
+import subprocess
+import logging
+
+log = logging.getLogger(__name__)
+
+
+def encontrar_ffmpeg():
+    """Procura o ffmpeg no PATH do sistema ou via imageio-ffmpeg."""
+    if shutil.which("ffmpeg"):
+        return "ffmpeg"
+
+    # 1. Tentar imageio_ffmpeg (pacote python com binário ffmpeg embutido)
+    try:
+        import imageio_ffmpeg
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        if exe and os.path.exists(exe):
+            return exe
+    except Exception as e:
+        log.debug(f"imageio_ffmpeg não disponível: {e}")
+
+    # 2. Caminhos comuns no Windows
+    for c in [
+        r"C:\ffmpeg\bin\ffmpeg.exe",
+        r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+        r"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe",
+    ]:
+        if os.path.exists(c):
+            return c
+
+    return None
+
+
+def mp4_para_mp3(entrada: str, saida: str, bitrate: str = "192k", timeout: int = 180):
+    """
+    Converte um arquivo MP4 (vídeo) para MP3 (áudio).
+    Extrai a faixa de áudio e recodifica em MP3.
+
+    Args:
+        entrada: Caminho do arquivo MP4 de entrada.
+        saida: Caminho do arquivo MP3 de saída.
+        bitrate: Bitrate do áudio (ex: "128k", "192k", "320k").
+        timeout: Tempo máximo em segundos.
+    """
+    ffmpeg_exe = encontrar_ffmpeg()
+    if not ffmpeg_exe:
+        raise RuntimeError(
+            "ffmpeg não foi encontrado. Certifique-se de ter o ffmpeg ou o pacote imageio-ffmpeg instalado."
+        )
+
+    if not os.path.exists(entrada):
+        raise FileNotFoundError(f"Arquivo não encontrado: {entrada}")
+
+    # Garantir que o diretório de saída existe
+    os.makedirs(os.path.dirname(saida) or ".", exist_ok=True)
+
+    cmd = [
+        ffmpeg_exe,
+        "-i", os.path.abspath(entrada),
+        "-vn",                 # Descartar fluxo de vídeo
+        "-ar", "44100",        # Taxa de amostragem padrão
+        "-ac", "2",            # Estéreo
+        "-b:a", bitrate,       # Bitrate de áudio
+        "-y",                  # Sobrescrever
+        os.path.abspath(saida),
+    ]
+
+    log.info(f"Executando ffmpeg: {' '.join(cmd)}")
+
+    resultado = subprocess.run(
+        cmd,
+        capture_output=True,
+        timeout=timeout,
+    )
+
+    if resultado.returncode != 0:
+        erro = resultado.stderr.decode("utf-8", errors="replace")
+        log.warning(f"ffmpeg erro (código {resultado.returncode}): {erro}")
+        raise RuntimeError("Erro ao extrair o áudio do vídeo. Verifique se o arquivo de vídeo não está corrompido.")
+
+    if not os.path.exists(saida) or os.path.getsize(saida) == 0:
+        raise RuntimeError("A conversão não gerou um arquivo de áudio válido.")
+
+    log.info(f"MP4→MP3 OK: {os.path.basename(entrada)} ({bitrate})")
