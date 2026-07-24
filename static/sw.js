@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prisma-cache-v4';
+const CACHE_NAME = 'prisma-cache-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/style.css',
@@ -31,8 +31,12 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
-  // PERF-006: Ignora rotas dinâmicas (sessão Flask) e de API/download
   const url = new URL(event.request.url);
+
+  // Ignorar requisições de domínios externos (ex: Google Fonts)
+  if (url.origin !== self.location.origin) return;
+
+  // PERF-006: Ignora rotas dinâmicas (sessão Flask) e de API/download
   const rotasDinamicas = ['/', '/upload', '/converter', '/preview', '/ferramentas-avancadas', '/modificar-arquivos'];
   const isDinamica = rotasDinamicas.some(r => url.pathname === r || url.pathname.startsWith('/preview/'));
   if (isDinamica || url.pathname.includes('/api/') || url.pathname.includes('/download/')) {
