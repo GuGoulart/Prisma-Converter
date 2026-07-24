@@ -92,7 +92,7 @@ def cabecalhos_seguranca(response):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; "
         "img-src 'self' data: blob:; "
-        "connect-src 'self'"
+        "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com"
     )
     return response
 
