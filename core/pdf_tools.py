@@ -40,7 +40,7 @@ def dividir_pdf(arquivo_entrada: str, caminho_saida_zip: str, modo: str = "indiv
             try:
                 passo = int(parametro)
                 if passo < 1: passo = 1
-            except:
+            except Exception:
                 passo = 1
             for i in range(0, total_paginas, passo):
                 fim = min(i + passo - 1, total_paginas - 1)
@@ -56,13 +56,13 @@ def dividir_pdf(arquivo_entrada: str, caminho_saida_zip: str, modo: str = "indiv
                         fim = min(total_paginas - 1, int(fim) - 1)
                         if inicio <= fim:
                             intervalos.append((inicio, fim))
-                    except: pass
+                    except Exception: pass
                 else:
                     try:
                         pg = int(parte) - 1
                         if 0 <= pg < total_paginas:
                             intervalos.append((pg, pg))
-                    except: pass
+                    except Exception: pass
             if not intervalos:
                 # CONV-004: avisa o usuário em vez de fallback silencioso
                 raise ValueError(
@@ -88,9 +88,9 @@ def dividir_pdf(arquivo_entrada: str, caminho_saida_zip: str, modo: str = "indiv
                 
         for caminho in caminhos_gerados:
             try: os.remove(caminho)
-            except: pass
+            except Exception: pass
         try: os.rmdir(pasta_temp)
-        except: pass
+        except Exception: pass
 
 
 def proteger_pdf(arquivo_entrada: str, senha: str, caminho_saida: str):
@@ -251,9 +251,9 @@ def extrair_imagens_pdf(arquivo_entrada: str, caminho_saida_zip: str):
             
     for caminho in caminhos_gerados:
         try: os.remove(caminho)
-        except: pass
+        except Exception: pass
     try: os.rmdir(pasta_temp)
-    except: pass
+    except Exception: pass
 
 
 def manipular_paginas_pdf(arquivo_entrada: str, caminho_saida: str, remover: str = "", rotacionar: str = ""):
@@ -278,7 +278,7 @@ def manipular_paginas_pdf(arquivo_entrada: str, caminho_saida: str, remover: str
                     grau = round(grau / 90.0) * 90 # Arredondar para múltiplo de 90
                     if 0 <= pg < total_paginas:
                         rotacoes_dict[pg] = grau
-                except: pass
+                except Exception: pass
                 
     # 2. Parse exclusões (formato: "1, 3-5")
     paginas_manter = []
@@ -293,13 +293,13 @@ def manipular_paginas_pdf(arquivo_entrada: str, caminho_saida: str, remover: str
                     fim = min(total_paginas - 1, int(fim) - 1)
                     for i in range(inicio, fim + 1):
                         exclusoes.add(i)
-                except: pass
+                except Exception: pass
             else:
                 try:
                     pg = int(parte) - 1
                     if 0 <= pg < total_paginas:
                         exclusoes.add(pg)
-                except: pass
+                except Exception: pass
 
     for i in range(total_paginas):
         if i not in exclusoes:

@@ -7,7 +7,8 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from collections import defaultdict
 from threading import Lock
-from core.security import gerar_csrf, validar_csrf, verificar_rate_limit, validar_nome, validar_magic, rate_limit_required
+from core.security import (gerar_csrf, validar_csrf, verificar_rate_limit,
+                           validar_nome, validar_magic, rate_limit_required, extrair_ip_cliente)
 from core.cleanup import iniciar_limpeza
 import sys
 from dotenv import load_dotenv
@@ -28,6 +29,10 @@ TIMEOUT_PREVIEW = 40
 app.config["UPLOAD_FOLDER"]      = UPLOAD_FOLDER
 app.config["DOWNLOAD_FOLDER"]    = DOWNLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = MAX_MB * 1024 * 1024
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+if os.environ.get("PORT"):
+    app.config["SESSION_COOKIE_SECURE"] = True
 
 os.makedirs(UPLOAD_FOLDER,   exist_ok=True)
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
@@ -44,7 +49,7 @@ log = logging.getLogger(__name__)
 
 _conversoes_ativas = 0
 _lock_conv         = Lock()
-MAX_PARALELAS      = 1
+MAX_PARALELAS      = int(os.environ.get("MAX_PARALELAS", 4))
 
 LIMITES_POR_TIPO = {
     "pdf":  MAX_MB * 1024 * 1024,
@@ -61,7 +66,6 @@ LIMITES_POR_TIPO = {
     "json": MAX_MB * 1024 * 1024,
     "webp": MAX_MB * 1024 * 1024,
     "heic": MAX_MB * 1024 * 1024,
-    "epub": MAX_MB * 1024 * 1024,
     "mp4":  MAX_MB * 1024 * 1024,
     "mp3":  MAX_MB * 1024 * 1024,
     "enc":  MAX_MB * 1024 * 1024,
@@ -81,12 +85,14 @@ def cabecalhos_seguranca(response):
     # SEG-009: HSTS apenas em produção (evita travar HTTP em desenvolvimento local)
     if os.environ.get("PORT") and not app.debug:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    # SEG-008: removido unsafe-inline — scripts e estilos inline migrados para data attributes + arquivos externos
+    # AUD-001: CSP unificado (merge de cabecalhos_seguranca + add_security_headers removido)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self'; "
-        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:; "
+        "img-src 'self' data: blob:; "
+        "connect-src 'self'"
     )
     return response
 
@@ -143,8 +149,11 @@ def gerar_preview_tabela(caminho: str, extensao: str, limite: int = None):
                 encoding_errors="replace",
                 on_bad_lines="skip",
             )
-        elif extensao in ("xlsx", "xls"):
+        elif extensao == "xlsx":
             df = pd.read_excel(caminho, nrows=limite, engine="openpyxl")
+        elif extensao == "xls":
+            # AUD-006: xls (formato binário legado) não suporta openpyxl — auto-detect engine
+            df = pd.read_excel(caminho, nrows=limite)
         elif extensao == "json":
             df = pd.read_json(caminho)
         else:
@@ -185,6 +194,7 @@ def inject_globals():
         csrf_token=gerar_csrf(),
         todas_conversoes=CONVERSOES,
     )
+
 
 @app.errorhandler(413)
 def arquivo_grande(e):
@@ -500,6 +510,51 @@ def api_mp4_para_mp3():
         return resp
     except Exception as e:
         log.warning(f"api_mp4_para_mp3 error: {e}")
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
+
+@app.route("/api/media/mp4-para-gif", methods=["POST"])
+@rate_limit_required
+def api_mp4_para_gif():
+    if not validar_csrf(request.form.get('csrf_token', '')):
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
+
+    f = request.files.get("arquivo")
+    if not f or not f.filename:
+        return render_template("pdf_tools.html", erro="Selecione um arquivo de vídeo MP4."), 400
+    
+    try:
+        fps = int(request.form.get("fps", 15))
+        if fps not in (10, 15, 20):
+            fps = 15
+    except (ValueError, TypeError):
+        fps = 15
+
+    try:
+        largura = int(request.form.get("largura", 480))
+        if largura not in (320, 480, 640, 0):
+            largura = 480
+    except (ValueError, TypeError):
+        largura = 480
+
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+    nome_seguro = secure_filename(f.filename) or "video.mp4"
+    entrada = os.path.join(pp, nome_seguro)
+    f.save(entrada)
+    
+    saida = os.path.join(pp, "animacao.gif")
+    try:
+        from core.media_tools import mp4_para_gif
+        mp4_para_gif(entrada, saida, fps=fps, largura=largura)
+        @after_this_request
+        def cleanup(response):
+            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
+            return response
+        resp = send_file(saida, as_attachment=True, download_name="Prisma_Animacao.gif")
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        log.warning(f"api_mp4_para_gif error: {e}")
         return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/qr/gerar", methods=["POST"])
@@ -839,7 +894,7 @@ def api_mesclar_planilhas():
             return response
         return send_file(saida, as_attachment=True, download_name=f"Prisma_Mesclado.{formato}")
     except Exception as e:
-        return render_template("index.html", erro=str(e)), 400
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/manifest.json")
 def serve_manifest():
@@ -852,6 +907,9 @@ def serve_sw():
 
 @app.route("/preview/<pasta_uuid>/<preview_file>")
 def preview_arquivo(pasta_uuid, preview_file):
+    # AUD-007: valida formato UUID (hex 32 chars) para defesa em profundidade
+    if not re.match(r'^[a-f0-9]{32}$', pasta_uuid):
+        abort(400)
     if session.get("pasta_upload") != pasta_uuid:
         abort(403)
     if not re.match(r'^[a-zA-Z0-9_]+\.[a-zA-Z0-9]{1,10}$', preview_file):
@@ -864,9 +922,11 @@ def preview_arquivo(pasta_uuid, preview_file):
 
 @app.route("/preview-convert/<pasta_uuid>/<destino>")
 def preview_convert(pasta_uuid, destino):
+    if not re.match(r'^[a-f0-9]{32}$', pasta_uuid):
+        abort(400)
     if session.get("pasta_upload") != pasta_uuid:
         abort(403)
-    if destino not in {"pdf","png","jpg","csv","xlsx","docx","pptx","ppt","json","webp","heic","txt"}:
+    if destino not in {"pdf","png","jpg","gif","csv","xlsx","docx","pptx","ppt","json","webp","heic","txt"}:
         abort(400)
 
     orientacao = request.args.get("orientacao", "retrato")
@@ -909,6 +969,8 @@ def preview_convert(pasta_uuid, destino):
 
 @app.route("/preview-tabela/<pasta_uuid>/<destino>")
 def preview_tabela(pasta_uuid, destino):
+    if not re.match(r'^[a-f0-9]{32}$', pasta_uuid):
+        abort(400)
     if session.get("pasta_upload") != pasta_uuid:
         abort(403)
     if destino not in ("csv", "xlsx", "json"):
@@ -934,8 +996,9 @@ def preview_tabela(pasta_uuid, destino):
             try:
                 converter_arquivo(entrada, cache, extensao, destino)
             except Exception as e:
+                # AUD-004: usa _erro_seguro para não expor detalhes internos
                 return Response(
-                    f"<p class='prev-erro-msg'>Erro ao converter: {e}</p>",
+                    f"<p class='prev-erro-msg'>Erro ao converter: {_erro_seguro(e)}</p>",
                     status=500
                 )
         alvo     = cache
@@ -955,7 +1018,7 @@ def preview_tabela(pasta_uuid, destino):
 @app.route("/upload", methods=["POST"])
 def upload():
     global contador_conversoes
-    ip = request.remote_addr
+    ip = extrair_ip_cliente(request)
 
     if not verificar_rate_limit(ip):
         return render_template("index.html", erro="Muitas requisições. Aguarde um momento.")
@@ -1052,14 +1115,15 @@ def upload():
 
     except Exception as e:
         log.error(f"Upload error — {ip} — {traceback.format_exc()}")
-        return render_template("index.html", erro=str(e))
+        # AUD-003: usa _erro_seguro em vez de str(e) para não expor detalhes internos
+        return render_template("index.html", erro=_erro_seguro(e))
 
 
 @app.route("/converter", methods=["POST"])
 def converter():
     global _conversoes_ativas
     global contador_conversoes
-    ip = request.remote_addr
+    ip = extrair_ip_cliente(request)
 
     if not verificar_rate_limit(ip):
         return render_template("index.html", erro="Muitas requisições.")
@@ -1126,10 +1190,10 @@ def converter():
         @after_this_request
         def deletar(resp):
             try: shutil.rmtree(pp, ignore_errors=True)
-            except: pass
+            except Exception: pass
             try:
                 if saida and os.path.exists(saida): os.remove(saida)
-            except: pass
+            except Exception: pass
             return resp
 
         # QC-005: usa lock para incremento thread-safe do contador
@@ -1161,7 +1225,7 @@ def converter():
     except Exception as e:
         log.error(f"Conversão error — {traceback.format_exc()}")
         try: shutil.rmtree(pp, ignore_errors=True)
-        except: pass
+        except Exception: pass
         return render_template("index.html", erro=_erro_seguro(e))
     finally:
         with _lock_conv:

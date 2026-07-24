@@ -8,6 +8,15 @@ from threading import Lock
 _contagem_ip = defaultdict(list)
 _lock_rate   = Lock()
 
+def extrair_ip_cliente(req):
+    """Extrai o IP real do cliente, respeitando proxies reversos (X-Forwarded-For)."""
+    if req is None:
+        return "127.0.0.1"
+    xf = req.headers.get("X-Forwarded-For")
+    if xf:
+        return xf.split(",")[0].strip()
+    return req.remote_addr or "127.0.0.1"
+
 def verificar_rate_limit(ip):
     agora = time.time()
     with _lock_rate:
@@ -18,10 +27,11 @@ def verificar_rate_limit(ip):
 
 def rate_limit_required(f):
     from functools import wraps
-    from flask import request, jsonify, render_template
+    from flask import request
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not verificar_rate_limit(request.remote_addr):
+        ip = extrair_ip_cliente(request)
+        if not verificar_rate_limit(ip):
             return "Muitas requisições. Aguarde um momento.", 429
         return f(*args, **kwargs)
     return decorated_function
@@ -44,6 +54,7 @@ _MAGIC = {
     "docx": [b"PK\x03\x04"], "xlsx": [b"PK\x03\x04"], "pptx": [b"PK\x03\x04"],
     "ppt":  [b"\xd0\xcf\x11\xe0"], "doc": [b"\xd0\xcf\x11\xe0"], "xls": [b"\xd0\xcf\x11\xe0"],
     "png":  [b"\x89PNG"],
+    "gif":  [b"GIF87a", b"GIF89a"],
     "jpg":  [b"\xff\xd8\xff"], "jpeg": [b"\xff\xd8\xff"],
     "mp4":  "special",
     "mp3":  [b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"ID3"],
@@ -58,7 +69,9 @@ _MAGIC = {
 
 def validar_nome(nome):
     p = nome.split(".")
-    return len(p) <= 2 or not any(x.lower() in _EXT_PERIGOSAS for x in p[1:-1])
+    if len(p) < 2:
+        return True
+    return not any(x.lower() in _EXT_PERIGOSAS for x in p[1:])
 
 def validar_magic(caminho, ext):
     m = _MAGIC.get(ext)

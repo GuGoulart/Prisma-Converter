@@ -264,6 +264,11 @@
             border-color: color-mix(in srgb, #34d399 35%, transparent) !important;
             background: color-mix(in srgb, #34d399 10%, transparent) !important;
         }
+        .badge-gif {
+            color: #fbbf24 !important;
+            border-color: color-mix(in srgb, #fbbf24 35%, transparent) !important;
+            background: color-mix(in srgb, #fbbf24 10%, transparent) !important;
+        }
         .badge-qr {
             color: #a78bfa !important;
             border-color: color-mix(in srgb, #a78bfa 35%, transparent) !important;
@@ -874,6 +879,65 @@
                         </select>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
                             <span>Converter e baixar MP3</span><span class="botao-arr">↓</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- MP4 → GIF -->
+                <div class="pdf-tool-card">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                                <line x1="7" y1="2" x2="7" y2="22"></line>
+                                <line x1="17" y1="2" x2="17" y2="22"></line>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <line x1="2" y1="7" x2="7" y2="7"></line>
+                                <line x1="2" y1="17" x2="7" y2="17"></line>
+                                <line x1="17" y1="17" x2="22" y2="17"></line>
+                                <line x1="17" y1="7" x2="22" y2="7"></line>
+                            </svg>
+                            MP4 → GIF
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-gif">GIF</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Converte um vídeo MP4 em animação GIF. Personalize a taxa de quadros e a resolução.</p>
+                    <form action="/api/media/mp4-para-gif" method="POST" enctype="multipart/form-data"
+                        style="display:flex;flex-direction:column;gap:12px;height:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <label for="mp4GifInput" class="btn-escolher">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 6px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Escolher Vídeo
+                            </label>
+                            <span class="file-name-display" id="mp4GifFileName">Nenhum arquivo selecionado</span>
+                            <input type="file" name="arquivo" id="mp4GifInput" accept=".mp4,.m4v,.mov" required
+                                class="hidden-file-input">
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <select name="fps">
+                                <option value="10">10 FPS (Fluido / Leve)</option>
+                                <option value="15" selected>15 FPS (Equilibrado)</option>
+                                <option value="20">20 FPS (Alta Fluidez)</option>
+                            </select>
+                            <select name="largura">
+                                <option value="320">320px (Pequeno)</option>
+                                <option value="480" selected>480px (Médio)</option>
+                                <option value="640">640px (Grande)</option>
+                                <option value="0">Original</option>
+                            </select>
+                        </div>
+                        <button class="botao botao-conv" type="submit" style="margin-top:auto">
+                            <span>Converter e baixar GIF</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>

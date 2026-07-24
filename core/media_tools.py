@@ -88,3 +88,102 @@ def mp4_para_mp3(entrada: str, saida: str, bitrate: str = "192k", timeout: int =
         raise RuntimeError("A conversão não gerou um arquivo de áudio válido.")
 
     log.info(f"MP4→MP3 OK: {os.path.basename(entrada)} ({bitrate})")
+
+
+def _mp4_para_gif_opencv(entrada: str, saida: str, fps: int = 15, largura: int = 480):
+    """Fallback usando OpenCV e Pillow se FFmpeg não estiver disponível."""
+    try:
+        import cv2
+        from PIL import Image
+    except ImportError as e:
+        raise RuntimeError(f"Bibliotecas para conversão de mídia não disponíveis: {e}")
+
+    cap = cv2.VideoCapture(entrada)
+    if not cap.isOpened():
+        raise RuntimeError("Não foi possível abrir o arquivo de vídeo MP4.")
+
+    video_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    passo = max(1, int(round(video_fps / fps)))
+
+    frames = []
+    idx = 0
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if idx % passo == 0:
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(frame_rgb)
+            if largura > 0 and img.width > largura:
+                altura = int(img.height * (largura / img.width))
+                img = img.resize((largura, altura), Image.Resampling.LANCZOS)
+            frames.append(img)
+        idx += 1
+
+    cap.release()
+
+    if not frames:
+        raise RuntimeError("Nenhum frame extraído do vídeo MP4.")
+
+    duracao_ms = int(1000 / fps)
+    frames[0].save(
+        saida,
+        save_all=True,
+        append_images=frames[1:],
+        duration=duracao_ms,
+        loop=0,
+        optimize=True
+    )
+
+
+def mp4_para_gif(entrada: str, saida: str, fps: int = 15, largura: int = 480, timeout: int = 180):
+    """
+    Converte um arquivo MP4 (vídeo) para GIF animado.
+    Tenta usar FFmpeg com palettegen/paletteuse para alta qualidade.
+    Caso FFmpeg não esteja instalado, utiliza fallback com OpenCV + Pillow.
+
+    Args:
+        entrada: Caminho do arquivo MP4.
+        saida: Caminho do arquivo GIF de saída.
+        fps: Frames por segundo no GIF (10, 15, 20).
+        largura: Largura máxima em pixels (320, 480, 640; 0 para original).
+        timeout: Tempo limite em segundos.
+    """
+    if not os.path.exists(entrada):
+        raise FileNotFoundError(f"Arquivo não encontrado: {entrada}")
+
+    os.makedirs(os.path.dirname(saida) or ".", exist_ok=True)
+
+    ffmpeg_exe = encontrar_ffmpeg()
+
+    if ffmpeg_exe:
+        scale_filter = f"scale={largura}:-1:flags=lanczos," if largura > 0 else ""
+        vf = f"fps={fps},{scale_filter}split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
+
+        cmd = [
+            ffmpeg_exe,
+            "-i", os.path.abspath(entrada),
+            "-vf", vf,
+            "-loop", "0",
+            "-y",
+            os.path.abspath(saida)
+        ]
+
+        log.info(f"Executando ffmpeg MP4->GIF: {' '.join(cmd)}")
+        try:
+            resultado = subprocess.run(cmd, capture_output=True, timeout=timeout)
+            if resultado.returncode == 0 and os.path.exists(saida) and os.path.getsize(saida) > 0:
+                log.info(f"MP4→GIF via FFmpeg OK: {os.path.basename(entrada)}")
+                return
+            log.warning("FFmpeg falhou ao gerar GIF. Tentando fallback com OpenCV...")
+        except Exception as e:
+            log.warning(f"Erro ao rodar FFmpeg ({e}). Tentando fallback com OpenCV...")
+
+    # Fallback OpenCV
+    _mp4_para_gif_opencv(entrada, saida, fps=fps, largura=largura)
+    if not os.path.exists(saida) or os.path.getsize(saida) == 0:
+        raise RuntimeError("A conversão para GIF não gerou um arquivo válido.")
+
+    log.info(f"MP4→GIF via OpenCV OK: {os.path.basename(entrada)}")
+

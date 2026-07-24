@@ -1,4 +1,3 @@
-import pdfplumber
 import os, subprocess, tempfile, zipfile, shutil, logging, io
 import re as _re
 import csv
@@ -62,6 +61,7 @@ CONVERSOES = {
     "jpg":  ["pdf",  "png", "webp", "heic", "docx", "pptx", "txt"],
     "webp": ["pdf",  "png", "jpg", "heic", "docx", "pptx", "txt"],
     "heic": ["pdf",  "png", "jpg", "webp", "docx", "pptx", "txt"],
+    "mp4":  ["mp3",  "gif"],
 }
 
 def obter_conversoes(extensao):
@@ -207,10 +207,10 @@ def _office_xlsx_para_pdf(entrada, saida, orientacao="retrato"):
     finally:
         if wb:    
             try: wb.Close(False)
-            except: pass
+            except Exception: pass
         if excel: 
             try: excel.Quit()
-            except: pass
+            except Exception: pass
         pythoncom.CoUninitialize()
 
 
@@ -226,7 +226,7 @@ def csv_para_pdf(entrada, saida, orientacao="retrato"):
     finally:
         if os.path.exists(temp):
             try: os.remove(temp)
-            except: pass
+            except Exception: pass
 
 
 # ─── DOCX → PDF ───────────────────────────────────────────────
@@ -246,10 +246,10 @@ def _office_docx_para_pdf(entrada, saida):
     finally:
         if doc:  
             try: doc.Close(False)
-            except: pass
+            except Exception: pass
         if word: 
             try: word.Quit()
-            except: pass
+            except Exception: pass
         pythoncom.CoUninitialize()
 
 
@@ -270,10 +270,10 @@ def _office_ppt_para_pdf(entrada, saida):
     finally:
         if apres: 
             try: apres.Close()
-            except: pass
+            except Exception: pass
         if pp:    
             try: pp.Quit()
-            except: pass
+            except Exception: pass
         pythoncom.CoUninitialize()
 
 
@@ -303,7 +303,6 @@ def pdf_para_jpg(entrada, saida):
     doc = fitz.open(entrada)
     try:
         pix = doc[0].get_pixmap(matrix=fitz.Matrix(2, 2))
-        import io
         img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
         img.save(saida, "JPEG", quality=92)
     finally: doc.close()
@@ -341,9 +340,9 @@ def pdf_para_pptx(entrada: str, saida: str):
         doc.close()
         for f in os.listdir(temp_dir):
             try: os.remove(os.path.join(temp_dir, f))
-            except: pass
+            except Exception: pass
         try: os.rmdir(temp_dir)
-        except: pass
+        except Exception: pass
 
     prs.save(saida)
 
@@ -364,7 +363,7 @@ def pdf_para_ppt(entrada: str, saida: str):
     finally:
         if os.path.exists(temp_pptx):
             try: os.remove(temp_pptx)
-            except: pass
+            except Exception: pass
 
 def _office_pptx_para_ppt(entrada, saida):
     pythoncom.CoInitialize()
@@ -376,10 +375,10 @@ def _office_pptx_para_ppt(entrada, saida):
     finally:
         if apres: 
             try: apres.Close()
-            except: pass
+            except Exception: pass
         if pp:    
             try: pp.Quit()
-            except: pass
+            except Exception: pass
         pythoncom.CoUninitialize()
 
 
@@ -413,6 +412,8 @@ def pdf_extrair_dataframe(entrada: str):
 
 
 def _tentar_extrair(entrada: str, estrategia: str) -> list:
+    # AUD-002: import explícito (antes dependia do escopo local de pdf_extrair_dataframe)
+    import pdfplumber
     cfg = (
         dict(vertical_strategy="lines", horizontal_strategy="lines",
              snap_tolerance=5, join_tolerance=3)
@@ -427,7 +428,7 @@ def _tentar_extrair(entrada: str, estrategia: str) -> list:
             try:
                 for t in page.extract_tables(cfg):
                     if t: todas.extend(t)
-            except: pass
+            except Exception: pass
     return todas
 
 
@@ -447,6 +448,7 @@ def _normalizar(linhas: list):
 
 def _extrair_por_posicao_palavras(entrada: str):
     """Detecta colunas pela posição X das palavras — funciona para relatórios sem bordas."""
+    import pdfplumber  # AUD-002
     try: import pandas as pd
     except ImportError: raise RuntimeError("pandas não instalado")
     todas_linhas = []
@@ -510,6 +512,7 @@ def _extrair_por_posicao_palavras(entrada: str):
 
 
 def _fallback_texto(entrada: str):
+    import pdfplumber  # AUD-002
     try: import pandas as pd
     except ImportError: raise RuntimeError("pandas não instalado")
     linhas_raw = []
@@ -566,7 +569,7 @@ def jpg_para_png(entrada, saida):
 
 def _pdf_para_imagem_completo(pdf_path: str, saida: str, fmt: str = "png"):
     """Renderiza todas as páginas e empacota em um arquivo .zip para evitar Out-of-Memory (OOM)."""
-    import io, zipfile
+    # AUD-008: io e zipfile já importados no topo do módulo
     doc = fitz.open(pdf_path)
     try:
         with zipfile.ZipFile(saida, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -599,7 +602,7 @@ def _via_pdf_para_img(entrada: str, saida: str, origem_ext: str, fmt: str):
     finally:
         if os.path.exists(temp_pdf):
             try: os.remove(temp_pdf)
-            except: pass
+            except Exception: pass
 
 def docx_para_png(entrada, saida): _via_pdf_para_img(entrada, saida, "docx", "png")
 def docx_para_jpg(entrada, saida): _via_pdf_para_img(entrada, saida, "docx", "jpg")
@@ -658,7 +661,7 @@ def _via_pdf(entrada, saida, origem_ext, destino_ext):
     finally:
         if os.path.exists(temp_pdf):
             try: os.remove(temp_pdf)
-            except: pass
+            except Exception: pass
 
 
 # ─── JSON ↔ CSV/XLSX ──────────────────────────────────────────────
@@ -695,7 +698,7 @@ def json_para_pdf(entrada, saida, orientacao="retrato"):
     finally:
         if os.path.exists(temp):
             try: os.remove(temp)
-            except: pass
+            except Exception: pass
 
 
 
@@ -703,6 +706,10 @@ def json_para_pdf(entrada, saida, orientacao="retrato"):
 def mp4_para_mp3_conv(entrada: str, saida: str):
     from core.media_tools import mp4_para_mp3
     mp4_para_mp3(entrada, saida)
+
+def mp4_para_gif_conv(entrada: str, saida: str):
+    from core.media_tools import mp4_para_gif
+    mp4_para_gif(entrada, saida)
 
 # ─── Mesclar Planilhas ──────────────────────────────────────────
 def mesclar_planilhas(arquivos: list, saida: str, formato: str = "xlsx"):
@@ -749,7 +756,6 @@ def pdf_para_txt_ocr(entrada: str, saida: str):
     try:
         for page in doc:
             pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-            import io
             img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
             texto = pytesseract.image_to_string(img, lang="por+eng")
             texto_total.append(texto)
@@ -947,6 +953,7 @@ _MAPA = {
     ("heic", "txt"):  imagem_para_txt_ocr,
     # MP4
     ("mp4",  "mp3"):  mp4_para_mp3_conv,
+    ("mp4",  "gif"):  mp4_para_gif_conv,
 }
 
 _ACEITA_ORIENTACAO = {("xlsx","pdf"), ("xls","pdf"), ("csv","pdf"), ("json","pdf")}

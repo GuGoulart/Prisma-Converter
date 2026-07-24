@@ -131,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFileInput('extractInput',    'extractFileName');
     setupFileInput('manipulateInput', 'manipulateFileName');
     setupFileInput('mp4Input',        'mp4FileName');
+    setupFileInput('mp4GifInput',     'mp4GifFileName');
     setupFileInput('qrLerInput',      'qrLerFileName');
     setupFileInput('paletaInput',     'paletaFileName');
 
