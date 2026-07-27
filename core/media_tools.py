@@ -251,6 +251,12 @@ def baixar_midia_url(url: str, pasta_destino: str, tipo: str = "mp4", progresso_
         # Se for caminho para o executável, passa o diretório ou o próprio caminho
         ydl_opts["ffmpeg_location"] = ffmpeg_exe
 
+    # Suporte a cookies.txt para vídeos restritos se o arquivo existir na raiz do projeto
+    for cookie_name in ["cookies.txt", "youtube_cookies.txt"]:
+        if os.path.exists(cookie_name):
+            ydl_opts["cookiefile"] = os.path.abspath(cookie_name)
+            break
+
     if tipo == "mp3":
         ydl_opts.update({
             "format": "bestaudio/best",
@@ -262,7 +268,7 @@ def baixar_midia_url(url: str, pasta_destino: str, tipo: str = "mp4", progresso_
         })
     else:
         ydl_opts.update({
-            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best",
             "merge_output_format": "mp4",
         })
 
