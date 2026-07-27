@@ -909,6 +909,7 @@
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
                             Baixar Vídeo / Áudio por Link
+                            <span class="tool-badge" style="color: #fbbf24; border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.1); margin-left: 4px;">BETA LOCAL</span>
                         </div>
                         <div class="tool-badges">
                             <span class="tool-badge badge-mp4">YouTube</span>
@@ -918,6 +919,15 @@
                         </div>
                     </div>
                     <p class="pdf-tool-desc">Cole a URL de um vídeo ou post do YouTube, Instagram, X/Twitter, TikTok, etc. para baixar o vídeo em MP4 ou extrair apenas o áudio em MP3 com barra de progresso em tempo real.</p>
+                    
+                    <div style="padding: 10px 14px; background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.3); color: #fbbf24; font-family: var(--mono); font-size: 12px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <span><strong>Recurso em Beta:</strong> Esta funcionalidade está em fase experimental e funciona apenas no ambiente local por enquanto.</span>
+                    </div>
                     <form id="formDownloadUrl" style="display:flex;flex-direction:column;gap:12px;width:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <div>
