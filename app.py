@@ -121,6 +121,26 @@ def _erro_seguro(e: Exception) -> str:
     return "Ocorreu um erro ao processar o arquivo. Verifique se ele está corrompido ou tente novamente."
 
 
+_ERROS_URL_CONHECIDOS = {
+    "video unavailable": "Este vídeo está indisponível, privado ou foi removido.",
+    "is not available": "Este vídeo não está disponível na plataforma.",
+    "private video": "Este vídeo é privado e não pode ser baixado.",
+    "unsupported url": "Link não suportado ou URL inválida.",
+    "is not a valid url": "Informe uma URL válida de vídeo ou post.",
+    "sign in": "Este vídeo possui restrição de idade ou requer login.",
+    "copyright": "Vídeo bloqueado por reivindicação de direitos autorais.",
+    "too many requests": "Muitas requisições para esta plataforma. Tente novamente em instantes.",
+}
+
+def _erro_seguro_url(e: Exception) -> str:
+    """Retorna mensagem amigável específica para erros de download por URL."""
+    msg = str(e).lower()
+    for chave, amigavel in _ERROS_URL_CONHECIDOS.items():
+        if chave in msg:
+            return amigavel
+    return "Não foi possível baixar o vídeo deste link. Verifique se o link está correto e se o vídeo é público."
+
+
 
 
 def criar_pasta():
@@ -610,7 +630,7 @@ def api_iniciar_download_url():
             log.warning(f"Erro no job de download via URL ({job_id}): {e}")
             with _lock_jobs:
                 if job_id in _jobs_download:
-                    _jobs_download[job_id]["erro"] = _erro_seguro(e)
+                    _jobs_download[job_id]["erro"] = _erro_seguro_url(e)
                     _jobs_download[job_id]["status"] = "Erro ao baixar."
 
     threading.Thread(target=_trabalhador, daemon=True).start()

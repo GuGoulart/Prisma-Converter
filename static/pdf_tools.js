@@ -277,8 +277,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnTextSpan) btnTextSpan.textContent = 'Processando...';
 
         if (progressContainerUrl) progressContainerUrl.style.display = 'flex';
-        if (progressFillUrl) progressFillUrl.style.width = '0%';
-        if (progressPercentUrl) progressPercentUrl.textContent = '0%';
+        if (progressFillUrl) {
+            progressFillUrl.style.width = '0%';
+            progressFillUrl.style.background = '';
+            progressFillUrl.style.boxShadow = '';
+        }
+        if (progressPercentUrl) {
+            progressPercentUrl.style.display = 'inline';
+            progressPercentUrl.textContent = '0%';
+        }
         if (progressStatusUrl) {
             progressStatusUrl.textContent = 'Iniciando download...';
             progressStatusUrl.style.color = 'var(--accent)';
@@ -314,6 +321,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (progressStatusUrl) {
                             progressStatusUrl.textContent = statusData.erro;
                             progressStatusUrl.style.color = '#f87171';
+                        }
+                        if (progressPercentUrl) progressPercentUrl.style.display = 'none';
+                        if (progressFillUrl) {
+                            progressFillUrl.style.background = '#f87171';
+                            progressFillUrl.style.boxShadow = '0 0 10px #f87171';
                         }
                         btnIniciarDownloadUrl.disabled = false;
                         if (btnTextSpan) btnTextSpan.textContent = 'Baixar Mídia';
