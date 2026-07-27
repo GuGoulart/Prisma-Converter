@@ -236,6 +236,15 @@ def baixar_midia_url(url: str, pasta_destino: str, tipo: str = "mp4", progresso_
         "quiet": True,
         "no_warnings": True,
         "restrictfilenames": True,
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android", "ios", "mweb", "web"],
+            }
+        },
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
+        }
     }
 
     if ffmpeg_exe:
