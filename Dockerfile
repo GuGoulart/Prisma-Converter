@@ -2,6 +2,7 @@ FROM python:3.11-slim
 
 # Instala LibreOffice (headless), Tesseract OCR e dependências do sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    nodejs \
     libreoffice \
     libreoffice-writer \
     libreoffice-calc \

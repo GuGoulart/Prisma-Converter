@@ -269,22 +269,50 @@ def baixar_midia_url(url: str, pasta_destino: str, tipo: str = "mp4", progresso_
     if progresso_callback:
         progresso_callback(5.0, "Obtendo informações do vídeo...")
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url.strip(), download=True)
-        filename = ydl.prepare_filename(info)
+    configs_tentativas = [
+        # Estratégia 1: Cliente móvel mweb / android
+        {"youtube": {"player_client": ["mweb", "android", "ios", "web"]}},
+        # Estratégia 2: Cliente android exclusivo
+        {"youtube": {"player_client": ["android", "ios"]}},
+        # Estratégia 3: Padrão sem restrição de cliente
+        {}
+    ]
 
-        # Se for MP3, o pós-processador do ffmpeg pode alterar a extensão para .mp3
-        if tipo == "mp3":
-            base_filename = os.path.splitext(filename)[0]
-            mp3_candidate = base_filename + ".mp3"
-            if os.path.exists(mp3_candidate):
-                filename = mp3_candidate
+    ultimo_erro = None
+    filename = None
 
-    if not os.path.exists(filename) or os.path.getsize(filename) == 0:
-        # Procurar qualquer arquivo criado na pasta destino se o nome exato variou
-        arquivos = [os.path.join(pasta_destino, f) for f in os.listdir(pasta_destino)]
+    for idx, ext_args in enumerate(configs_tentativas):
+        try:
+            opts_atuais = ydl_opts.copy()
+            if ext_args:
+                opts_atuais["extractor_args"] = ext_args
+            else:
+                opts_atuais.pop("extractor_args", None)
+
+            with yt_dlp.YoutubeDL(opts_atuais) as ydl:
+                info = ydl.extract_info(url.strip(), download=True)
+                cand = ydl.prepare_filename(info)
+
+                if tipo == "mp3":
+                    base_cand = os.path.splitext(cand)[0]
+                    mp3_cand = base_cand + ".mp3"
+                    if os.path.exists(mp3_cand):
+                        cand = mp3_cand
+
+                if cand and os.path.exists(cand) and os.path.getsize(cand) > 0:
+                    filename = cand
+                    break
+        except Exception as e:
+            ultimo_erro = e
+            log.warning(f"Tentativa {idx + 1} com player_client {ext_args} falhou: {e}")
+
+    if not filename or not os.path.exists(filename) or os.path.getsize(filename) == 0:
+        # Procurar qualquer arquivo criado na pasta destino se o nome variou
+        arquivos = [os.path.join(pasta_destino, f) for f in os.listdir(pasta_destino) if os.path.isfile(os.path.join(pasta_destino, f))]
         if arquivos:
-            filename = sorted(arquivos, key=os.path.getmtime, reverse=True)[0]
+            filename = sorted(arquivos, key=lambda p: os.path.getmtime(p), reverse=True)[0]
+        elif ultimo_erro:
+            raise ultimo_erro
         else:
             raise RuntimeError("Não foi possível gerar o arquivo de mídia baixado.")
 
