@@ -236,6 +236,8 @@ def baixar_midia_url(url: str, pasta_destino: str, tipo: str = "mp4", progresso_
         "quiet": True,
         "no_warnings": True,
         "restrictfilenames": True,
+        "nocheckcertificate": True,
+        "geo_bypass": True,
         "extractor_args": {
             "youtube": {
                 "player_client": ["android", "ios", "mweb", "web"],
