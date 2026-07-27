@@ -324,6 +324,64 @@
             width: 100%;
             text-align: center;
         }
+
+        /* Downloader de Vídeo via Link */
+        .url-input-field {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .url-input-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+        .progress-container {
+            margin-top: 12px;
+            padding: 14px;
+            background: var(--bg);
+            border: 1px solid var(--border2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .progress-track {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+            border-radius: 5px;
+            border: 1px solid var(--border2);
+        }
+        [data-theme="light"] .progress-track {
+            background: rgba(0, 0, 0, 0.06);
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), #00ffaa);
+            box-shadow: 0 0 12px var(--accent);
+            transition: width 0.3s ease;
+            border-radius: 5px;
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text);
+        }
+        .progress-status-text {
+            color: var(--accent);
+            font-weight: 700;
+        }
     </style>
 </head>
 
@@ -837,6 +895,54 @@
                             <span>Ler QR Code</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
+                </div>
+
+                <!-- Baixar Vídeo / Áudio por Link -->
+                <div class="pdf-tool-card" style="grid-column: 1 / -1;">
+                    <div class="pdf-tool-title">
+                        <div class="pdf-tool-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="color:var(--accent)">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Baixar Vídeo / Áudio por Link
+                        </div>
+                        <div class="tool-badges">
+                            <span class="tool-badge badge-mp4">YouTube</span>
+                            <span class="tool-badge badge-mp4">Instagram</span>
+                            <span class="tool-badge badge-mp4">Twitter / X</span>
+                            <span class="tool-badge badge-mp4">TikTok</span>
+                        </div>
+                    </div>
+                    <p class="pdf-tool-desc">Cole a URL de um vídeo ou post do YouTube, Instagram, X/Twitter, TikTok, etc. para baixar o vídeo em MP4 ou extrair apenas o áudio em MP3 com barra de progresso em tempo real.</p>
+                    <form id="formDownloadUrl" style="display:flex;flex-direction:column;gap:12px;width:100%">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div>
+                            <input type="url" name="url" id="inputUrlMedia" class="url-input-field"
+                                placeholder="https://www.youtube.com/watch?v=... ou https://www.instagram.com/p/..." required>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <select name="tipo" id="selectTipoMedia">
+                                <option value="mp4" selected>Vídeo Completo (MP4)</option>
+                                <option value="mp3">Apenas Áudio (MP3)</option>
+                            </select>
+                            <button class="botao botao-conv" type="submit" id="btnIniciarDownloadUrl">
+                                <span>Baixar Mídia</span><span class="botao-arr">↓</span>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="progress-container" id="progressContainerUrl" style="display: none;">
+                        <div class="progress-info">
+                            <span id="progressStatusUrl" class="progress-status-text">Iniciando download...</span>
+                            <span id="progressPercentUrl">0%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="progressFillUrl"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- MP4 → MP3 -->

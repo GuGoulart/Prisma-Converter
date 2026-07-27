@@ -187,3 +187,101 @@ def mp4_para_gif(entrada: str, saida: str, fps: int = 15, largura: int = 480, ti
 
     log.info(f"MP4→GIF via OpenCV OK: {os.path.basename(entrada)}")
 
+
+def baixar_midia_url(url: str, pasta_destino: str, tipo: str = "mp4", progresso_callback=None) -> str:
+    """
+    Baixa vídeo ou áudio a partir de um link (YouTube, Instagram, Twitter/X, TikTok, etc.) usando yt-dlp.
+
+    Args:
+        url: Link do vídeo/post.
+        pasta_destino: Diretório onde o arquivo será salvo.
+        tipo: "mp4" para vídeo ou "mp3" para áudio.
+        progresso_callback: Função callback(percent: float, status_msg: str) para progresso em tempo real.
+
+    Returns:
+        Caminho do arquivo final gerado.
+    """
+    try:
+        import yt_dlp
+    except ImportError:
+        raise RuntimeError("A biblioteca yt-dlp não está instalada. Execute 'pip install yt-dlp'.")
+
+    if not url or not url.strip():
+        raise ValueError("URL inválida ou vazia.")
+
+    os.makedirs(pasta_destino, exist_ok=True)
+    out_pattern = os.path.join(pasta_destino, "%(title).100s_%(id)s.%(ext)s")
+
+    def hook(d):
+        if not progresso_callback:
+            return
+        status = d.get("status")
+        if status == "downloading":
+            total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+            downloaded = d.get("downloaded_bytes") or 0
+            if total > 0:
+                pct = round((downloaded / total) * 100, 1)
+                progresso_callback(pct, f"Baixando... {pct}%")
+            else:
+                progresso_callback(50.0, "Baixando mídia...")
+        elif status == "finished":
+            progresso_callback(95.0, "Finalizando processamento do arquivo...")
+
+    ffmpeg_exe = encontrar_ffmpeg()
+
+    ydl_opts = {
+        "outtmpl": out_pattern,
+        "progress_hooks": [hook],
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "restrictfilenames": True,
+    }
+
+    if ffmpeg_exe:
+        # Se for caminho para o executável, passa o diretório ou o próprio caminho
+        ydl_opts["ffmpeg_location"] = ffmpeg_exe
+
+    if tipo == "mp3":
+        ydl_opts.update({
+            "format": "bestaudio/best",
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }],
+        })
+    else:
+        ydl_opts.update({
+            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+            "merge_output_format": "mp4",
+        })
+
+    if progresso_callback:
+        progresso_callback(5.0, "Obtendo informações do vídeo...")
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url.strip(), download=True)
+        filename = ydl.prepare_filename(info)
+
+        # Se for MP3, o pós-processador do ffmpeg pode alterar a extensão para .mp3
+        if tipo == "mp3":
+            base_filename = os.path.splitext(filename)[0]
+            mp3_candidate = base_filename + ".mp3"
+            if os.path.exists(mp3_candidate):
+                filename = mp3_candidate
+
+    if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+        # Procurar qualquer arquivo criado na pasta destino se o nome exato variou
+        arquivos = [os.path.join(pasta_destino, f) for f in os.listdir(pasta_destino)]
+        if arquivos:
+            filename = sorted(arquivos, key=os.path.getmtime, reverse=True)[0]
+        else:
+            raise RuntimeError("Não foi possível gerar o arquivo de mídia baixado.")
+
+    if progresso_callback:
+        progresso_callback(100.0, "Download concluído!")
+
+    return filename
+
+

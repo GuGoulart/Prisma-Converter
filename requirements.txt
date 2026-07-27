@@ -47,3 +47,4 @@ pyzipper==0.4.0
 ebooklib==0.20
 xhtml2pdf==0.2.17
 extcolors==1.0.0
+yt-dlp

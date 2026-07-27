@@ -51,6 +51,9 @@ _conversoes_ativas = 0
 _lock_conv         = Lock()
 MAX_PARALELAS      = int(os.environ.get("MAX_PARALELAS", 4))
 
+_jobs_download     = {}
+_lock_jobs         = Lock()
+
 LIMITES_POR_TIPO = {
     "pdf":  MAX_MB * 1024 * 1024,
     "docx": MAX_MB * 1024 * 1024,
@@ -556,6 +559,112 @@ def api_mp4_para_gif():
     except Exception as e:
         log.warning(f"api_mp4_para_gif error: {e}")
         return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
+
+
+@app.route("/api/media/iniciar-download-url", methods=["POST"])
+@rate_limit_required
+def api_iniciar_download_url():
+    if not validar_csrf(request.form.get("csrf_token", "")):
+        return jsonify({"erro": "Token CSRF inválido. Recarregue a página."}), 403
+
+    url = request.form.get("url", "").strip()
+    tipo = request.form.get("tipo", "mp4").strip().lower()
+    if not url:
+        return jsonify({"erro": "Informe um link de vídeo ou post válido."}), 400
+
+    if tipo not in ("mp4", "mp3"):
+        tipo = "mp4"
+
+    job_id = uuid.uuid4().hex
+    uid = criar_pasta()
+    pp = pasta_path(uid)
+
+    with _lock_jobs:
+        _jobs_download[job_id] = {
+            "percent": 0.0,
+            "status": "Iniciando processo...",
+            "concluido": False,
+            "erro": None,
+            "caminho_saida": None,
+            "pasta_uid": uid,
+            "timestamp": time.time(),
+        }
+
+    def _trabalhador():
+        def _progresso(pct, msg):
+            with _lock_jobs:
+                if job_id in _jobs_download:
+                    _jobs_download[job_id]["percent"] = pct
+                    _jobs_download[job_id]["status"] = msg
+
+        try:
+            from core.media_tools import baixar_midia_url
+            caminho_final = baixar_midia_url(url, pp, tipo=tipo, progresso_callback=_progresso)
+            with _lock_jobs:
+                if job_id in _jobs_download:
+                    _jobs_download[job_id]["percent"] = 100.0
+                    _jobs_download[job_id]["status"] = "Download concluído!"
+                    _jobs_download[job_id]["concluido"] = True
+                    _jobs_download[job_id]["caminho_saida"] = caminho_final
+        except Exception as e:
+            log.warning(f"Erro no job de download via URL ({job_id}): {e}")
+            with _lock_jobs:
+                if job_id in _jobs_download:
+                    _jobs_download[job_id]["erro"] = _erro_seguro(e)
+                    _jobs_download[job_id]["status"] = "Erro ao baixar."
+
+    threading.Thread(target=_trabalhador, daemon=True).start()
+
+    return jsonify({"ok": True, "job_id": job_id})
+
+
+@app.route("/api/media/download-status/<job_id>", methods=["GET"])
+def api_download_status(job_id):
+    with _lock_jobs:
+        job = _jobs_download.get(job_id)
+
+    if not job:
+        return jsonify({"erro": "Download não encontrado ou expirado."}), 404
+
+    return jsonify({
+        "percent": job["percent"],
+        "status": job["status"],
+        "concluido": job["concluido"],
+        "erro": job["erro"],
+        "download_url": f"/api/media/obter-download-url/{job_id}" if job["concluido"] else None
+    })
+
+
+@app.route("/api/media/obter-download-url/<job_id>", methods=["GET"])
+def api_obter_download_url(job_id):
+    with _lock_jobs:
+        job = _jobs_download.get(job_id)
+
+    if not job or not job.get("concluido") or not job.get("caminho_saida"):
+        return render_template("pdf_tools.html", erro="Arquivo não disponível para download."), 404
+
+    saida = job["caminho_saida"]
+    pp = job["pasta_uid"]
+
+    if not os.path.exists(saida):
+        return render_template("pdf_tools.html", erro="O arquivo baixado não foi encontrado."), 404
+
+    nome_download = os.path.basename(saida)
+
+    @after_this_request
+    def cleanup(response):
+        def _remov():
+            time.sleep(5)
+            shutil.rmtree(pasta_path(pp), ignore_errors=True)
+            with _lock_jobs:
+                _jobs_download.pop(job_id, None)
+        threading.Thread(target=_remov, daemon=True).start()
+        return response
+
+    resp = send_file(saida, as_attachment=True, download_name=nome_download)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
 
 @app.route("/api/qr/gerar", methods=["POST"])
 @rate_limit_required
