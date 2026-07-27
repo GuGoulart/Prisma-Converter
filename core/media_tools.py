@@ -10,6 +10,10 @@ import logging
 
 log = logging.getLogger(__name__)
 
+# Diretório onde este arquivo está (usado para localizar cookies.txt de forma confiável,
+# independente de onde o processo Flask/gunicorn foi iniciado)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def encontrar_ffmpeg():
     """Procura o ffmpeg no PATH do sistema ou via imageio-ffmpeg."""
@@ -253,11 +257,25 @@ def baixar_midia_url(url: str, pasta_destino: str, tipo: str = "mp4", progresso_
         # Se for caminho para o executável, passa o diretório ou o próprio caminho
         ydl_opts["ffmpeg_location"] = ffmpeg_exe
 
-    # Suporte a cookies.txt para vídeos restritos se o arquivo existir na raiz do projeto
+    # Suporte a cookies.txt para vídeos restritos (idade/login).
+    # IMPORTANTE: o caminho é resolvido a partir da pasta deste arquivo (BASE_DIR),
+    # e não do diretório de trabalho do processo — isso evita que o cookie "suma"
+    # quando o Flask/gunicorn é iniciado de outro lugar.
+    cookie_encontrado = False
     for cookie_name in ["cookies.txt", "youtube_cookies.txt"]:
-        if os.path.exists(cookie_name):
-            ydl_opts["cookiefile"] = os.path.abspath(cookie_name)
+        caminho_cookie = os.path.join(BASE_DIR, cookie_name)
+        if os.path.exists(caminho_cookie):
+            ydl_opts["cookiefile"] = caminho_cookie
+            log.info(f"Usando cookies de: {caminho_cookie}")
+            cookie_encontrado = True
             break
+
+    if not cookie_encontrado:
+        log.warning(
+            "Nenhum arquivo de cookies encontrado em %s — vídeos com restrição de "
+            "idade/login vão falhar até que um cookies.txt válido seja adicionado.",
+            BASE_DIR,
+        )
 
     if tipo == "mp3":
         ydl_opts.update({
@@ -328,5 +346,3 @@ def baixar_midia_url(url: str, pasta_destino: str, tipo: str = "mp4", progresso_
         progresso_callback(100.0, "Download concluído!")
 
     return filename
-
-
