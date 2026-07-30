@@ -21,6 +21,7 @@
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
     <style>
         .pdf-tool-grid {
             display: grid;
@@ -418,17 +419,28 @@
             <div class="sidebar-linha"></div>
 
             <div class="sidebar-info" style="gap: 8px;">
-                <p class="sidebar-label">Menu</p>
-                <a href="/" class="nav-link">Início</a>
-                <a href="/conversor" class="nav-link">Conversor de arquivos</a>
-                <a href="/ferramentas-avancadas" class="nav-link">Ferramentas Avançadas</a>
-                <a href="/modificar-arquivos" class="nav-link nav-active">Modificar Arquivos</a>
+                <p class="sidebar-label" data-i18n="sidebar.menu">Menu</p>
+                <a href="/" class="nav-link" data-i18n="nav.home">Início</a>
+                <a href="/conversor" class="nav-link" data-i18n="nav.converter">Conversor de arquivos</a>
+                <a href="/ferramentas-avancadas" class="nav-link" data-i18n="nav.advanced">Ferramentas Avançadas</a>
+                <a href="/modificar-arquivos" class="nav-link nav-active" data-i18n="nav.modify">Modificar Arquivos</a>
             </div>
 
             <div class="sidebar-linha"></div>
 
             <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
-                <p class="sidebar-label" style="margin-bottom: 0;">Tema</p>
+                <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.language">Idioma</p>
+                <div class="lang-selector-wrap">
+                    <button class="btn-lang-opt" data-lang="pt">PT</button>
+                    <button class="btn-lang-opt" data-lang="en">EN</button>
+                    <button class="btn-lang-opt" data-lang="es">ES</button>
+                </div>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
+                <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.theme">Tema</p>
                 <button id="themeToggle" class="btn-tema-icon" aria-label="Alternar Tema">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
                         stroke-linecap="round">
@@ -448,9 +460,8 @@
         <main class="main">
 
             <header class="header-main">
-                <h1 class="titulo-principal">Modificar <em>Arquivos</em></h1>
-                <p class="titulo-sub">Comprima, proteja com senha, criptografe e manipule seus arquivos com segurança.
-                </p>
+                <h1 class="titulo-principal" data-i18n="file.header.title">Modificar <em>Arquivos</em></h1>
+                <p class="titulo-sub" data-i18n="file.header.sub">Comprima, proteja com senha, criptografe e manipule seus arquivos com segurança.</p>
             </header>
 
             <!-- Erro -->
@@ -474,14 +485,14 @@
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
-                            Comprimir Arquivos
+                            <span data-i18n="file.zip.title">Comprimir Arquivos</span>
                         </div>
                         <div class="tool-badges">
                             <span class="tool-badge badge-zip">ZIP</span>
                             <span class="tool-badge badge-all">TAR.GZ</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Selecione vários arquivos e comprima-os em um único ZIP ou TAR.GZ.</p>
+                    <p class="pdf-tool-desc" data-i18n="file.zip.desc">Selecione vários arquivos e comprima-os em um único ZIP ou TAR.GZ.</p>
                     <form action="/api/file/comprimir" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -493,7 +504,7 @@
                                     <polyline points="17 8 12 3 7 8" />
                                     <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
-                                Escolher Arquivos
+                                <span data-i18n="pdf.merge.choose">Escolher Arquivos</span>
                             </label>
                             <input type="file" name="arquivos" id="comprimirInput" multiple required
                                 class="hidden-file-input">
@@ -501,7 +512,7 @@
                         <div id="comprimirListContainer"
                             style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
                             <span id="comprimirEmptyMsg"
-                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum
+                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;" data-i18n="file.none">Nenhum
                                 arquivo selecionado</span>
                         </div>
                         <select name="formato">
@@ -509,7 +520,7 @@
                             <option value="tar.gz">TAR.GZ</option>
                         </select>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                            <span>Comprimir e baixar</span><span class="botao-arr">↓</span>
+                            <span data-i18n="file.zip.action">Comprimir e baixar</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>
@@ -524,13 +535,13 @@
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
-                            ZIP com Senha
+                            <span data-i18n="file.zippass.title">ZIP com Senha</span>
                         </div>
                         <div class="tool-badges">
                             <span class="tool-badge badge-enc">AES-256</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Crie um arquivo ZIP protegido com criptografia AES-256. Ideal para enviar dados sensíveis.</p>
+                    <p class="pdf-tool-desc" data-i18n="file.zippass.desc">Crie um arquivo ZIP protegido com criptografia AES-256. Ideal para enviar dados sensíveis.</p>
                     <form action="/api/file/zip-senha" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -542,7 +553,7 @@
                                     <polyline points="17 8 12 3 7 8" />
                                     <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
-                                Escolher Arquivos
+                                <span data-i18n="pdf.merge.choose">Escolher Arquivos</span>
                             </label>
                             <input type="file" name="arquivos" id="zipSenhaInput" multiple required
                                 class="hidden-file-input">
@@ -550,12 +561,12 @@
                         <div id="zipSenhaListContainer"
                             style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
                             <span id="zipSenhaEmptyMsg"
-                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum
+                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;" data-i18n="file.none">Nenhum
                                 arquivo selecionado</span>
                         </div>
-                        <input type="password" name="senha" placeholder="Senha para proteger o ZIP" required>
+                        <input type="password" name="senha" placeholder="Senha para proteger o ZIP" data-i18n-ph="file.zippass.ph" required>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                            <span>Proteger e baixar</span><span class="botao-arr">↓</span>
+                            <span data-i18n="file.zippass.action">Proteger e baixar</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>
@@ -569,13 +580,13 @@
                                 style="color:var(--accent)">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                             </svg>
-                            Criptografar Arquivo
+                            <span data-i18n="file.enc.title">Criptografar Arquivo</span>
                         </div>
                         <div class="tool-badges">
                             <span class="tool-badge badge-enc">AES-256</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Criptografe qualquer arquivo com AES-256-CBC. Só quem tiver a senha poderá abrir.</p>
+                    <p class="pdf-tool-desc" data-i18n="file.enc.desc">Criptografe qualquer arquivo com AES-256-CBC. Só quem tiver a senha poderá abrir.</p>
                     <form action="/api/file/criptografar" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -587,14 +598,14 @@
                                     <polyline points="17 8 12 3 7 8" />
                                     <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
-                                Escolher Arquivo
+                                <span data-i18n="pdf.split.choose">Escolher Arquivo</span>
                             </label>
-                            <span class="file-name-display" id="criptoFileName">Nenhum arquivo selecionado</span>
+                            <span class="file-name-display" id="criptoFileName" data-i18n="file.none">Nenhum arquivo selecionado</span>
                             <input type="file" name="arquivo" id="criptoInput" required class="hidden-file-input">
                         </div>
-                        <input type="password" name="senha" placeholder="Senha de criptografia" required>
+                        <input type="password" name="senha" placeholder="Senha de criptografia" data-i18n-ph="file.enc.ph" required>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                            <span>Criptografar e baixar .enc</span><span class="botao-arr">↓</span>
+                            <span data-i18n="file.enc.action">Criptografar e baixar .enc</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>
@@ -609,13 +620,13 @@
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                                 <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
                             </svg>
-                            Descriptografar Arquivo
+                            <span data-i18n="file.dec.title">Descriptografar Arquivo</span>
                         </div>
                         <div class="tool-badges">
                             <span class="tool-badge badge-enc">.ENC</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Descriptografe arquivos .enc gerados pelo Prisma (necessita da senha original).</p>
+                    <p class="pdf-tool-desc" data-i18n="file.dec.desc">Descriptografe arquivos .enc gerados pelo Prisma (necessita da senha original).</p>
                     <form action="/api/file/descriptografar" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -627,14 +638,14 @@
                                     <polyline points="17 8 12 3 7 8" />
                                     <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
-                                Escolher Arquivo .enc
+                                <span data-i18n="file.dec.choose">Escolher Arquivo .enc</span>
                             </label>
-                            <span class="file-name-display" id="decriptoFileName">Nenhum arquivo selecionado</span>
+                            <span class="file-name-display" id="decriptoFileName" data-i18n="file.none">Nenhum arquivo selecionado</span>
                             <input type="file" name="arquivo" id="decriptoInput" required class="hidden-file-input">
                         </div>
-                        <input type="password" name="senha" placeholder="Senha usada na criptografia" required>
+                        <input type="password" name="senha" placeholder="Senha usada na criptografia" data-i18n-ph="file.dec.ph" required>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                            <span>Descriptografar e baixar</span><span class="botao-arr">↓</span>
+                            <span data-i18n="file.dec.action">Descriptografar e baixar</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>
@@ -651,13 +662,13 @@
                                 <line x1="10" y1="3" x2="8" y2="21"></line>
                                 <line x1="16" y1="3" x2="14" y2="21"></line>
                             </svg>
-                            Calculadora de Hash
+                            <span data-i18n="file.hash.title">Calculadora de Hash</span>
                         </div>
                         <div class="tool-badges">
                             <span class="tool-badge badge-hash">HASH</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Calcule MD5, SHA-1 e SHA-256 de qualquer arquivo. Útil para verificar integridade.</p>
+                    <p class="pdf-tool-desc" data-i18n="file.hash.desc">Calcule as impressões digitais (checksums) de qualquer arquivo.</p>
                     <form id="hashForm" style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <div>
@@ -668,14 +679,14 @@
                                     <polyline points="17 8 12 3 7 8" />
                                     <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
-                                Escolher Arquivo
+                                <span data-i18n="pdf.split.choose">Escolher Arquivo</span>
                             </label>
-                            <span class="file-name-display" id="hashFileName">Nenhum arquivo selecionado</span>
+                            <span class="file-name-display" id="hashFileName" data-i18n="file.none">Nenhum arquivo selecionado</span>
                             <input type="file" name="arquivo" id="hashInput" required class="hidden-file-input">
                         </div>
                         <div class="hash-resultado" id="hashResultado"></div>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto" id="hashBtn">
-                            <span>Calcular Hash</span><span class="botao-arr">#</span>
+                            <span data-i18n="file.hash.action">Calcular Hash</span><span class="botao-arr">#</span>
                         </button>
                     </form>
                 </div>
@@ -689,13 +700,13 @@
                                 style="color:var(--accent)">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
-                            Renomear em Lote
+                            <span data-i18n="file.rename.title">Renomear Arquivos em Lote</span>
                         </div>
                         <div class="tool-badges">
                             <span class="tool-badge badge-all">ZIP</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Renomeie vários arquivos de uma vez com um padrão. Use {n} para numeração sequencial.</p>
+                    <p class="pdf-tool-desc" data-i18n="file.rename.desc">Adicione um prefixo padronizado a múltiplos arquivos simultaneamente.</p>
                     <form action="/api/file/renomear-lote" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -707,7 +718,7 @@
                                     <polyline points="17 8 12 3 7 8" />
                                     <line x1="12" y1="3" x2="12" y2="15" />
                                 </svg>
-                                Escolher Arquivos
+                                <span data-i18n="pdf.merge.choose">Escolher Arquivos</span>
                             </label>
                             <input type="file" name="arquivos" id="renomearInput" multiple required
                                 class="hidden-file-input">
@@ -715,12 +726,12 @@
                         <div id="renomearListContainer"
                             style="background: rgba(120, 120, 120, 0.05); border: 1px dashed var(--border2); border-radius: 0; padding: 12px; min-height: 40px; display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;">
                             <span id="renomearEmptyMsg"
-                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;">Nenhum
+                                style="font-size: 12px; color: var(--muted); font-style: italic; margin: auto;" data-i18n="file.none">Nenhum
                                 arquivo selecionado</span>
                         </div>
-                        <input type="text" name="padrao" placeholder="Padrão: foto_{n}, relatorio_{n}" value="arquivo_{n}" required>
+                        <input type="text" name="padrao" placeholder="Novo prefixo para os arquivos" data-i18n-ph="file.rename.ph" value="arquivo_{n}" required>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                            <span>Renomear e baixar ZIP</span><span class="botao-arr">↓</span>
+                            <span data-i18n="file.rename.action">Renomear e baixar ZIP</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>

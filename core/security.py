@@ -1,5 +1,6 @@
 import os
 import secrets
+import zipfile
 from flask import session
 import time
 from collections import defaultdict
@@ -8,22 +9,49 @@ from threading import Lock
 _contagem_ip = defaultdict(list)
 _lock_rate   = Lock()
 
-def extrair_ip_cliente(req):
+# ─── Limites de segurança ────────────────────────────────────────────────────
+
+# Tamanho máximo descomprimido de um ZIP (100 MB).
+# Protege contra Zip Bomb: um arquivo .zip de 1 KB pode se expandir para GBs.
+# ARQUITETURA: Se no futuro o serviço usar Redis, migrar esta lógica para um
+# middleware distribuído (ex: Flask-Limiter com Redis storage).
+ZIP_BOMB_MAX_BYTES = 100 * 1024 * 1024   # 100 MB descomprimidos
+ZIP_BOMB_MAX_RATIO = 100                 # Razão máxima comprimido/descomprimido
+
+
+def extrair_ip_cliente(req=None):
     """Extrai o IP real do cliente, respeitando proxies reversos (X-Forwarded-For)."""
     if req is None:
+        try:
+            from flask import request
+            req = request
+        except RuntimeError:
+            return "127.0.0.1"
+    if not req:
         return "127.0.0.1"
     xf = req.headers.get("X-Forwarded-For")
     if xf:
         return xf.split(",")[0].strip()
-    return req.remote_addr or "127.0.0.1"
+    return getattr(req, 'remote_addr', None) or "127.0.0.1"
+
 
 def verificar_rate_limit(ip):
+    """
+    Rate limiting in-memory (10 req/60s por IP).
+
+    LIMITAÇÃO CONHECIDA: Este controle é por instância de processo. Em ambientes
+    com múltiplas réplicas (ex: Cloud Run com escala horizontal), o limite é
+    aplicado individualmente por réplica, não de forma global.
+    Para rate limiting global, migrar para Flask-Limiter com backend Redis.
+    """
     agora = time.time()
     with _lock_rate:
         _contagem_ip[ip] = [t for t in _contagem_ip[ip] if agora - t < 60]
-        if len(_contagem_ip[ip]) >= 10: return False
+        if len(_contagem_ip[ip]) >= 10:
+            return False
         _contagem_ip[ip].append(agora)
         return True
+
 
 def rate_limit_required(f):
     from functools import wraps
@@ -36,17 +64,20 @@ def rate_limit_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 def gerar_csrf():
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(32)
     return session["csrf_token"]
 
+
 def validar_csrf(tok):
     return bool(tok and tok == session.get("csrf_token"))
 
+
 _EXT_PERIGOSAS = {
-    "exe","bat","cmd","com","php","sh","ps1","vbs","js",
-    "jar","py","rb","pl","asp","jsp","cgi","msi","dll"
+    "exe", "bat", "cmd", "com", "php", "sh", "ps1", "vbs", "js",
+    "jar", "py", "rb", "pl", "asp", "jsp", "cgi", "msi", "dll"
 }
 
 _MAGIC = {
@@ -67,11 +98,13 @@ _MAGIC = {
     "txt":  None,   # texto puro
 }
 
+
 def validar_nome(nome):
     p = nome.split(".")
     if len(p) < 2:
         return True
     return not any(x.lower() in _EXT_PERIGOSAS for x in p[1:])
+
 
 def validar_magic(caminho, ext):
     m = _MAGIC.get(ext)
@@ -116,5 +149,83 @@ def validar_magic(caminho, ext):
         with open(caminho, "rb") as f:
             h = f.read(8)
         return any(h.startswith(x) for x in m)
+    except OSError:
+        return False
+
+
+def validar_mime_type(request_file, extensoes_permitidas: set) -> bool:
+    """
+    Valida o Content-Type HTTP do arquivo enviado.
+    Previne que um cliente envie um arquivo perigoso com Content-Type forjado.
+    Esta validação é complementar à validação de magic bytes — ambas devem ser usadas.
+
+    Args:
+        request_file: Objeto FileStorage do Flask (request.files[...]).
+        extensoes_permitidas: Set de extensões aceitas (ex: {'pdf', 'docx'}).
+
+    Returns:
+        True se o Content-Type é plausível para a extensão; False caso contrário.
+    """
+    MIME_ACEITOS = {
+        "application/pdf", "application/octet-stream",
+        "application/msword", "application/vnd.ms-excel",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "image/png", "image/jpeg", "image/webp", "image/heic", "image/gif",
+        "video/mp4", "video/quicktime", "video/x-m4v",
+        "audio/mpeg", "audio/mp3",
+        "text/plain", "text/csv", "application/csv",
+        "application/json", "text/json",
+        "application/zip", "application/x-tar", "application/gzip",
+        "application/x-zip-compressed", "multipart/x-zip",
+        # Navegadores podem enviar tipos genéricos — sempre aceitar octet-stream
+    }
+    ct = (request_file.mimetype or "").lower().split(";")[0].strip()
+    # Se Content-Type está ausente ou é genérico, permitir (será validado por magic bytes)
+    if not ct or ct == "application/octet-stream":
+        return True
+    return ct in MIME_ACEITOS
+
+
+def verificar_zip_bomb(caminho_zip: str) -> bool:
+    """
+    Verifica se um arquivo ZIP é uma Zip Bomb (arquivo comprimido armadilhado).
+
+    Critérios de rejeição:
+    - Tamanho total descomprimido > ZIP_BOMB_MAX_BYTES (padrão: 100 MB)
+    - Razão comprimido/descomprimido > ZIP_BOMB_MAX_RATIO (padrão: 100x)
+
+    Args:
+        caminho_zip: Caminho para o arquivo ZIP a ser verificado.
+
+    Returns:
+        True se o arquivo é seguro; False se for suspeito de Zip Bomb.
+
+    Raises:
+        zipfile.BadZipFile: Se o arquivo não for um ZIP válido.
+    """
+    try:
+        tamanho_zip = os.path.getsize(caminho_zip)
+        total_descomprimido = 0
+
+        with zipfile.ZipFile(caminho_zip, "r") as zf:
+            for info in zf.infolist():
+                total_descomprimido += info.file_size
+                # Rejeita imediatamente se já passou do limite
+                if total_descomprimido > ZIP_BOMB_MAX_BYTES:
+                    return False
+
+        # Verifica razão de compressão (evita 1GB comprimido para 1TB)
+        if tamanho_zip > 0 and total_descomprimido > 0:
+            ratio = total_descomprimido / tamanho_zip
+            if ratio > ZIP_BOMB_MAX_RATIO:
+                return False
+
+        return True
+    except zipfile.BadZipFile:
+        # Não é um ZIP — deixa a validação de magic bytes lidar com isso
+        return True
     except OSError:
         return False

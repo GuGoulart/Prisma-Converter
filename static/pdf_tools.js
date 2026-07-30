@@ -117,7 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 display.textContent = this.files[0].name;
                 display.style.color = 'var(--text)';
             } else {
-                display.textContent = 'Nenhum arquivo selecionado';
+                const dict = typeof translations !== 'undefined' && typeof getCurrentLang === 'function' ? translations[getCurrentLang()] : null;
+                display.textContent = dict?.['file.none'] || 'Nenhum arquivo selecionado';
                 display.style.color = 'var(--muted)';
             }
         });
@@ -258,112 +259,4 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(spawnIcon, 400);
     }
 
-    // ── Downloader de Mídia por Link com Barra de Progresso ────
-    const formDownloadUrl = document.getElementById('formDownloadUrl');
-    const inputUrlMedia = document.getElementById('inputUrlMedia');
-    const btnIniciarDownloadUrl = document.getElementById('btnIniciarDownloadUrl');
-    const progressContainerUrl = document.getElementById('progressContainerUrl');
-    const progressStatusUrl = document.getElementById('progressStatusUrl');
-    const progressPercentUrl = document.getElementById('progressPercentUrl');
-    const progressFillUrl = document.getElementById('progressFillUrl');
-
-    formDownloadUrl?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const urlVal = inputUrlMedia?.value?.trim();
-        if (!urlVal) return;
-
-        btnIniciarDownloadUrl.disabled = true;
-        const btnTextSpan = btnIniciarDownloadUrl.querySelector('span:first-child');
-        if (btnTextSpan) btnTextSpan.textContent = 'Processando...';
-
-        if (progressContainerUrl) progressContainerUrl.style.display = 'flex';
-        if (progressFillUrl) {
-            progressFillUrl.style.width = '0%';
-            progressFillUrl.style.background = '';
-            progressFillUrl.style.boxShadow = '';
-        }
-        if (progressPercentUrl) {
-            progressPercentUrl.style.display = 'inline';
-            progressPercentUrl.textContent = '0%';
-        }
-        if (progressStatusUrl) {
-            progressStatusUrl.textContent = 'Iniciando download...';
-            progressStatusUrl.style.color = 'var(--accent)';
-        }
-
-        try {
-            const formData = new FormData(formDownloadUrl);
-            const resp = await fetch('/api/media/iniciar-download-url', {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await resp.json();
-
-            if (!resp.ok || data.erro) {
-                alert(data.erro || 'Não foi possível iniciar o download.');
-                if (progressContainerUrl) progressContainerUrl.style.display = 'none';
-                btnIniciarDownloadUrl.disabled = false;
-                if (btnTextSpan) btnTextSpan.textContent = 'Baixar Mídia';
-                return;
-            }
-
-            const jobId = data.job_id;
-
-            // Loop de Polling para Progresso em Tempo Real
-            const pollInterval = setInterval(async () => {
-                try {
-                    const statusResp = await fetch(`/api/media/download-status/${jobId}`);
-                    const statusData = await statusResp.json();
-
-                    if (statusData.erro) {
-                        clearInterval(pollInterval);
-                        if (progressStatusUrl) {
-                            progressStatusUrl.textContent = statusData.erro;
-                            progressStatusUrl.style.color = '#f87171';
-                        }
-                        if (progressPercentUrl) progressPercentUrl.style.display = 'none';
-                        if (progressFillUrl) {
-                            progressFillUrl.style.background = '#f87171';
-                            progressFillUrl.style.boxShadow = '0 0 10px #f87171';
-                        }
-                        btnIniciarDownloadUrl.disabled = false;
-                        if (btnTextSpan) btnTextSpan.textContent = 'Baixar Mídia';
-                        return;
-                    }
-
-                    const pct = Math.min(100, Math.max(0, statusData.percent || 0));
-                    if (progressFillUrl) progressFillUrl.style.width = `${pct}%`;
-                    if (progressPercentUrl) progressPercentUrl.textContent = `${pct}%`;
-                    if (progressStatusUrl && statusData.status) {
-                        progressStatusUrl.textContent = statusData.status;
-                    }
-
-                    if (statusData.concluido && statusData.download_url) {
-                        clearInterval(pollInterval);
-                        if (progressFillUrl) progressFillUrl.style.width = '100%';
-                        if (progressPercentUrl) progressPercentUrl.textContent = '100%';
-                        if (progressStatusUrl) progressStatusUrl.textContent = 'Concluído! Baixando arquivo...';
-
-                        // Iniciar o download automático do arquivo gerado
-                        window.location.href = statusData.download_url;
-
-                        setTimeout(() => {
-                            btnIniciarDownloadUrl.disabled = false;
-                            if (btnTextSpan) btnTextSpan.textContent = 'Baixar Mídia';
-                        }, 3000);
-                    }
-                } catch (err) {
-                    console.error('Erro ao consultar progresso:', err);
-                }
-            }, 600);
-
-        } catch (err) {
-            alert('Erro de conexão com o servidor.');
-            if (progressContainerUrl) progressContainerUrl.style.display = 'none';
-            btnIniciarDownloadUrl.disabled = false;
-            if (btnTextSpan) btnTextSpan.textContent = 'Baixar Mídia';
-        }
-    });
-
-}); // fim DOMContentLoaded
+    // ── }); // fim DOMContentLoaded

@@ -70,7 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 display.textContent = this.files[0].name;
                 display.style.color = 'var(--text)';
             } else {
-                display.textContent = 'Nenhum arquivo selecionado';
+                const dict = typeof translations !== 'undefined' && typeof getCurrentLang === 'function' ? translations[getCurrentLang()] : null;
+                display.textContent = dict?.['file.none'] || 'Nenhum arquivo selecionado';
                 display.style.color = 'var(--muted)';
             }
         });

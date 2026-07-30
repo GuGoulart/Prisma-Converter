@@ -532,3 +532,38 @@
     line-height: 1.5
 }
 
+/* ── Seletor de Idioma ── */
+.lang-selector-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    padding: 2px;
+}
+
+.btn-lang-opt {
+    background: transparent;
+    border: none;
+    color: var(--muted2);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.05em;
+    user-select: none;
+}
+
+.btn-lang-opt:hover {
+    color: var(--text);
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.btn-lang-opt.ativo {
+    color: #0a0a0a;
+    background: var(--accent);
+}
+
+

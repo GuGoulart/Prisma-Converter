@@ -1,6 +1,11 @@
 """
 media_tools.py — Ferramentas de mídia (áudio/vídeo)
-Usa ffmpeg (do sistema ou via imageio-ffmpeg) para conversões de mídia.
+Usa ffmpeg (do sistema ou via imageio-ffmpeg) para conversões de mídia
+de arquivos enviados pelo próprio usuário.
+
+NOTA: Download de vídeos de plataformas externas (YouTube, Instagram, etc.)
+foi removido por violar os Termos de Serviço dessas plataformas e a legislação
+de direitos autorais aplicável (DMCA, Marco Civil da Internet).
 """
 
 import os
@@ -9,10 +14,6 @@ import subprocess
 import logging
 
 log = logging.getLogger(__name__)
-
-# Diretório onde este arquivo está (usado para localizar cookies.txt de forma confiável,
-# independente de onde o processo Flask/gunicorn foi iniciado)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def encontrar_ffmpeg():
@@ -45,6 +46,7 @@ def mp4_para_mp3(entrada: str, saida: str, bitrate: str = "192k", timeout: int =
     """
     Converte um arquivo MP4 (vídeo) para MP3 (áudio).
     Extrai a faixa de áudio e recodifica em MP3.
+    Opera exclusivamente sobre arquivos enviados pelo próprio usuário.
 
     Args:
         entrada: Caminho do arquivo MP4 de entrada.
@@ -144,6 +146,7 @@ def _mp4_para_gif_opencv(entrada: str, saida: str, fps: int = 15, largura: int =
 def mp4_para_gif(entrada: str, saida: str, fps: int = 15, largura: int = 480, timeout: int = 180):
     """
     Converte um arquivo MP4 (vídeo) para GIF animado.
+    Opera exclusivamente sobre arquivos enviados pelo próprio usuário.
     Tenta usar FFmpeg com palettegen/paletteuse para alta qualidade.
     Caso FFmpeg não esteja instalado, utiliza fallback com OpenCV + Pillow.
 
@@ -178,7 +181,7 @@ def mp4_para_gif(entrada: str, saida: str, fps: int = 15, largura: int = 480, ti
         try:
             resultado = subprocess.run(cmd, capture_output=True, timeout=timeout)
             if resultado.returncode == 0 and os.path.exists(saida) and os.path.getsize(saida) > 0:
-                log.info(f"MP4→GIF via FFmpeg OK: {os.path.basename(entrada)}")
+                log.info(f"MP4->GIF via FFmpeg OK: {os.path.basename(entrada)}")
                 return
             log.warning("FFmpeg falhou ao gerar GIF. Tentando fallback com OpenCV...")
         except Exception as e:
@@ -189,160 +192,4 @@ def mp4_para_gif(entrada: str, saida: str, fps: int = 15, largura: int = 480, ti
     if not os.path.exists(saida) or os.path.getsize(saida) == 0:
         raise RuntimeError("A conversão para GIF não gerou um arquivo válido.")
 
-    log.info(f"MP4→GIF via OpenCV OK: {os.path.basename(entrada)}")
-
-
-def baixar_midia_url(url: str, pasta_destino: str, tipo: str = "mp4", progresso_callback=None) -> str:
-    """
-    Baixa vídeo ou áudio a partir de um link (YouTube, Instagram, Twitter/X, TikTok, etc.) usando yt-dlp.
-
-    Args:
-        url: Link do vídeo/post.
-        pasta_destino: Diretório onde o arquivo será salvo.
-        tipo: "mp4" para vídeo ou "mp3" para áudio.
-        progresso_callback: Função callback(percent: float, status_msg: str) para progresso em tempo real.
-
-    Returns:
-        Caminho do arquivo final gerado.
-    """
-    try:
-        import yt_dlp
-    except ImportError:
-        raise RuntimeError("A biblioteca yt-dlp não está instalada. Execute 'pip install yt-dlp'.")
-
-    if not url or not url.strip():
-        raise ValueError("URL inválida ou vazia.")
-
-    os.makedirs(pasta_destino, exist_ok=True)
-    out_pattern = os.path.join(pasta_destino, "%(title).100s_%(id)s.%(ext)s")
-
-    def hook(d):
-        if not progresso_callback:
-            return
-        status = d.get("status")
-        if status == "downloading":
-            total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
-            downloaded = d.get("downloaded_bytes") or 0
-            if total > 0:
-                pct = round((downloaded / total) * 100, 1)
-                progresso_callback(pct, f"Baixando... {pct}%")
-            else:
-                progresso_callback(50.0, "Baixando mídia...")
-        elif status == "finished":
-            progresso_callback(95.0, "Finalizando processamento do arquivo...")
-
-    ffmpeg_exe = encontrar_ffmpeg()
-
-    ydl_opts = {
-        "outtmpl": out_pattern,
-        "progress_hooks": [hook],
-        "noplaylist": True,
-        "quiet": True,
-        "no_warnings": True,
-        "restrictfilenames": True,
-        "nocheckcertificate": True,
-        "geo_bypass": True,
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["android", "ios", "mweb", "web"],
-            }
-        },
-        "http_headers": {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
-        }
-    }
-
-    if ffmpeg_exe:
-        # Se for caminho para o executável, passa o diretório ou o próprio caminho
-        ydl_opts["ffmpeg_location"] = ffmpeg_exe
-
-    # Suporte a cookies.txt para vídeos restritos (idade/login).
-    # IMPORTANTE: o caminho é resolvido a partir da pasta deste arquivo (BASE_DIR),
-    # e não do diretório de trabalho do processo — isso evita que o cookie "suma"
-    # quando o Flask/gunicorn é iniciado de outro lugar.
-    cookie_encontrado = False
-    for cookie_name in ["cookies.txt", "youtube_cookies.txt"]:
-        caminho_cookie = os.path.join(BASE_DIR, cookie_name)
-        if os.path.exists(caminho_cookie):
-            ydl_opts["cookiefile"] = caminho_cookie
-            log.info(f"Usando cookies de: {caminho_cookie}")
-            cookie_encontrado = True
-            break
-
-    if not cookie_encontrado:
-        log.warning(
-            "Nenhum arquivo de cookies encontrado em %s — vídeos com restrição de "
-            "idade/login vão falhar até que um cookies.txt válido seja adicionado.",
-            BASE_DIR,
-        )
-
-    if tipo == "mp3":
-        ydl_opts.update({
-            "format": "bestaudio/best",
-            "postprocessors": [{
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "192",
-            }],
-        })
-    else:
-        ydl_opts.update({
-            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best",
-            "merge_output_format": "mp4",
-        })
-
-    if progresso_callback:
-        progresso_callback(5.0, "Obtendo informações do vídeo...")
-
-    configs_tentativas = [
-        # Estratégia 1: Cliente móvel mweb / android
-        {"youtube": {"player_client": ["mweb", "android", "ios", "web"]}},
-        # Estratégia 2: Cliente android exclusivo
-        {"youtube": {"player_client": ["android", "ios"]}},
-        # Estratégia 3: Padrão sem restrição de cliente
-        {}
-    ]
-
-    ultimo_erro = None
-    filename = None
-
-    for idx, ext_args in enumerate(configs_tentativas):
-        try:
-            opts_atuais = ydl_opts.copy()
-            if ext_args:
-                opts_atuais["extractor_args"] = ext_args
-            else:
-                opts_atuais.pop("extractor_args", None)
-
-            with yt_dlp.YoutubeDL(opts_atuais) as ydl:
-                info = ydl.extract_info(url.strip(), download=True)
-                cand = ydl.prepare_filename(info)
-
-                if tipo == "mp3":
-                    base_cand = os.path.splitext(cand)[0]
-                    mp3_cand = base_cand + ".mp3"
-                    if os.path.exists(mp3_cand):
-                        cand = mp3_cand
-
-                if cand and os.path.exists(cand) and os.path.getsize(cand) > 0:
-                    filename = cand
-                    break
-        except Exception as e:
-            ultimo_erro = e
-            log.warning(f"Tentativa {idx + 1} com player_client {ext_args} falhou: {e}")
-
-    if not filename or not os.path.exists(filename) or os.path.getsize(filename) == 0:
-        # Procurar qualquer arquivo criado na pasta destino se o nome variou
-        arquivos = [os.path.join(pasta_destino, f) for f in os.listdir(pasta_destino) if os.path.isfile(os.path.join(pasta_destino, f))]
-        if arquivos:
-            filename = sorted(arquivos, key=lambda p: os.path.getmtime(p), reverse=True)[0]
-        elif ultimo_erro:
-            raise ultimo_erro
-        else:
-            raise RuntimeError("Não foi possível gerar o arquivo de mídia baixado.")
-
-    if progresso_callback:
-        progresso_callback(100.0, "Download concluído!")
-
-    return filename
+    log.info(f"MP4->GIF via OpenCV OK: {os.path.basename(entrada)}")

@@ -6,6 +6,7 @@
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
     <style>
         body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
         h1 { font-size: 64px; color: var(--accent2); margin-bottom: 16px; font-family: var(--font); }
@@ -16,7 +17,7 @@
 </head>
 <body>
     <h1>500</h1>
-    <p>Ops! Ocorreu um erro interno no servidor ao processar sua requisição.</p>
-    <a href="/">Voltar ao Início</a>
+    <p data-i18n="err.500">Ops! Ocorreu um erro interno no servidor ao processar sua requisição.</p>
+    <a href="/" data-i18n="nav.home">Voltar ao Início</a>
 </body>
 </html>

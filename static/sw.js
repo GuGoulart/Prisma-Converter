@@ -1,9 +1,19 @@
-const CACHE_NAME = 'prisma-cache-v5';
+const CACHE_NAME = 'prisma-cache-v7';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/style.css',
+  '/static/i18n.js',
   '/static/script.js',
-  '/static/manifest.json'
+  '/static/pdf_tools.js',
+  '/static/file_tools.js',
+  '/static/css/vars.css',
+  '/static/css/layout.css',
+  '/static/css/components.css',
+  '/static/css/animations.css',
+  '/static/manifest.json',
+  '/static/favicon.svg',
+  '/static/icon-192.png',
+  '/static/icon-512.png'
 ];
 
 self.addEventListener('install', event => {
@@ -37,7 +47,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin) return;
 
   // PERF-006: Ignora rotas dinâmicas (sessão Flask) e de API/download
-  const rotasDinamicas = ['/', '/upload', '/converter', '/preview', '/ferramentas-avancadas', '/modificar-arquivos'];
+  const rotasDinamicas = ['/', '/conversor', '/upload', '/converter', '/preview', '/ferramentas-avancadas', '/modificar-arquivos'];
   const isDinamica = rotasDinamicas.some(r => url.pathname === r || url.pathname.startsWith('/preview/'));
   if (isDinamica || url.pathname.includes('/api/') || url.pathname.includes('/download/')) {
       return;
@@ -68,4 +78,3 @@ self.addEventListener('fetch', event => {
       })
   );
 });
-

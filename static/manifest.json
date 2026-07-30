@@ -1,23 +1,49 @@
 {
-  "name": "Prisma Converter",
+  "name": "Prisma Converter — Suíte de Arquivos",
   "short_name": "Prisma",
-  "description": "Conversor rápido, seguro e local de arquivos.",
+  "description": "Conversão universal, manipulação avançada de PDF, segurança e ferramentas de mídia diretamente no seu navegador.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#090a0f",
-  "theme_color": "#090a0f",
+  "orientation": "any",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "categories": ["utilities", "productivity"],
   "icons": [
     {
       "src": "/static/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/static/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Conversor de Arquivos",
+      "short_name": "Conversor",
+      "description": "Converta PDFs, DOCX, XLSX, imagens e mais",
+      "url": "/conversor",
+      "icons": [{ "src": "/static/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ferramentas Avançadas",
+      "short_name": "Ferramentas",
+      "description": "Mesclar, dividir, QR code e extração de paleta",
+      "url": "/ferramentas-avancadas",
+      "icons": [{ "src": "/static/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Modificar Arquivos",
+      "short_name": "Modificar",
+      "description": "Compressão, criptografia AES-256, hash e ZIP com senha",
+      "url": "/modificar-arquivos",
+      "icons": [{ "src": "/static/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

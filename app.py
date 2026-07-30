@@ -8,8 +8,11 @@ from datetime import datetime
 from collections import defaultdict
 from threading import Lock
 from core.security import (gerar_csrf, validar_csrf, verificar_rate_limit,
-                           validar_nome, validar_magic, rate_limit_required, extrair_ip_cliente)
+                           validar_nome, validar_magic, rate_limit_required,
+                           extrair_ip_cliente, validar_mime_type, verificar_zip_bomb)
 from core.cleanup import iniciar_limpeza
+from core.tasks import job_store, executar_conversao_async
+from core.storage import storage
 import sys
 from dotenv import load_dotenv
 
@@ -42,17 +45,31 @@ _lock_contador      = Lock()  # QC-005: protege o contador contra race condition
 
 logging.basicConfig(
     stream=sys.stdout, level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
+    format="%(asctime)s [%(levelname)s] [%(request_id)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 log = logging.getLogger(__name__)
+
+# ── Request ID para correlação de logs ────────────────────────────────────────
+_request_id_local = threading.local()
+
+class _RequestIdFilter(logging.Filter):
+    """Injeta o request_id no contexto de cada log — facilita debugging em produção."""
+    def filter(self, record):
+        record.request_id = getattr(_request_id_local, 'request_id', '-')
+        return True
+
+for _h in logging.root.handlers:
+    _h.addFilter(_RequestIdFilter())
+
+@app.before_request
+def _set_request_id():
+    _request_id_local.request_id = uuid.uuid4().hex[:8]
 
 _conversoes_ativas = 0
 _lock_conv         = Lock()
 MAX_PARALELAS      = int(os.environ.get("MAX_PARALELAS", 4))
 
-_jobs_download     = {}
-_lock_jobs         = Lock()
 
 LIMITES_POR_TIPO = {
     "pdf":  MAX_MB * 1024 * 1024,
@@ -75,6 +92,25 @@ LIMITES_POR_TIPO = {
 }
 NOMES_LIMITES = {k: f"{MAX_MB} MB" for k in LIMITES_POR_TIPO}
 
+
+# ── Flask-Limiter com Redis (quando disponível) ──────────────────────────────────────
+# Modo: sem REDIS_URL → rate limiting in-memory (limitado a uma instância).
+#        com REDIS_URL → rate limiting distribuído via Redis (escala horizontal).
+_REDIS_URL = os.environ.get("REDIS_URL", "")
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    _limiter_storage_uri = _REDIS_URL if _REDIS_URL else "memory://"
+    limiter = Limiter(
+        app=app,
+        key_func=extrair_ip_cliente,
+        default_limits=["200 per day", "60 per hour"],
+        storage_uri=_limiter_storage_uri,
+    )
+    log.info("[limiter] Flask-Limiter ativo (%s)", "Redis" if _REDIS_URL else "in-memory")
+except ImportError:
+    limiter = None
+    log.warning("[limiter] flask-limiter não instalado — usando rate limiting custom.")
 
 # ── Segurança ─────────────────────────────────────────────────
 
@@ -121,24 +157,6 @@ def _erro_seguro(e: Exception) -> str:
     return "Ocorreu um erro ao processar o arquivo. Verifique se ele está corrompido ou tente novamente."
 
 
-_ERROS_URL_CONHECIDOS = {
-    "video unavailable": "Este vídeo está indisponível, privado ou foi removido.",
-    "is not available": "Este vídeo não está disponível na plataforma.",
-    "private video": "Este vídeo é privado e não pode ser baixado.",
-    "unsupported url": "Link não suportado ou URL inválida.",
-    "is not a valid url": "Informe uma URL válida de vídeo ou post.",
-    "sign in": "Este vídeo possui restrição de idade ou requer login.",
-    "copyright": "Vídeo bloqueado por reivindicação de direitos autorais.",
-    "too many requests": "Muitas requisições para esta plataforma. Tente novamente em instantes.",
-}
-
-def _erro_seguro_url(e: Exception) -> str:
-    """Retorna mensagem amigável específica para erros de download por URL."""
-    msg = str(e).lower()
-    for chave, amigavel in _ERROS_URL_CONHECIDOS.items():
-        if chave in msg:
-            return amigavel
-    return "Não foi possível baixar o vídeo deste link. Verifique se o link está correto e se o vídeo é público."
 
 
 
@@ -581,109 +599,6 @@ def api_mp4_para_gif():
         return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 
-@app.route("/api/media/iniciar-download-url", methods=["POST"])
-@rate_limit_required
-def api_iniciar_download_url():
-    if not validar_csrf(request.form.get("csrf_token", "")):
-        return jsonify({"erro": "Token CSRF inválido. Recarregue a página."}), 403
-
-    url = request.form.get("url", "").strip()
-    tipo = request.form.get("tipo", "mp4").strip().lower()
-    if not url:
-        return jsonify({"erro": "Informe um link de vídeo ou post válido."}), 400
-
-    if tipo not in ("mp4", "mp3"):
-        tipo = "mp4"
-
-    job_id = uuid.uuid4().hex
-    uid = criar_pasta()
-    pp = pasta_path(uid)
-
-    with _lock_jobs:
-        _jobs_download[job_id] = {
-            "percent": 0.0,
-            "status": "Iniciando processo...",
-            "concluido": False,
-            "erro": None,
-            "caminho_saida": None,
-            "pasta_uid": uid,
-            "timestamp": time.time(),
-        }
-
-    def _trabalhador():
-        def _progresso(pct, msg):
-            with _lock_jobs:
-                if job_id in _jobs_download:
-                    _jobs_download[job_id]["percent"] = pct
-                    _jobs_download[job_id]["status"] = msg
-
-        try:
-            from core.media_tools import baixar_midia_url
-            caminho_final = baixar_midia_url(url, pp, tipo=tipo, progresso_callback=_progresso)
-            with _lock_jobs:
-                if job_id in _jobs_download:
-                    _jobs_download[job_id]["percent"] = 100.0
-                    _jobs_download[job_id]["status"] = "Download concluído!"
-                    _jobs_download[job_id]["concluido"] = True
-                    _jobs_download[job_id]["caminho_saida"] = caminho_final
-        except Exception as e:
-            log.warning(f"Erro no job de download via URL ({job_id}): {e}")
-            with _lock_jobs:
-                if job_id in _jobs_download:
-                    _jobs_download[job_id]["erro"] = _erro_seguro_url(e)
-                    _jobs_download[job_id]["status"] = "Erro ao baixar."
-
-    threading.Thread(target=_trabalhador, daemon=True).start()
-
-    return jsonify({"ok": True, "job_id": job_id})
-
-
-@app.route("/api/media/download-status/<job_id>", methods=["GET"])
-def api_download_status(job_id):
-    with _lock_jobs:
-        job = _jobs_download.get(job_id)
-
-    if not job:
-        return jsonify({"erro": "Download não encontrado ou expirado."}), 404
-
-    return jsonify({
-        "percent": job["percent"],
-        "status": job["status"],
-        "concluido": job["concluido"],
-        "erro": job["erro"],
-        "download_url": f"/api/media/obter-download-url/{job_id}" if job["concluido"] else None
-    })
-
-
-@app.route("/api/media/obter-download-url/<job_id>", methods=["GET"])
-def api_obter_download_url(job_id):
-    with _lock_jobs:
-        job = _jobs_download.get(job_id)
-
-    if not job or not job.get("concluido") or not job.get("caminho_saida"):
-        return render_template("pdf_tools.html", erro="Arquivo não disponível para download."), 404
-
-    saida = job["caminho_saida"]
-    pp = job["pasta_uid"]
-
-    if not os.path.exists(saida):
-        return render_template("pdf_tools.html", erro="O arquivo baixado não foi encontrado."), 404
-
-    nome_download = os.path.basename(saida)
-
-    @after_this_request
-    def cleanup(response):
-        def _remov():
-            time.sleep(5)
-            shutil.rmtree(pasta_path(pp), ignore_errors=True)
-            with _lock_jobs:
-                _jobs_download.pop(job_id, None)
-        threading.Thread(target=_remov, daemon=True).start()
-        return response
-
-    resp = send_file(saida, as_attachment=True, download_name=nome_download)
-    resp.headers["Cache-Control"] = "no-store"
-    return resp
 
 
 @app.route("/api/qr/gerar", methods=["POST"])
@@ -964,7 +879,12 @@ def api_renomear_lote():
         return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     arquivos = request.files.getlist("arquivos")
-    padrao = request.form.get("padrao", "arquivo_{n}")
+    # SEC-PATH: sanitiza o padrão de nome para prevenir Path Traversal.
+    # Permite apenas: letras, números, underscore, hífen, espaço e o token {n}.
+    padrao_raw = request.form.get("padrao", "arquivo_{n}")
+    padrao = re.sub(r'[^\w\-_ {}]', '', padrao_raw).strip() or "arquivo_{n}"
+    if len(padrao) > 100:
+        padrao = padrao[:100]
     if not arquivos or len(arquivos) < 1:
         return "Selecione pelo menos 1 arquivo", 400
     
@@ -1167,7 +1087,12 @@ def upload():
         if "." not in nome_original:
             return render_template("index.html", erro="Arquivo sem extensão reconhecida.")
 
-        ext      = nome_original.rsplit(".", 1)[1].lower()
+        ext = nome_original.rsplit(".", 1)[1].lower()
+
+        # SEC-MIME: valida Content-Type HTTP — defesa complementar ao magic bytes
+        if not validar_mime_type(arq, {ext}):
+            return render_template("index.html", erro="Tipo de arquivo não permitido.")
+
         conteudo = arq.read()
         tamanho  = len(conteudo)
 
@@ -1188,6 +1113,12 @@ def upload():
             shutil.rmtree(pp, ignore_errors=True)
             return render_template("index.html",
                                    erro=f"Arquivo não parece ser '{ext.upper()}' válido.")
+
+        # SEC-ZIPBOMB: verifica se é uma Zip Bomb antes de qualquer extração
+        if ext in ("zip",) and not verificar_zip_bomb(cam):
+            shutil.rmtree(pp, ignore_errors=True)
+            return render_template("index.html",
+                                   erro="Arquivo ZIP suspeito: tamanho descomprimido excede o limite permitido.")
 
         conversoes = obter_conversoes(ext)
         if not conversoes:
@@ -1359,6 +1290,168 @@ def converter():
     finally:
         with _lock_conv:
             _conversoes_ativas -= 1
+
+
+# ── API de Conversão Assíncrona ───────────────────────────────────────────────────────
+#
+# Fluxo:
+#   1. POST /api/converter/async — inicia job, retorna {job_id}
+#   2. GET  /api/converter/status/<job_id> — retorna progresso (percent, status, concluido)
+#   3. GET  /api/converter/download/<job_id> — retorna o arquivo quando concluido=True
+#
+# O frontend faz polling do endpoint de status e inicia o download automaticamente.
+# Esta arquitetura elimina a espera síncrona de até 120s na rota /converter.
+
+@app.route("/api/converter/async", methods=["POST"])
+@rate_limit_required
+def api_converter_async():
+    """Inicia uma conversão assíncrona e retorna um job_id para polling."""
+    if not validar_csrf(request.form.get("csrf_token", "")):
+        return jsonify({"erro": "Token inválido. Recarregue a página."}), 403
+
+    uid          = session.get("pasta_upload", "")
+    arquivo_nome = session.get("arquivo_nome", "")
+    origem       = request.form.get("origem", "").strip().lower()
+    destino      = request.form.get("destino", "").strip().lower()
+    nome_original = request.form.get("nome_original", "arquivo")
+    orientacao   = request.form.get("orientacao", "retrato")
+    if orientacao not in ("retrato", "paisagem"):
+        orientacao = "retrato"
+
+    # Validar sessão e arquivo
+    if not re.match(r'^[a-f0-9]{32}$', uid):
+        return jsonify({"erro": "Sessão inválida. Faça o upload novamente."}), 400
+    if not origem or not destino:
+        return jsonify({"erro": "Formato de origem ou destino não especificado."}), 400
+
+    pp      = pasta_path(uid)
+    entrada = os.path.join(pp, arquivo_nome)
+    if not os.path.exists(entrada):
+        return jsonify({"erro": "Arquivo expirou. Faça o upload novamente."}), 400
+
+    # Verificar limite de conversões paralelas
+    with _lock_conv:
+        if _conversoes_ativas >= MAX_PARALELAS:
+            return jsonify({"erro": "Servidor ocupado. Aguarde um momento e tente novamente."}), 503
+        _conversoes_ativas += 1
+
+    try:
+        base = re.sub(r'[^\w\-_. ]', '_',
+                      os.path.splitext(secure_filename(nome_original))[0]).strip() or "arquivo"
+        if destino in ("png", "jpg", "jpeg", "webp", "heic") and \
+           origem not in ("png", "jpg", "jpeg", "webp", "heic"):
+            nome_saida = f"{base}_{destino.upper()}s.zip"
+        else:
+            nome_saida = f"{base}.{destino}"
+
+        saida = os.path.join(DOWNLOAD_FOLDER, f"{uuid.uuid4().hex}_{nome_saida}")
+
+        job_id = executar_conversao_async(
+            entrada=entrada,
+            saida=saida,
+            origem=origem,
+            destino=destino,
+            orientacao=orientacao,
+            pasta_uid=uid,
+            nome_download=nome_saida,
+            timeout_segundos=TIMEOUT_CONV,
+        )
+
+        log.info("[async] Job %s iniciado: %s→%s (%s)", job_id[:8], origem, destino, nome_original)
+        return jsonify({"ok": True, "job_id": job_id})
+
+    except Exception as e:
+        with _lock_conv:
+            _conversoes_ativas -= 1
+        log.error("[async] Erro ao iniciar job: %s", e)
+        return jsonify({"erro": _erro_seguro(e)}), 500
+
+
+@app.route("/api/converter/status/<job_id>", methods=["GET"])
+def api_converter_status(job_id):
+    """Retorna o progresso e status de um job de conversão assíncrona."""
+    if not re.match(r'^[a-f0-9]{32}$', job_id):
+        return jsonify({"erro": "Job ID inválido."}), 400
+
+    job = job_store.get(job_id)
+    if not job:
+        return jsonify({"erro": "Job não encontrado ou expirado."}), 404
+
+    return jsonify({
+        "percent":   job["percent"],
+        "status":    job["status"],
+        "concluido": job["concluido"],
+        "erro":      job["erro"],
+        "download_url": f"/api/converter/download/{job_id}" if job["concluido"] and not job["erro"] else None,
+    })
+
+
+@app.route("/api/converter/download/<job_id>", methods=["GET"])
+def api_converter_download(job_id):
+    """Retorna o arquivo convertido quando a conversão estiver concluída."""
+    if not re.match(r'^[a-f0-9]{32}$', job_id):
+        return jsonify({"erro": "Job ID inválido."}), 400
+
+    job = job_store.get(job_id)
+
+    if not job:
+        return render_template("index.html", erro="Download não encontrado ou expirado."), 404
+    if job.get("erro"):
+        return render_template("index.html", erro=job["erro"]), 400
+    if not job.get("concluido") or not job.get("caminho_saida"):
+        return render_template("index.html", erro="Conversão ainda não concluída."), 202
+
+    saida        = job["caminho_saida"]
+    nome_download = job["nome_download"]
+    pasta_uid    = job["pasta_uid"]
+
+    # Verificar se o arquivo ainda existe (pode ter sido limpo)
+    if not storage.existe(saida):
+        job_store.remover(job_id)
+        return render_template("index.html", erro="O arquivo convertido expirou. Faça o processo novamente."), 404
+
+    # Atualizar histórico da sessão
+    if "historico" not in session:
+        session["historico"] = []
+    # Tentar extrair origem/destino do nome do arquivo para o histórico
+    ext_destino = nome_download.rsplit(".", 1)[-1].upper() if "." in nome_download else "?"
+    session["historico"].insert(0, {
+        "nome":    nome_download,
+        "origem":  "?",
+        "destino": ext_destino,
+        "hora":    datetime.now().strftime("%H:%M"),
+    })
+    session["historico"] = session["historico"][:5]
+    session["pasta_upload"] = ""
+    session.modified = True
+
+    # Remover o job e limpar arquivos após o download
+    job_store.remover(job_id)
+
+    @after_this_request
+    def cleanup(response):
+        def _remov():
+            time.sleep(3)
+            shutil.rmtree(pasta_path(pasta_uid), ignore_errors=True)
+            try:
+                if os.path.exists(saida):
+                    os.remove(saida)
+            except OSError:
+                pass
+            with _lock_conv:
+                global _conversoes_ativas
+                _conversoes_ativas = max(0, _conversoes_ativas - 1)
+        threading.Thread(target=_remov, daemon=True).start()
+        return response
+
+    # Atualizar contador de conversões
+    with _lock_contador:
+        global contador_conversoes
+        contador_conversoes += 1
+
+    resp = send_file(saida, as_attachment=True, download_name=nome_download)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 if __name__ == "__main__":

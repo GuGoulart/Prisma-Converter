@@ -20,11 +20,20 @@ __pycache__/
 .idea/
 .DS_Store
 
-# Temporários
+# Temporários de runtime
 uploads/*
 downloads/*
 !uploads/.gitkeep
 !downloads/.gitkeep
+
+# Desenvolvimento e testes (não devem ir para produção)
+scratch/
+*.log
+prisma.log
+
+# Arquivos de cookies do yt-dlp (removido; não devem existir, mas por precaução)
+cookies.txt
+youtube_cookies.txt
 
 # Docs
 README.md

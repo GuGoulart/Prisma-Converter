@@ -460,7 +460,7 @@
         left: 0;
         right: 0;
         height: 50px;
-        background: rgba(10, 10, 10, 0.9);
+        background: var(--mobile-nav-bg);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border-bottom: 1px solid var(--border);
@@ -530,7 +530,7 @@
         max-height: 100vh;
         z-index: 200;
         border-right: 1px solid var(--border2);
-        background: rgba(10, 10, 10, 0.97);
+        background: var(--sidebar-mobile-bg);
         transition: left .3s cubic-bezier(.4, 0, .2, 1);
         padding: 20px 24px 32px;
         overflow-y: auto;
