@@ -39,7 +39,7 @@ six==1.17.0
 termcolor==3.3.0
 tqdm==4.68.3
 typing_extensions==4.15.0
-tzdata==2026.2
+tzdata
 Werkzeug==3.1.8
 xlsxwriter==3.2.9
 gunicorn==23.0.0
