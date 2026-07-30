@@ -19,6 +19,7 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+gha-creds-*.json
 
 # Temporários de runtime
 uploads/*
