@@ -122,6 +122,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 display.style.color = 'var(--muted)';
             }
         });
+
+        // Habilita Arrastar e Soltar (Drag & Drop) nos cards de ferramentas
+        const label = document.querySelector(`label[for="${inputId}"]`);
+        const card = input.closest('.pdf-tool-card') || label?.parentElement;
+        if (card) {
+            ['dragover', 'dragenter'].forEach(evt => {
+                card.addEventListener(evt, (e) => {
+                    e.preventDefault();
+                    card.style.borderColor = 'var(--accent, #00f0ff)';
+                });
+            });
+            ['dragleave', 'drop'].forEach(evt => {
+                card.addEventListener(evt, (e) => {
+                    e.preventDefault();
+                    card.style.borderColor = '';
+                });
+            });
+            card.addEventListener('drop', (e) => {
+                if (e.dataTransfer?.files?.length) {
+                    input.files = e.dataTransfer.files;
+                    input.dispatchEvent(new Event('change'));
+                }
+            });
+        }
     }
 
     setupFileInput('splitInput',      'splitFileName');
@@ -164,7 +188,11 @@ document.addEventListener('DOMContentLoaded', () => {
     qrLerForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const fileInput = document.getElementById('qrLerInput');
-        if (!fileInput?.files?.length) return;
+        if (!fileInput?.files?.length) {
+            qrLerResultado.innerHTML = '<span style="color:var(--accent2)">Selecione um arquivo de imagem com QR Code.</span>';
+            qrLerResultado.style.display = 'block';
+            return;
+        }
 
         const formData = new FormData(qrLerForm);
         qrLerBtn.disabled = true;
@@ -201,10 +229,15 @@ document.addEventListener('DOMContentLoaded', () => {
     paletaForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const fileInput = document.getElementById('paletaInput');
-        if (!fileInput?.files?.length) return;
+        if (!fileInput?.files?.length) {
+            paletaResultado.innerHTML = '<span style="color:var(--accent2)">Por favor, selecione uma imagem primeiro.</span>';
+            paletaResultado.style.display = 'block';
+            return;
+        }
 
         const formData = new FormData(paletaForm);
         paletaBtn.disabled = true;
+        const origBtnText = paletaBtn.querySelector('span:first-child')?.textContent || 'Extrair Cores';
         paletaBtn.querySelector('span:first-child').textContent = 'Extraindo...';
 
         try {
@@ -213,21 +246,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.erro) {
                 paletaResultado.innerHTML = `<span style="color:var(--accent2)">${data.erro}</span>`;
+            } else if (!data.paleta || data.paleta.length === 0) {
+                paletaResultado.innerHTML = `<span style="color:var(--accent2)">Não foi possível extrair a paleta desta imagem.</span>`;
             } else {
                 let html = '<div class="paleta-swatches">';
                 for (const c of data.paleta) {
-                    html += `<div class="paleta-swatch" style="background:${c.hex}" title="${c.hex} — ${c.percentual}%" onclick="navigator.clipboard.writeText('${c.hex}')"><span class="paleta-swatch-label">${c.hex}</span></div>`;
+                    html += `<div class="paleta-swatch" style="background:${c.hex}" title="${c.hex} — ${c.percentual}%" onclick="navigator.clipboard.writeText('${c.hex}'); if (typeof mostrarToast === 'function') mostrarToast('Cor ${c.hex} copiada!');"><span class="paleta-swatch-label">${c.hex}</span></div>`;
                 }
                 html += '</div>';
                 paletaResultado.innerHTML = html;
             }
             paletaResultado.style.display = 'block';
         } catch (err) {
-            paletaResultado.innerHTML = '<span style="color:var(--accent2)">Erro de conexão.</span>';
+            paletaResultado.innerHTML = '<span style="color:var(--accent2)">Erro de conexão ao processar a imagem.</span>';
             paletaResultado.style.display = 'block';
         } finally {
             paletaBtn.disabled = false;
-            paletaBtn.querySelector('span:first-child').textContent = 'Extrair Cores';
+            paletaBtn.querySelector('span:first-child').textContent = origBtnText;
         }
     });
 
