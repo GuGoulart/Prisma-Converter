@@ -562,7 +562,7 @@
 }
 
 .btn-lang-opt.ativo {
-    color: #0a0a0a;
+    color: var(--accent-text, #0a0a0a);
     background: var(--accent);
 }
 
