@@ -21,7 +21,8 @@ import os, re, secrets, shutil, time, uuid, logging, threading, traceback
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+_sec_key = (os.environ.get("SECRET_KEY") or "").strip()
+app.secret_key = _sec_key if _sec_key else secrets.token_hex(32)
 
 UPLOAD_FOLDER   = "uploads"
 DOWNLOAD_FOLDER = "downloads"
@@ -67,7 +68,12 @@ def _set_request_id():
 
 _conversoes_ativas = 0
 _lock_conv         = Lock()
-MAX_PARALELAS      = int(os.environ.get("MAX_PARALELAS", 4))
+
+def _get_env_int(key, default):
+    val = (os.environ.get(key) or "").strip()
+    return int(val) if val.isdigit() else default
+
+MAX_PARALELAS = _get_env_int("MAX_PARALELAS", 4)
 
 
 LIMITES_POR_TIPO = {
@@ -95,7 +101,7 @@ NOMES_LIMITES = {k: f"{MAX_MB} MB" for k in LIMITES_POR_TIPO}
 # ── Flask-Limiter com Redis (quando disponível) ──────────────────────────────────────
 # Modo: sem REDIS_URL → rate limiting in-memory (limitado a uma instância).
 #        com REDIS_URL → rate limiting distribuído via Redis (escala horizontal).
-_REDIS_URL = os.environ.get("REDIS_URL", "")
+_REDIS_URL = (os.environ.get("REDIS_URL") or "").strip()
 try:
     from flask_limiter import Limiter
     # Flask-Limiter exige key_func sem parâmetros. extrair_ip_cliente(req=None)

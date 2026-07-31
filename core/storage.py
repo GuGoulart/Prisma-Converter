@@ -38,8 +38,8 @@ import logging
 
 log = logging.getLogger(__name__)
 
-GCS_BUCKET = os.environ.get("GCS_BUCKET", "")
-GCS_PREFIX = os.environ.get("GCS_PREFIX", "prisma/")
+GCS_BUCKET = (os.environ.get("GCS_BUCKET") or "").strip()
+GCS_PREFIX = (os.environ.get("GCS_PREFIX") or "").strip() or "prisma/"
 _USE_GCS = False
 _gcs_client = None
 _gcs_bucket_obj = None

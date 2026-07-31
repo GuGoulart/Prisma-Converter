@@ -39,7 +39,7 @@ log = logging.getLogger(__name__)
 
 # ─── Configuração de modo (Celery vs Thread) ─────────────────────────────────
 
-REDIS_URL = os.environ.get("REDIS_URL", "")
+REDIS_URL = (os.environ.get("REDIS_URL") or "").strip()
 _USE_CELERY = False
 celery_app = None
 
