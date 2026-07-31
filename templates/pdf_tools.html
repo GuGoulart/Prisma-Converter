@@ -689,11 +689,11 @@
                                 class="hidden-file-input">
                         </div>
                         <div style="display:flex; flex-direction:column; gap:6px;">
-                            <label style="font-size:0.85rem; font-weight:500; color:var(--text-muted)">Nível de Compressão:</label>
+                            <label style="font-size:0.85rem; font-weight:500; color:var(--text-muted)" data-i18n="pdf.compress.label">Nível de Compressão:</label>
                             <select name="nivel" class="input-select" style="padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text); outline:none; font-family:inherit;">
-                                <option value="baixa">Baixa (Sem perda de qualidade)</option>
-                                <option value="media" selected>Média (Equilíbrio)</option>
-                                <option value="alta">Alta (Máxima redução)</option>
+                                <option value="baixa" data-i18n="pdf.compress.opt.low">Baixa (Sem perda de qualidade)</option>
+                                <option value="media" selected data-i18n="pdf.compress.opt.med">Média (Equilíbrio)</option>
+                                <option value="alta" data-i18n="pdf.compress.opt.high">Alta (Máxima redução)</option>
                             </select>
                         </div>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
@@ -796,13 +796,13 @@
                                 <path d="M14 2v6h6"></path>
                                 <line x1="9" y1="15" x2="15" y2="15"></line>
                             </svg>
-                            <span>Remover e Rotacionar</span>
+                            <span data-i18n="pdf.rotate.title">Remover e Rotacionar</span>
                         </div>
                         <div class="tool-badges">
                             <span class="tool-badge badge-pdf">PDF</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Remova ou rotacione (90°, 180°, 270°) páginas específicas do PDF.</p>
+                    <p class="pdf-tool-desc" data-i18n="pdf.rotate.desc">Remova ou rotacione (90°, 180°, 270°) páginas específicas do PDF.</p>
                     <form action="/api/pdf/manipular-paginas" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -820,10 +820,10 @@
                             <input type="file" name="arquivo" id="manipulateInput" accept=".pdf" required
                                 class="hidden-file-input">
                         </div>
-                        <input type="text" name="remover" placeholder="Páginas p/ remover (ex: 1,3-5)">
-                        <input type="text" name="rotacionar" placeholder="Páginas p/ rotacionar (ex: 2:90,4:180)">
+                        <input type="text" name="remover" placeholder="Páginas p/ remover (ex: 1,3-5)" data-i18n-ph="pdf.rotate.ph_remove">
+                        <input type="text" name="rotacionar" placeholder="Páginas p/ rotacionar (ex: 2:90,4:180)" data-i18n-ph="pdf.rotate.ph_rotate">
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                            <span data-i18n="pdf.wm.action">Aplicar e baixar</span><span class="botao-arr">↓</span>
+                            <span data-i18n="pdf.rotate.action">Aplicar e baixar</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>
@@ -852,9 +852,9 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <input type="text" name="texto" placeholder="Texto ou URL para o QR Code" data-i18n-ph="pdf.qrgen.ph" required>
                         <div style="display:flex;gap:8px;align-items:center">
-                            <label style="font-size:12px;color:var(--muted);white-space:nowrap">Cor:</label>
+                            <label style="font-size:12px;color:var(--muted);white-space:nowrap" data-i18n="pdf.qrgen.color">Cor:</label>
                             <input type="color" name="cor_frente" value="#000000" style="width:32px;height:28px;padding:0;border:1px solid var(--border2);cursor:pointer">
-                            <label style="font-size:12px;color:var(--muted);white-space:nowrap">Fundo:</label>
+                            <label style="font-size:12px;color:var(--muted);white-space:nowrap" data-i18n="pdf.qrgen.bg">Fundo:</label>
                             <input type="color" name="cor_fundo" value="#FFFFFF" style="width:32px;height:28px;padding:0;border:1px solid var(--border2);cursor:pointer">
                         </div>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
@@ -938,9 +938,9 @@
                                 class="hidden-file-input">
                         </div>
                         <select name="bitrate">
-                            <option value="128k">128 kbps (Menor tamanho)</option>
-                            <option value="192k" selected>192 kbps (Equilíbrio)</option>
-                            <option value="320k">320 kbps (Máxima qualidade)</option>
+                            <option value="128k" data-i18n="pdf.mp4.bit128">128 kbps (Menor tamanho)</option>
+                            <option value="192k" selected data-i18n="pdf.mp4.bit192">192 kbps (Equilíbrio)</option>
+                            <option value="320k" data-i18n="pdf.mp4.bit320">320 kbps (Máxima qualidade)</option>
                         </select>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
                             <span data-i18n="pdf.mp4.action">Extrair Áudio MP3</span><span class="botao-arr">↓</span>
@@ -964,13 +964,13 @@
                                 <line x1="17" y1="17" x2="22" y2="17"></line>
                                 <line x1="17" y1="7" x2="22" y2="7"></line>
                             </svg>
-                            <span>MP4 → GIF</span>
+                            <span data-i18n="pdf.gif.title">MP4 → GIF</span>
                         </div>
                         <div class="tool-badges">
                             <span class="tool-badge badge-gif">GIF</span>
                         </div>
                     </div>
-                    <p class="pdf-tool-desc">Converte um vídeo MP4 em animação GIF. Personalize a taxa de quadros e a resolução.</p>
+                    <p class="pdf-tool-desc" data-i18n="pdf.gif.desc">Converte um vídeo MP4 em animação GIF. Personalize a taxa de quadros e a resolução.</p>
                     <form action="/api/media/mp4-para-gif" method="POST" enctype="multipart/form-data"
                         style="display:flex;flex-direction:column;gap:12px;height:100%">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -990,19 +990,19 @@
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                             <select name="fps">
-                                <option value="10">10 FPS (Fluido / Leve)</option>
-                                <option value="15" selected>15 FPS (Equilibrado)</option>
-                                <option value="20">20 FPS (Alta Fluidez)</option>
+                                <option value="10" data-i18n="pdf.gif.fps10">10 FPS (Fluido / Leve)</option>
+                                <option value="15" selected data-i18n="pdf.gif.fps15">15 FPS (Equilibrado)</option>
+                                <option value="20" data-i18n="pdf.gif.fps20">20 FPS (Alta Fluidez)</option>
                             </select>
                             <select name="largura">
-                                <option value="320">320px (Pequeno)</option>
-                                <option value="480" selected>480px (Médio)</option>
-                                <option value="640">640px (Grande)</option>
-                                <option value="0">Original</option>
+                                <option value="320" data-i18n="pdf.gif.w320">320px (Pequeno)</option>
+                                <option value="480" selected data-i18n="pdf.gif.w480">480px (Médio)</option>
+                                <option value="640" data-i18n="pdf.gif.w640">640px (Grande)</option>
+                                <option value="0" data-i18n="pdf.gif.w0">Original</option>
                             </select>
                         </div>
                         <button class="botao botao-conv" type="submit" style="margin-top:auto">
-                            <span>Converter e baixar GIF</span><span class="botao-arr">↓</span>
+                            <span data-i18n="pdf.gif.action">Converter e baixar GIF</span><span class="botao-arr">↓</span>
                         </button>
                     </form>
                 </div>
