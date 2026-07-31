@@ -294,4 +294,4 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(spawnIcon, 400);
     }
 
-    // ── }); // fim DOMContentLoaded
+});
