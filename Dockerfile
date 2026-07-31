@@ -1,4 +1,4 @@
-FROM python:3.11-bookworm-slim
+FROM python:3.11-slim-bookworm
 
 # Instala LibreOffice (headless), Tesseract OCR e dependências do sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
