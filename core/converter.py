@@ -61,7 +61,7 @@ CONVERSOES = {
     "jpg":  ["pdf",  "png", "webp", "heic", "docx", "pptx", "txt"],
     "webp": ["pdf",  "png", "jpg", "heic", "docx", "pptx", "txt"],
     "heic": ["pdf",  "png", "jpg", "webp", "docx", "pptx", "txt"],
-    "mp4":  ["mp3",  "gif"],
+    "mp4":  ["mp3"],
 }
 
 def obter_conversoes(extensao):

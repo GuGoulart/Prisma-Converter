@@ -37,18 +37,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('drawerOverlay');
 
-    menuBtn?.addEventListener('click', () => {
-        sidebar?.classList.toggle('aberta');
-        overlay?.classList.toggle('ativo');
-        menuBtn?.classList.toggle('ativo');
-        document.body.style.overflow = sidebar?.classList.contains('aberta') ? 'hidden' : '';
-    });
-
-    overlay?.addEventListener('click', () => {
+    const fecharDrawer = () => {
         sidebar?.classList.remove('aberta');
         overlay?.classList.remove('ativo');
         menuBtn?.classList.remove('ativo');
         document.body.style.overflow = '';
+    };
+
+    menuBtn?.addEventListener('click', () => {
+        const estaAberta = sidebar?.classList.toggle('aberta');
+        overlay?.classList.toggle('ativo', estaAberta);
+        menuBtn?.classList.toggle('ativo', estaAberta);
+        document.body.style.overflow = estaAberta ? 'hidden' : '';
+    });
+
+    overlay?.addEventListener('click', fecharDrawer);
+    sidebar?.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', fecharDrawer);
     });
 
     // ── Auto-ocultar mensagem de erro após 5s ─────────────────

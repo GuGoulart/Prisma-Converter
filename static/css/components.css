@@ -168,13 +168,13 @@
 .botao-conv {
     background: var(--accent);
     border-color: var(--accent);
-    color: #0a0a0a
+    color: var(--accent-text, #0a0a0a);
 }
 
 .botao-conv:hover {
-    background: #d4ff1a;
-    border-color: #d4ff1a;
-    box-shadow: 0 0 30px rgba(200, 255, 0, .25)
+    background: var(--accent-hover, #d4ff1a);
+    border-color: var(--accent-hover, #d4ff1a);
+    box-shadow: 0 0 30px var(--accent-glow, rgba(200, 255, 0, .25));
 }
 
 .botao-outro {
