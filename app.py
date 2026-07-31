@@ -99,11 +99,14 @@ NOMES_LIMITES = {k: f"{MAX_MB} MB" for k in LIMITES_POR_TIPO}
 _REDIS_URL = os.environ.get("REDIS_URL", "")
 try:
     from flask_limiter import Limiter
-    from flask_limiter.util import get_remote_address
+    # Flask-Limiter exige key_func sem parâmetros. extrair_ip_cliente(req=None)
+    # já lê de flask.request quando chamado sem args, então o wrapper é direto.
+    def _limiter_key():
+        return extrair_ip_cliente()  # req=None → usa flask.request do contexto
     _limiter_storage_uri = _REDIS_URL if _REDIS_URL else "memory://"
     limiter = Limiter(
         app=app,
-        key_func=extrair_ip_cliente,
+        key_func=_limiter_key,
         default_limits=["200 per day", "60 per hour"],
         storage_uri=_limiter_storage_uri,
     )
@@ -111,6 +114,9 @@ try:
 except ImportError:
     limiter = None
     log.warning("[limiter] flask-limiter não instalado — usando rate limiting custom.")
+except Exception as _le:
+    limiter = None
+    log.error("[limiter] Erro ao inicializar Flask-Limiter: %s — usando rate limiting custom.", _le)
 
 # ── Segurança ─────────────────────────────────────────────────
 

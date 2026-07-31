@@ -20,29 +20,16 @@ jobs:
       - name: ⚙️ Configurando SDK do Google
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: 🚀 Lançando para o Cloud Run
-        run: |
-          # Monta a lista de env vars dinamicamente.
-          # REDIS_URL e GCS_BUCKET são opcionais — se não definidos nos Secrets,
-          # o app usa modo in-memory/local automaticamente (sem quebrar).
-          ENV_VARS="SECRET_KEY=${{ secrets.SECRET_KEY }}"
-
-          if [ -n "${{ secrets.REDIS_URL }}" ]; then
-            ENV_VARS="${ENV_VARS},REDIS_URL=${{ secrets.REDIS_URL }}"
-          fi
-
-          if [ -n "${{ secrets.GCS_BUCKET }}" ]; then
-            ENV_VARS="${ENV_VARS},GCS_BUCKET=${{ secrets.GCS_BUCKET }}"
-          fi
-
-          if [ -n "${{ secrets.GCS_PREFIX }}" ]; then
-            ENV_VARS="${ENV_VARS},GCS_PREFIX=${{ secrets.GCS_PREFIX }}"
-          fi
-
-          gcloud run deploy prisma \
-            --source . \
-            --region us-central1 \
-            --allow-unauthenticated \
-            --memory 2Gi \
-            --set-env-vars="${ENV_VARS}" \
-            --quiet
+      - name: 🚀 Deploy no Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: prisma
+          region: us-central1
+          source: .
+          flags: '--allow-unauthenticated --memory=2Gi --timeout=120'
+          env_vars: |
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            REDIS_URL=${{ secrets.REDIS_URL }}
+            GCS_BUCKET=${{ secrets.GCS_BUCKET }}
+            GCS_PREFIX=${{ secrets.GCS_PREFIX }}
+            MAX_PARALELAS=${{ secrets.MAX_PARALELAS }}
