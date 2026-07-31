@@ -43,24 +43,23 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 contador_conversoes = 0
 _lock_contador      = Lock()  # QC-005: protege o contador contra race conditions
 
-logging.basicConfig(
-    stream=sys.stdout, level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [%(request_id)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
-log = logging.getLogger(__name__)
-
 # ── Request ID para correlação de logs ────────────────────────────────────────
 _request_id_local = threading.local()
 
-class _RequestIdFilter(logging.Filter):
-    """Injeta o request_id no contexto de cada log — facilita debugging em produção."""
-    def filter(self, record):
-        record.request_id = getattr(_request_id_local, 'request_id', '-')
-        return True
+class _RequestIdFormatter(logging.Formatter):
+    """Garante que request_id sempre exista no record de log sem lançar KeyError/ValueError."""
+    def format(self, record):
+        if not hasattr(record, "request_id"):
+            record.request_id = getattr(_request_id_local, "request_id", "-")
+        return super().format(record)
 
-for _h in logging.root.handlers:
-    _h.addFilter(_RequestIdFilter())
+_log_handler = logging.StreamHandler(sys.stdout)
+_log_handler.setFormatter(_RequestIdFormatter(
+    fmt="%(asctime)s [%(levelname)s] [%(request_id)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+))
+logging.basicConfig(level=logging.INFO, handlers=[_log_handler])
+log = logging.getLogger(__name__)
 
 @app.before_request
 def _set_request_id():
