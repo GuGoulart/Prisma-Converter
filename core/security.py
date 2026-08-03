@@ -99,6 +99,60 @@ _MAGIC = {
 }
 
 
+_EXPLICIT_EXECUTABLE_MAGIC = [
+    b"MZ",                     # Windows PE Executable (.exe, .dll, .sys, .scr, .cpl)
+    b"\x7fELF",                # Linux Executable (ELF)
+    b"\xca\xfe\xba\xbe",        # Java Class File / Mach-O Fat Binary
+    b"\xfe\xed\xfa\xce",        # Mach-O 32-bit (macOS)
+    b"\xfe\xed\xfa\xcf",        # Mach-O 64-bit (macOS)
+    b"\xce\xfa\xed\xfe",        # Mach-O 32-bit reverse (macOS)
+    b"\xcf\xfa\xed\xfe",        # Mach-O 64-bit reverse (macOS)
+    b"\x4d\x53\x43\x46",        # Microsoft CAB File (.cab)
+]
+
+_SCRIPT_TEXT_PATTERNS = [
+    b"<?php",
+    b"<script",
+    b"#!/bin/sh",
+    b"#!/bin/bash",
+    b"#!/usr/bin/env",
+    b"eval(base64_decode",
+    b"wscript.shell",
+    b"activexobject",
+]
+
+
+def verificar_assinatura_maliciosa(caminho: str) -> bool:
+    """
+    Varre os bytes iniciais do arquivo em busca de assinaturas maliciosas conhecidas.
+
+    Returns:
+        True se o arquivo for SUSPEITO/MALICIOSO (deve ser bloqueado);
+        False se a varredura não encontrou nenhuma assinatura de risco.
+    """
+    try:
+        with open(caminho, "rb") as f:
+            header = f.read(512)
+
+        if not header:
+            return False
+
+        # 1. Verifica magic bytes de executáveis binários
+        for magic in _EXPLICIT_EXECUTABLE_MAGIC:
+            if header.startswith(magic):
+                return True
+
+        # 2. Para scripts maliciosos embutidos
+        header_lower = header.lower()
+        for pat in _SCRIPT_TEXT_PATTERNS:
+            if pat in header_lower:
+                return True
+
+        return False
+    except Exception:
+        return True
+
+
 def validar_nome(nome):
     p = nome.split(".")
     if len(p) < 2:
@@ -107,6 +161,12 @@ def validar_nome(nome):
 
 
 def validar_magic(caminho, ext):
+    ext = (ext or "").lower()
+
+    # 1. Bloqueia imediatamente se for identificado como assinatura de executável ou script malicioso
+    if verificar_assinatura_maliciosa(caminho):
+        return False
+
     m = _MAGIC.get(ext)
 
     # Sem validação definida (CSV, TXT, formatos desconhecidos)

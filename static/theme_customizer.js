@@ -35,6 +35,21 @@
         return mode === "light" ? "purple" : "emerald";
     }
 
+    function getSavedRetentionPolicy() {
+        const saved = localStorage.getItem("retention_policy");
+        if (saved && ["instant", "5min", "15min"].includes(saved)) {
+            return saved;
+        }
+        return "15min";
+    }
+
+    function setSavedRetentionPolicy(policy) {
+        if (["instant", "5min", "15min"].includes(policy)) {
+            localStorage.setItem("retention_policy", policy);
+            updateRetentionUI(policy);
+        }
+    }
+
     function applyThemeAndAccent(mode, accentKey) {
         const root = document.documentElement;
         if (mode === "light") {
@@ -73,7 +88,7 @@
                 <div class="theme-modal-header">
                     <div class="theme-modal-header-left">
                         <h3 id="themeModalTitle" class="theme-modal-title" data-i18n="customizer.title">Personalizar Aparência</h3>
-                        <p class="theme-modal-subtitle" data-i18n="customizer.subtitle">Escolha o modo de exibição e a cor principal do site</p>
+                        <p class="theme-modal-subtitle" data-i18n="customizer.subtitle">Escolha o modo de exibição, retenção de arquivos e cores</p>
                     </div>
                     <button type="button" class="theme-modal-close" id="closeCustomizerBtn" aria-label="Fechar">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -113,6 +128,70 @@
                                     </svg>
                                 </div>
                                 <span data-i18n="customizer.mode.light">Claro</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Seção Retenção & Autodestruição de Arquivos -->
+                    <div class="theme-section">
+                        <div class="theme-section-head-bar">
+                            <label class="theme-section-label" data-i18n="conv.selfdestruct.title">MODO DE AUTODESTRUIÇÃO</label>
+                        </div>
+                        <div class="theme-retention-grid">
+                            <button type="button" class="theme-retention-btn" data-policy="instant">
+                                <div class="retention-left">
+                                    <div class="retention-icon-wrap">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                        </svg>
+                                    </div>
+                                    <div class="retention-info">
+                                        <span class="retention-title" data-i18n="conv.selfdestruct.instant">Download Único</span>
+                                        <span class="retention-desc" data-i18n="conv.selfdestruct.instantSub">Apaga pós 1º download</span>
+                                    </div>
+                                </div>
+                                <span class="retention-check">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </span>
+                            </button>
+                            <button type="button" class="theme-retention-btn" data-policy="5min">
+                                <div class="retention-left">
+                                    <div class="retention-icon-wrap">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="retention-info">
+                                        <span class="retention-title" data-i18n="conv.selfdestruct.5min">Timer 5 Min</span>
+                                        <span class="retention-desc" data-i18n="conv.selfdestruct.5minSub">Apaga em 5 minutos</span>
+                                    </div>
+                                </div>
+                                <span class="retention-check">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </span>
+                            </button>
+                            <button type="button" class="theme-retention-btn" data-policy="15min">
+                                <div class="retention-left">
+                                    <div class="retention-icon-wrap">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="retention-info">
+                                        <span class="retention-title" data-i18n="conv.selfdestruct.15min">Padrão 15 Min</span>
+                                        <span class="retention-desc" data-i18n="conv.selfdestruct.15minSub">Retenção de segurança</span>
+                                    </div>
+                                </div>
+                                <span class="retention-check">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </span>
                             </button>
                         </div>
                     </div>
@@ -179,6 +258,16 @@
         });
     }
 
+    function updateRetentionUI(activePolicy) {
+        document.querySelectorAll(".theme-retention-btn").forEach((btn) => {
+            if (btn.getAttribute("data-policy") === activePolicy) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+    }
+
     function updateModalUI(mode, activeAccentKey) {
         document.querySelectorAll(".theme-mode-square-btn, .theme-mode-pill-btn, .theme-mode-card").forEach((card) => {
             const cardMode = card.getAttribute("data-mode");
@@ -198,6 +287,7 @@
             }
         }
 
+        updateRetentionUI(getSavedRetentionPolicy());
         renderSwatches(mode, activeAccentKey);
     }
 
@@ -252,6 +342,12 @@
                 const currentAccent = getSavedAccent(targetMode);
                 applyThemeAndAccent(targetMode, currentAccent);
             }
+
+            const retBtn = e.target.closest(".theme-retention-btn");
+            if (retBtn) {
+                const targetPolicy = retBtn.getAttribute("data-policy");
+                setSavedRetentionPolicy(targetPolicy);
+            }
         });
 
         document.addEventListener("keydown", (e) => {
@@ -266,6 +362,8 @@
         close: closeModal,
         apply: applyThemeAndAccent,
         getSavedTheme,
-        getSavedAccent
+        getSavedAccent,
+        getRetentionPolicy: getSavedRetentionPolicy,
+        setRetentionPolicy: setSavedRetentionPolicy
     };
 })();

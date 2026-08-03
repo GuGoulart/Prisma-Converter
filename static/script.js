@@ -310,8 +310,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            // Etapa 1: Iniciar conversao assincrona
+            // Etapa 1: Iniciar conversao assincrona com politica de autodestruição salva no modal
             const formData = new FormData(converterForm);
+            const policy = (window.ThemeCustomizer && typeof window.ThemeCustomizer.getRetentionPolicy === 'function')
+                ? window.ThemeCustomizer.getRetentionPolicy()
+                : "15min";
+            formData.set("autodestruicao", policy);
+
             const resp = await fetch("/api/converter/async", { method: "POST", body: formData });
 
             if (!resp.ok) {
@@ -392,6 +397,56 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === "Escape") fecharDrawer();
     });
 
+
+    // ── Cronômetros de Autodestruição no Histórico em Tempo Real ──
+    function iniciarCronometrosHistorico() {
+        const histItems = document.querySelectorAll(".historico-item");
+        if (!histItems.length) return;
+
+        function atualizarTimers() {
+            const agora = Math.floor(Date.now() / 1000);
+            const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'pt';
+            const dict = typeof translations !== 'undefined' ? translations[lang] || {} : {};
+            const deletedLabel = dict['conv.history.deleted'] || 'Conteúdo Apagado';
+
+            histItems.forEach((item) => {
+                const isApagado = item.getAttribute("data-apagado") === "true";
+                const expiraStr = item.getAttribute("data-expires");
+                if (isApagado) return;
+
+                if (expiraStr) {
+                    const expiraEm = parseInt(expiraStr, 10);
+                    const restante = expiraEm - agora;
+
+                    const rightContainer = item.querySelector(".historico-item-right");
+                    const timerValSpan   = item.querySelector(".hist-timer-val");
+
+                    if (restante <= 0) {
+                        item.setAttribute("data-apagado", "true");
+                        if (rightContainer) {
+                            rightContainer.innerHTML = `
+                                <span class="hist-apagado-badge" data-i18n="conv.history.deleted">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                    ${deletedLabel}
+                                </span>`;
+                        }
+                    } else if (timerValSpan) {
+                        const m = Math.floor(restante / 60);
+                        const s = restante % 60;
+                        timerValSpan.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    }
+                }
+            });
+        }
+
+        atualizarTimers();
+        setInterval(atualizarTimers, 1000);
+    }
+
+    iniciarCronometrosHistorico();
 
     // ── Relógio no rodapé ─────────────────────────────────────
 

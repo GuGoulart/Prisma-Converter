@@ -235,13 +235,25 @@ iniciar_limpeza(UPLOAD_FOLDER, DOWNLOAD_FOLDER)
 
 # ── Context processor ─────────────────────────────────────────
 
-# QC-001: Único context_processor unificado — o anterior estava duplicado (o segundo sobrescrevia o primeiro)
 @app.context_processor
 def inject_globals():
     from core.converter import CONVERSOES
+    hist = session.get("historico", [])
+    agora = time.time()
+    for item in hist:
+        expira_em = item.get("expira_em")
+        if item.get("apagado"):
+            continue
+        if item.get("autodestruicao") == "instant" and item.get("baixado"):
+            item["apagado"] = True
+        elif expira_em and agora > expira_em:
+            item["apagado"] = True
+        elif item.get("caminho_saida") and not storage.existe(item["caminho_saida"]):
+            item["apagado"] = True
+
     return dict(
         contador=contador_conversoes,
-        historico=session.get("historico", []),
+        historico=hist,
         motor=obter_motor(),
         csrf_token=gerar_csrf(),
         todas_conversoes=CONVERSOES,
@@ -1320,14 +1332,18 @@ def api_converter_async():
     if not validar_csrf(request.form.get("csrf_token", "")):
         return jsonify({"erro": "Token inválido. Recarregue a página."}), 403
 
-    uid          = session.get("pasta_upload", "")
-    arquivo_nome = session.get("arquivo_nome", "")
-    origem       = request.form.get("origem", "").strip().lower()
-    destino      = request.form.get("destino", "").strip().lower()
-    nome_original = request.form.get("nome_original", "arquivo")
-    orientacao   = request.form.get("orientacao", "retrato")
+    uid            = session.get("pasta_upload", "")
+    arquivo_nome   = session.get("arquivo_nome", "")
+    origem         = request.form.get("origem", "").strip().lower()
+    destino        = request.form.get("destino", "").strip().lower()
+    nome_original  = request.form.get("nome_original", "arquivo")
+    orientacao     = request.form.get("orientacao", "retrato")
+    autodestruicao = request.form.get("autodestruicao", "15min").strip().lower()
+
     if orientacao not in ("retrato", "paisagem"):
         orientacao = "retrato"
+    if autodestruicao not in ("instant", "5min", "15min"):
+        autodestruicao = "15min"
 
     # Validar sessão e arquivo
     if not re.match(r'^[a-f0-9]{32}$', uid):
@@ -1366,9 +1382,10 @@ def api_converter_async():
             pasta_uid=uid,
             nome_download=nome_saida,
             timeout_segundos=TIMEOUT_CONV,
+            autodestruicao=autodestruicao,
         )
 
-        log.info("[async] Job %s iniciado: %s→%s (%s)", job_id[:8], origem, destino, nome_original)
+        log.info("[async] Job %s iniciado: %s→%s (%s) [Autodestruição: %s]", job_id[:8], origem, destino, nome_original, autodestruicao)
         return jsonify({"ok": True, "job_id": job_id})
 
     except Exception as e:
@@ -1412,48 +1429,88 @@ def api_converter_download(job_id):
     if not job.get("concluido") or not job.get("caminho_saida"):
         return render_template("index.html", erro="Conversão ainda não concluída."), 202
 
-    saida        = job["caminho_saida"]
-    nome_download = job["nome_download"]
-    pasta_uid    = job["pasta_uid"]
+    saida          = job["caminho_saida"]
+    nome_download  = job["nome_download"]
+    pasta_uid      = job["pasta_uid"]
+    autodestruicao = job.get("autodestruicao", "15min")
 
     # Verificar se o arquivo ainda existe (pode ter sido limpo)
     if not storage.existe(saida):
         job_store.remover(job_id)
         return render_template("index.html", erro="O arquivo convertido expirou. Faça o processo novamente."), 404
 
-    # Atualizar histórico da sessão
+    # Atualizar histórico da sessão com metadados ricos e timestamp de expiração
     if "historico" not in session:
         session["historico"] = []
-    # Tentar extrair origem/destino do nome do arquivo para o histórico
+
     ext_destino = nome_download.rsplit(".", 1)[-1].upper() if "." in nome_download else "?"
-    session["historico"].insert(0, {
-        "nome":    nome_download,
-        "origem":  "?",
-        "destino": ext_destino,
-        "hora":    datetime.now().strftime("%H:%M"),
-    })
-    session["historico"] = session["historico"][:5]
+    ext_origem  = job.get("origem", "?").upper()
+    timestamp_job = job.get("timestamp", time.time())
+
+    expira_em = None
+    if autodestruicao == "5min":
+        expira_em = int(timestamp_job + 300)
+    elif autodestruicao == "15min":
+        expira_em = int(timestamp_job + 900)
+
+    apagado_agora = (autodestruicao == "instant")
+
+    # Procura se o job já consta no histórico para atualizar seu estado
+    item_existente = None
+    for h in session["historico"]:
+        if h.get("job_id") == job_id:
+            item_existente = h
+            break
+
+    if item_existente:
+        item_existente["apagado"] = item_existente.get("apagado") or apagado_agora
+        item_existente["baixado"] = True
+    else:
+        novo_item = {
+            "job_id":        job_id,
+            "nome":          nome_download,
+            "origem":        ext_origem,
+            "destino":       ext_destino,
+            "hora":          datetime.now().strftime("%H:%M"),
+            "autodestruicao": autodestruicao,
+            "expira_em":     expira_em,
+            "caminho_saida": saida,
+            "apagado":       apagado_agora,
+            "baixado":       True,
+            "download_url":  f"/api/converter/download/{job_id}",
+        }
+        session["historico"].insert(0, novo_item)
+        session["historico"] = session["historico"][:8]
+
     session["pasta_upload"] = ""
     session.modified = True
 
-    # Remover o job e limpar arquivos após o download
-    job_store.remover(job_id)
+    # Se a política for 'instant' (Autodestruição Instantânea), remove do job_store e limpa o disco logo após o envio
+    if autodestruicao == "instant":
+        job_store.remover(job_id)
 
-    @after_this_request
-    def cleanup(response):
-        def _remov():
-            time.sleep(3)
-            shutil.rmtree(pasta_path(pasta_uid), ignore_errors=True)
-            try:
-                if os.path.exists(saida):
-                    os.remove(saida)
-            except OSError:
-                pass
+        @after_this_request
+        def cleanup_instant(response):
+            def _remov():
+                time.sleep(1)
+                shutil.rmtree(pasta_path(pasta_uid), ignore_errors=True)
+                try:
+                    storage.remover(saida)
+                except Exception:
+                    pass
+                with _lock_conv:
+                    global _conversoes_ativas
+                    _conversoes_ativas = max(0, _conversoes_ativas - 1)
+            threading.Thread(target=_remov, daemon=True).start()
+            return response
+    else:
+        # Se for 5min ou 15min, libera o lock de conversão ativa após envio
+        @after_this_request
+        def cleanup_lazy(response):
             with _lock_conv:
                 global _conversoes_ativas
                 _conversoes_ativas = max(0, _conversoes_ativas - 1)
-        threading.Thread(target=_remov, daemon=True).start()
-        return response
+            return response
 
     # Atualizar contador de conversões
     with _lock_contador:

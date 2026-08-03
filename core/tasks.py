@@ -104,7 +104,9 @@ class _JobStore:
         t = threading.Thread(target=self._limpeza_loop, daemon=True)
         t.start()
 
-    def criar(self, job_id: str, pasta_uid: str, nome_download: str) -> dict:
+    def criar(self, job_id: str, pasta_uid: str, nome_download: str, autodestruicao: str = "15min") -> dict:
+        if autodestruicao not in ("instant", "5min", "15min"):
+            autodestruicao = "15min"
         job = {
             "percent": 0.0,
             "status": "Aguardando processamento...",
@@ -113,6 +115,7 @@ class _JobStore:
             "caminho_saida": None,
             "pasta_uid": pasta_uid,
             "nome_download": nome_download,
+            "autodestruicao": autodestruicao,
             "timestamp": time.time(),
         }
         with self._lock:
@@ -133,19 +136,39 @@ class _JobStore:
             self._store.pop(job_id, None)
 
     def _limpeza_loop(self):
-        """Remove jobs expirados a cada 5 minutos."""
+        """Remove jobs e arquivos expirados conforme a política de autodestruição."""
+        from core.storage import storage
         while True:
-            time.sleep(300)
+            time.sleep(30)
             agora = time.time()
             with self._lock:
-                expirados = [
-                    jid for jid, j in self._store.items()
-                    if agora - j["timestamp"] > self.TTL
-                ]
-                for jid in expirados:
+                expirados = []
+                for jid, j in list(self._store.items()):
+                    politica = j.get("autodestruicao", "15min")
+                    tempo_decorrido = agora - j["timestamp"]
+                    # 5 min (300s) ou 15 min (900s) / fallback TTL 30 min
+                    limite = 300 if politica == "5min" else (900 if politica == "15min" else self.TTL)
+                    if tempo_decorrido > limite:
+                        expirados.append((jid, j.get("caminho_saida"), j.get("pasta_uid")))
+
+                for jid, caminho_saida, pasta_uid in expirados:
                     self._store.pop(jid, None)
+                    if caminho_saida:
+                        try:
+                            storage.remover(caminho_saida)
+                        except Exception:
+                            pass
+                    if pasta_uid:
+                        try:
+                            import shutil
+                            from core.security import validar_nome
+                            pasta = os.path.join("uploads", pasta_uid)
+                            if os.path.exists(pasta):
+                                shutil.rmtree(pasta, ignore_errors=True)
+                        except Exception:
+                            pass
             if expirados:
-                log.debug("[tasks] Jobs expirados removidos: %d", len(expirados))
+                log.info("[tasks] Autodestruição: %d jobs/arquivos removidos por expiração", len(expirados))
 
 
 # Instância global do job store
@@ -218,6 +241,7 @@ def executar_conversao_async(
     pasta_uid: str,
     nome_download: str,
     timeout_segundos: int = 120,
+    autodestruicao: str = "15min",
 ) -> str:
     """
     Enfileira ou inicia a conversão de arquivo de forma assíncrona.
@@ -231,12 +255,13 @@ def executar_conversao_async(
         pasta_uid:       UUID da pasta de upload (para limpeza posterior).
         nome_download:   Nome sugerido para o arquivo baixado.
         timeout_segundos: Máximo de segundos para execução (modo thread).
+        autodestruicao:  Política de retenção ("instant", "5min", "15min").
 
     Returns:
         job_id: Identificador único do job — use para consultar o status.
     """
     job_id = uuid.uuid4().hex
-    job_store.criar(job_id, pasta_uid, nome_download)
+    job_store.criar(job_id, pasta_uid, nome_download, autodestruicao=autodestruicao)
 
     if _USE_CELERY and celery_app is not None:
         # Modo Celery: envia para a fila

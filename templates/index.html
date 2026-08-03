@@ -284,12 +284,40 @@
                         </div>
                         <div class="historico-lista">
                             {% for item in historico %}
-                            <div class="historico-item">
-                                <span class="hist-badge badge-{{ item.origem|lower }}">{{ item.origem }}</span>
-                                <span class="hist-seta">→</span>
-                                <span class="hist-badge badge-{{ item.destino|lower }}">{{ item.destino }}</span>
-                                <span class="hist-nome">{{ item.nome }}</span>
-                                <span class="hist-hora">{{ item.hora }}</span>
+                            <div class="historico-item" id="hist-item-{{ loop.index }}" data-expires="{{ item.expira_em or '' }}" data-policy="{{ item.autodestruicao or '' }}" data-download-url="{{ item.download_url or '' }}" data-apagado="{{ 'true' if item.apagado else 'false' }}">
+                                <div class="historico-item-left">
+                                    <span class="hist-badge badge-{{ item.origem|lower }}">{{ item.origem }}</span>
+                                    <span class="hist-seta">→</span>
+                                    <span class="hist-badge badge-{{ item.destino|lower }}">{{ item.destino }}</span>
+                                    <span class="hist-nome" title="{{ item.nome }}">{{ item.nome }}</span>
+                                </div>
+                                <div class="historico-item-right" id="hist-right-{{ loop.index }}">
+                                    {% if item.apagado %}
+                                    <span class="hist-apagado-badge" data-i18n="conv.history.deleted">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                        Conteúdo Apagado
+                                    </span>
+                                    {% else %}
+                                        {% if item.expira_em %}
+                                        <span class="hist-timer" id="hist-timer-{{ loop.index }}">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="12 6 12 12 16 14"></polyline>
+                                            </svg>
+                                            <span class="hist-timer-val">--:--</span>
+                                        </span>
+                                        {% endif %}
+
+                                        {% if item.download_url %}
+                                        <a href="{{ item.download_url }}" class="btn-hist-download" id="hist-btn-{{ loop.index }}" data-i18n="conv.history.redownload">
+                                            Baixar Novamente ↗
+                                        </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
                             </div>
                             {% endfor %}
                         </div>
