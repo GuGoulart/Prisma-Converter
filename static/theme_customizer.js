@@ -212,6 +212,7 @@
 
         modal.classList.add("open");
         modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
 
         if (window.i18n && window.i18n.aplicarTraducoes) {
             window.i18n.aplicarTraducoes();
@@ -223,6 +224,7 @@
         if (!modal) return;
         modal.classList.remove("open");
         modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
     }
 
     // Event listeners globais

@@ -576,6 +576,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     background: rgba(4, 5, 8, 0.82);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -587,6 +588,8 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .theme-modal-overlay.open {
@@ -602,6 +605,7 @@
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 25px var(--accent-glow);
     width: 100%;
     max-width: 480px;
+    max-height: min(88vh, 88dvh);
     border-radius: 0;
     padding: 24px;
     display: flex;
@@ -610,6 +614,8 @@
     transform: translateY(10px);
     transition: transform 0.2s ease;
     color: var(--text);
+    box-sizing: border-box;
+    margin: auto;
 }
 
 [data-theme="light"] .theme-modal-card {
@@ -638,6 +644,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
+    flex-shrink: 0;
 }
 
 .theme-modal-header-left {
@@ -645,8 +652,6 @@
     flex-direction: column;
     gap: 4px;
 }
-
-
 
 .theme-modal-title {
     font-family: var(--font);
@@ -690,6 +695,29 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 4px;
+}
+
+/* Scrollbar estilizada para o body do modal */
+.theme-modal-body::-webkit-scrollbar {
+    width: 5px;
+}
+
+.theme-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.theme-modal-body::-webkit-scrollbar-thumb {
+    background: var(--border2);
+    border-radius: 2px;
+}
+
+.theme-modal-body::-webkit-scrollbar-thumb:hover {
+    background: var(--muted2);
 }
 
 .theme-section {
@@ -852,7 +880,9 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-top: 4px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border2);
+    flex-shrink: 0;
 }
 
 .btn-theme-modal-done {
@@ -873,6 +903,32 @@
 .btn-theme-modal-done:hover {
     background: var(--accent-hover);
     box-shadow: 0 0 12px var(--accent-glow);
+}
+
+@media (max-width: 576px), (max-height: 650px) {
+    .theme-modal-overlay {
+        padding: 12px;
+    }
+
+    .theme-modal-card {
+        padding: 16px;
+        gap: 14px;
+        max-height: min(92vh, 92dvh);
+    }
+
+    .theme-modal-title {
+        font-size: 17px;
+    }
+
+    .theme-modal-subtitle {
+        font-size: 12px;
+    }
+
+    .btn-theme-modal-done {
+        width: 100%;
+        text-align: center;
+        padding: 12px 16px;
+    }
 }
 
 
