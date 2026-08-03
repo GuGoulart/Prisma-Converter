@@ -216,7 +216,7 @@
     color: var(--muted2);
     width: 34px;
     height: 34px;
-    border-radius: 50%;
+    border-radius: 0;
     cursor: pointer;
     transition: all .2s;
     display: flex;
@@ -227,7 +227,8 @@
 .btn-tema-icon:hover {
     border-color: var(--accent);
     color: var(--accent);
-    background: rgba(200, 255, 0, .05);
+    background: var(--accent-glow);
+    transform: scale(1.05);
 }
 
 @keyframes slideUp {

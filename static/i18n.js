@@ -16,6 +16,17 @@ const translations = {
         "sidebar.theme": "Tema",
         "sidebar.language": "Idioma",
 
+        // --- Personalização ---
+        "customizer.title": "Personalizar Aparência",
+        "customizer.subtitle": "Escolha o modo de exibição e a cor principal do site",
+        "customizer.mode.title": "Modo de Exibição",
+        "customizer.mode.dark": "Escuro",
+        "customizer.mode.light": "Claro",
+        "customizer.accent.title": "Cor Principal do Site",
+        "customizer.accent.darkSub": "Cores otimizadas para o modo escuro",
+        "customizer.accent.lightSub": "Cores otimizadas para o modo claro",
+        "customizer.done": "Concluído",
+
         // --- Home Page ---
         "home.title": "Você pensa<br><em>O Prisma faz</em>",
         "home.subtitle": "De conversões a novas possibilidades. Tudo para seus arquivos, em um só lugar.",
@@ -173,6 +184,17 @@ const translations = {
         "sidebar.theme": "Theme",
         "sidebar.language": "Language",
 
+        // --- Customizer ---
+        "customizer.title": "Appearance Settings",
+        "customizer.subtitle": "Choose display mode and primary accent color",
+        "customizer.mode.title": "Display Mode",
+        "customizer.mode.dark": "Dark",
+        "customizer.mode.light": "Light",
+        "customizer.accent.title": "Primary Accent Color",
+        "customizer.accent.darkSub": "Colors optimized for dark mode",
+        "customizer.accent.lightSub": "Colors optimized for light mode",
+        "customizer.done": "Done",
+
         // --- Home Page ---
         "home.title": "You think it.<br><em>Prisma does it.</em>",
         "home.subtitle": "From conversions to new possibilities. Everything for your files, in one place.",
@@ -328,6 +350,17 @@ const translations = {
         "sidebar.conversions": "Conversiones",
         "sidebar.theme": "Tema",
         "sidebar.language": "Idioma",
+
+        // --- Personalización ---
+        "customizer.title": "Personalizar Apariencia",
+        "customizer.subtitle": "Elija el modo de visualización y el color principal del sitio",
+        "customizer.mode.title": "Modo de Visualización",
+        "customizer.mode.dark": "Oscuro",
+        "customizer.mode.light": "Claro",
+        "customizer.accent.title": "Color Principal del Sitio",
+        "customizer.accent.darkSub": "Colores optimizados para el modo oscuro",
+        "customizer.accent.lightSub": "Colores optimizados para el modo claro",
+        "customizer.done": "Listo",
 
         // --- Home Page ---
         "home.title": "Tú lo piensas.<br><em>Prisma lo hace.</em>",

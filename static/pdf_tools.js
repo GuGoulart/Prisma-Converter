@@ -14,23 +14,7 @@ if ('serviceWorker' in navigator) {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── Tema Claro / Escuro ───────────────────────────────────
-    const themeToggle = document.getElementById('themeToggle');
-    const root = document.documentElement;
-    const isLight = localStorage.getItem('theme') === 'light';
-
-    if (isLight) root.setAttribute('data-theme', 'light');
-
-    themeToggle?.addEventListener('click', () => {
-        const light = root.getAttribute('data-theme') === 'light';
-        if (light) {
-            root.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            root.setAttribute('data-theme', 'light');
-            localStorage.setItem('theme', 'light');
-        }
-    });
+    // ── Tema gerenciado por theme_customizer.js ─────────────────
 
     // ── Drawer mobile ─────────────────────────────────────────
     const menuBtn = document.getElementById('menuBtn');

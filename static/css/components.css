@@ -566,4 +566,316 @@
     background: var(--accent);
 }
 
+/* ==========================================================================
+   Modal de Personalização de Aparência & Temas de Cores — Design Geométrico Quadrado
+   ========================================================================== */
+
+.theme-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(4, 5, 8, 0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.theme-modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Card Principal do Modal */
+.theme-modal-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 25px var(--accent-glow);
+    width: 100%;
+    max-width: 480px;
+    border-radius: 0;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transform: translateY(10px);
+    transition: transform 0.2s ease;
+    color: var(--text);
+}
+
+[data-theme="light"] .theme-modal-card {
+    background: #ffffff;
+    border: 1px solid var(--border2);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12), 0 0 25px var(--accent-glow);
+}
+
+.theme-modal-overlay.open .theme-modal-card {
+    transform: translateY(0);
+}
+
+/* Faixa accent de topo */
+.theme-modal-top-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent);
+}
+
+/* Header */
+.theme-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.theme-modal-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+
+
+.theme-modal-title {
+    font-family: var(--font);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.theme-modal-subtitle {
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--muted2);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.theme-modal-close {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--muted2);
+    width: 32px;
+    height: 32px;
+    border-radius: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.theme-modal-close:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.theme-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.theme-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.theme-section-head-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.theme-section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted2);
+}
+
+.theme-section-sub {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+/* Modo de Exibição (Quadrado) */
+.theme-mode-grid-square {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.theme-mode-square-btn {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 0;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--muted2);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
+}
+
+.mode-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-mode-square-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.theme-mode-square-btn.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-text);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* Grid de Swatches de Cores (Quadradas) */
+.theme-swatches-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+@media (max-width: 420px) {
+    .theme-swatches-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.theme-swatch-btn {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 0;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.swatch-box-wrap {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.swatch-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 0;
+    display: block;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.theme-swatch-btn .swatch-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted2);
+    flex-grow: 1;
+    margin-left: 10px;
+    text-align: left;
+}
+
+.theme-swatch-btn .swatch-check {
+    opacity: 0;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s ease;
+}
+
+.theme-swatch-btn:hover {
+    border-color: var(--swatch-color);
+}
+
+.theme-swatch-btn:hover .swatch-name {
+    color: var(--text);
+}
+
+.theme-swatch-btn.active {
+    border-color: var(--swatch-color);
+    background: color-mix(in srgb, var(--swatch-color) 15%, transparent);
+}
+
+.theme-swatch-btn.active .swatch-name {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.theme-swatch-btn.active .swatch-check {
+    opacity: 1;
+    color: var(--swatch-color);
+}
+
+/* Footer do Modal (Sem status de tempo real) */
+.theme-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 4px;
+}
+
+.btn-theme-modal-done {
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    border-radius: 0;
+    padding: 10px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.btn-theme-modal-done:hover {
+    background: var(--accent-hover);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+
+
+
 
