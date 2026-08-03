@@ -75,25 +75,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const splitParametro = document.getElementById('splitParametro');
     const splitInfo = document.getElementById('splitInfo');
 
-    if (splitModo && splitParametro && splitInfo) {
-        splitModo.addEventListener('change', (e) => {
-            const v = e.target.value;
-            if (v === 'individual') {
-                splitParametro.style.display = 'none';
-                splitParametro.required = false;
-                splitInfo.textContent = 'Cria um arquivo separado para cada página do seu PDF original.';
-            } else if (v === 'fixo') {
-                splitParametro.style.display = 'block';
-                splitParametro.placeholder = 'Cortar a cada quantas páginas? Ex: 2';
-                splitParametro.required = true;
-                splitInfo.textContent = 'Agrupa o PDF em blocos do tamanho que você escolher.';
-            } else if (v === 'custom') {
-                splitParametro.style.display = 'block';
-                splitParametro.placeholder = 'Páginas específicas. Ex: 1-2, 5, 7-10';
-                splitParametro.required = true;
-                splitInfo.textContent = 'Você escolhe as partes exatas. Ex: "1-5" ou "3, 8-10".';
-            }
-        });
+    function atualizarSplitUI() {
+        if (!splitModo || !splitParametro || !splitInfo) return;
+        const dict = typeof translations !== 'undefined' && typeof getCurrentLang === 'function' ? translations[getCurrentLang()] : {};
+        const v = splitModo.value;
+
+        if (v === 'individual') {
+            splitParametro.style.display = 'none';
+            splitParametro.required = false;
+            splitInfo.textContent = dict['split.info.ind'] || 'Cria um arquivo separado para cada página do documento original.';
+        } else if (v === 'fixo') {
+            splitParametro.style.display = 'block';
+            splitParametro.placeholder = dict['split.ph.fix'] || 'Cortar a cada quantas páginas? Ex: 2';
+            splitParametro.required = true;
+            splitInfo.textContent = dict['split.info.fix'] || 'Agrupa as páginas em blocos fixos conforme o tamanho especificado.';
+        } else if (v === 'custom') {
+            splitParametro.style.display = 'block';
+            splitParametro.placeholder = dict['split.ph.cust'] || 'Páginas específicas. Ex: 1-2, 5, 7-10';
+            splitParametro.required = true;
+            splitInfo.textContent = dict['split.info.cust'] || 'Extrai somente as páginas escolhidas. Ex: 1-5 ou 3, 8-10.';
+        }
+    }
+
+    if (splitModo) {
+        splitModo.addEventListener('change', atualizarSplitUI);
+        window.addEventListener('languageChanged', atualizarSplitUI);
     }
 
     // ── Nome de arquivo nos inputs customizados ───────────────
@@ -176,16 +182,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     qrLerForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const dict = typeof translations !== 'undefined' && typeof getCurrentLang === 'function' ? translations[getCurrentLang()] : {};
         const fileInput = document.getElementById('qrLerInput');
+
         if (!fileInput?.files?.length) {
-            qrLerResultado.innerHTML = '<span style="color:var(--accent2)">Selecione um arquivo de imagem com QR Code.</span>';
+            qrLerResultado.innerHTML = `<span style="color:var(--accent2)">${dict['qr.select_err'] || 'Por favor, selecione uma imagem contendo um QR Code.'}</span>`;
             qrLerResultado.style.display = 'block';
             return;
         }
 
         const formData = new FormData(qrLerForm);
         qrLerBtn.disabled = true;
-        qrLerBtn.querySelector('span:first-child').textContent = 'Lendo...';
+        const origText = dict['pdf.qrread.action'] || 'Decodificar QR Code';
+        qrLerBtn.querySelector('span:first-child').textContent = dict['qr.reading'] || 'Decodificando...';
 
         try {
             const resp = await fetch('/api/qr/ler', { method: 'POST', body: formData });
@@ -202,11 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             qrLerResultado.style.display = 'block';
         } catch (err) {
-            qrLerResultado.innerHTML = '<span style="color:var(--accent2)">Erro de conexão.</span>';
+            qrLerResultado.innerHTML = `<span style="color:var(--accent2)">${dict['qr.conn_err'] || 'Erro de conexão ao decodificar o QR Code.'}</span>`;
             qrLerResultado.style.display = 'block';
         } finally {
             qrLerBtn.disabled = false;
-            qrLerBtn.querySelector('span:first-child').textContent = 'Ler QR Code';
+            qrLerBtn.querySelector('span:first-child').textContent = origText;
         }
     });
 
@@ -217,17 +226,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     paletaForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const dict = typeof translations !== 'undefined' && typeof getCurrentLang === 'function' ? translations[getCurrentLang()] : {};
         const fileInput = document.getElementById('paletaInput');
+
         if (!fileInput?.files?.length) {
-            paletaResultado.innerHTML = '<span style="color:var(--accent2)">Por favor, selecione uma imagem primeiro.</span>';
+            paletaResultado.innerHTML = `<span style="color:var(--accent2)">${dict['palette.select_err'] || 'Por favor, selecione uma imagem primeiro.'}</span>`;
             paletaResultado.style.display = 'block';
             return;
         }
 
         const formData = new FormData(paletaForm);
         paletaBtn.disabled = true;
-        const origBtnText = paletaBtn.querySelector('span:first-child')?.textContent || 'Extrair Cores';
-        paletaBtn.querySelector('span:first-child').textContent = 'Extraindo...';
+        const origBtnText = dict['pdf.palette.action'] || 'Extrair Paleta';
+        paletaBtn.querySelector('span:first-child').textContent = dict['palette.extracting'] || 'Extraindo...';
 
         try {
             const resp = await fetch('/api/img/paleta', { method: 'POST', body: formData });
@@ -236,18 +247,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.erro) {
                 paletaResultado.innerHTML = `<span style="color:var(--accent2)">${data.erro}</span>`;
             } else if (!data.paleta || data.paleta.length === 0) {
-                paletaResultado.innerHTML = `<span style="color:var(--accent2)">Não foi possível extrair a paleta desta imagem.</span>`;
+                paletaResultado.innerHTML = `<span style="color:var(--accent2)">${dict['palette.empty_err'] || 'Não foi possível extrair a paleta de cores desta imagem.'}</span>`;
             } else {
                 let html = '<div class="paleta-swatches">';
                 for (const c of data.paleta) {
-                    html += `<div class="paleta-swatch" style="background:${c.hex}" title="${c.hex} — ${c.percentual}%" onclick="navigator.clipboard.writeText('${c.hex}'); if (typeof mostrarToast === 'function') mostrarToast('Cor ${c.hex} copiada!');"><span class="paleta-swatch-label">${c.hex}</span></div>`;
+                    const copiedText = (dict['palette.copied'] || 'Cor {hex} copiada!').replace('{hex}', c.hex);
+                    html += `<div class="paleta-swatch" style="background:${c.hex}" title="${c.hex} — ${c.percentual}%" onclick="navigator.clipboard.writeText('${c.hex}'); if (typeof mostrarToast === 'function') mostrarToast('${copiedText}');"><span class="paleta-swatch-label">${c.hex}</span></div>`;
                 }
                 html += '</div>';
                 paletaResultado.innerHTML = html;
             }
             paletaResultado.style.display = 'block';
         } catch (err) {
-            paletaResultado.innerHTML = '<span style="color:var(--accent2)">Erro de conexão ao processar a imagem.</span>';
+            paletaResultado.innerHTML = `<span style="color:var(--accent2)">${dict['palette.conn_err'] || 'Erro de conexão ao processar a imagem.'}</span>`;
             paletaResultado.style.display = 'block';
         } finally {
             paletaBtn.disabled = false;

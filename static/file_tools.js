@@ -106,13 +106,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     hashForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const dict = typeof translations !== 'undefined' && typeof getCurrentLang === 'function' ? translations[getCurrentLang()] : {};
 
         const fileInput = document.getElementById('hashInput');
         if (!fileInput?.files?.length) return;
 
         const formData = new FormData(hashForm);
         hashBtn.disabled = true;
-        hashBtn.querySelector('span:first-child').textContent = 'Calculando...';
+        const origBtnText = dict['file.hash.action'] || 'Calcular Hash';
+        hashBtn.querySelector('span:first-child').textContent = dict['hash.calculating'] || 'Calculando...';
 
         try {
             const resp = await fetch('/api/file/hash', {
@@ -136,7 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     el.addEventListener('click', () => {
                         navigator.clipboard.writeText(el.dataset.hash).then(() => {
                             const original = el.textContent;
-                            el.textContent = '✓ copiado!';
+                            const copiedLabel = dict['hash.copied'] || '✓ copiado!';
+                            el.textContent = copiedLabel;
                             el.style.color = 'var(--accent)';
                             setTimeout(() => {
                                 el.textContent = original;
@@ -149,11 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             hashResultado.style.display = 'block';
         } catch (err) {
-            hashResultado.innerHTML = '<span style="color:var(--accent2)">Erro de conexão.</span>';
+            hashResultado.innerHTML = `<span style="color:var(--accent2)">${dict['hash.conn_err'] || 'Erro de conexão ao calcular o hash do arquivo.'}</span>`;
             hashResultado.style.display = 'block';
         } finally {
             hashBtn.disabled = false;
-            hashBtn.querySelector('span:first-child').textContent = 'Calcular Hash';
+            hashBtn.querySelector('span:first-child').textContent = origBtnText;
         }
     });
 

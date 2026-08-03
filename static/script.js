@@ -51,8 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (autoSubmit && uploadForm) {
             const btn = document.getElementById("btnEnviar");
             if (btn) {
+                const dict = typeof translations !== 'undefined' && typeof getCurrentLang === 'function' ? translations[getCurrentLang()] : {};
                 btn.disabled = true;
-                btn.innerHTML = `<span>Enviando...</span><div class="spinner"></div>`;
+                btn.innerHTML = `<span>${dict['upload.sending'] || 'Carregando...'}</span><div class="spinner"></div>`;
             }
             uploadForm.submit();
         }
@@ -61,8 +62,9 @@ document.addEventListener("DOMContentLoaded", () => {
     uploadForm?.addEventListener("submit", () => {
         const btn = document.getElementById("btnEnviar");
         if (!btn || btn.disabled) return;
+        const dict = typeof translations !== 'undefined' && typeof getCurrentLang === 'function' ? translations[getCurrentLang()] : {};
         btn.disabled = true;
-        btn.innerHTML = `<span>Enviando...</span><div class="spinner"></div>`;
+        btn.innerHTML = `<span>${dict['upload.sending'] || 'Carregando...'}</span><div class="spinner"></div>`;
     });
 
 
@@ -135,13 +137,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const sub = document.getElementById("previewSub");
         if (!viewer) return;
 
+        const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'pt';
+        const dict = typeof translations !== 'undefined' ? translations[lang] || {} : {};
+
         // Spinner imediato
+        const genMsg = (dict['preview.generating'] || 'Gerando pré-visualização {format}...').replace('{format}', destino.toUpperCase());
         viewer.innerHTML = `
             <div class="preview-loading">
                 <div class="spinner-preview"></div>
-                <span>Gerando prévia ${destino.toUpperCase()}...</span>
+                <span>${genMsg}</span>
             </div>`;
-        if (sub) sub.textContent = "Gerando...";
+        if (sub) sub.textContent = "...";
 
         const ori = document.querySelector('input[name="_ori"]:checked')?.value || "retrato";
 
@@ -149,7 +155,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (destino === "pdf") {
                 const url = `/preview-convert/${pastaUUID}/pdf?orientacao=${ori}`;
-                _embedComLoader(viewer, url, `PDF · ${ori}`, sub);
+                const oriLabel = ori === 'paisagem' ? (dict['conv.ori.landscape'] || 'Paisagem') : (dict['conv.ori.portrait'] || 'Retrato');
+                _embedComLoader(viewer, url, `PDF · ${oriLabel}`, sub);
 
             } else if (destino === "png" || destino === "jpg") {
                 const url = `/preview-convert/${pastaUUID}/${destino}`;
@@ -159,46 +166,57 @@ document.addEventListener("DOMContentLoaded", () => {
                     img.onerror = () => reject(new Error("Falha ao carregar imagem"));
                     img.src = url;
                 });
+                const rendMsg = (dict['preview.rendered'] || '{format} · renderizado').replace('{format}', destino.toUpperCase());
                 viewer.innerHTML = `<img src="${url}" class="img-preview-visual" alt="Prévia ${destino.toUpperCase()}">`;
-                if (sub) sub.textContent = `${destino.toUpperCase()} · renderizado`;
+                if (sub) sub.textContent = rendMsg;
 
             } else if (destino === "csv" || destino === "xlsx") {
                 const resp = await fetch(`/preview-tabela/${pastaUUID}/${destino}`);
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const html = await resp.text();
+                const fullMsg = (dict['preview.full_data'] || '{format} · dados completos').replace('{format}', destino.toUpperCase());
                 viewer.innerHTML = `<div class="preview-scroll">${html}</div>`;
-                if (sub) sub.textContent = `${destino.toUpperCase()} · dados completos`;
+                if (sub) sub.textContent = fullMsg;
 
             } else if (destino === "docx") {
                 const url = `/preview-convert/${pastaUUID}/pdf`;
-                _embedComLoader(viewer, url, "DOCX · ref. visual", sub,
+                const visRef = (dict['preview.visual_ref'] || '{format} · ref. visual').replace('{format}', 'DOCX');
+                const noticeMsg = dict['preview.docx_notice'] || 'DOCX não pode ser exibido diretamente no navegador.';
+                const noticeSub = dict['preview.docx_sub'] || 'Exibindo abaixo a prévia gerada em formato PDF.';
+                _embedComLoader(viewer, url, visRef, sub,
                     `<div class="preview-aviso">
-                        <span>DOCX não pode ser pré-visualizado no browser.</span>
-                        <span class="preview-aviso-sub">Abaixo: aparência como PDF</span>
+                        <span>${noticeMsg}</span>
+                        <span class="preview-aviso-sub">${noticeSub}</span>
                      </div>`);
 
             } else if (destino === "pptx" || destino === "ppt") {
                 const url = `/preview-convert/${pastaUUID}/pdf`;
-                _embedComLoader(viewer, url, `${destino.toUpperCase()} · ref. visual`, sub,
+                const visRef = (dict['preview.visual_ref'] || '{format} · ref. visual').replace('{format}', destino.toUpperCase());
+                const noticeMsg = (dict['preview.ppt_notice'] || '{format} gerado como slides por página do PDF.').replace('{format}', destino.toUpperCase());
+                const noticeSub = dict['preview.ppt_sub'] || 'Exibindo abaixo o documento PDF original para referência.';
+                _embedComLoader(viewer, url, visRef, sub,
                     `<div class="preview-aviso">
-                        <span>${destino.toUpperCase()} gerado como slides por página do PDF.</span>
-                        <span class="preview-aviso-sub">Abaixo: PDF original para referência</span>
+                        <span>${noticeMsg}</span>
+                        <span class="preview-aviso-sub">${noticeSub}</span>
                      </div>`);
 
             } else {
+                const notAvail = (dict['preview.not_available'] || 'Pré-visualização não disponível para {format}').replace('{format}', destino.toUpperCase());
+                const downloadSub = dict['preview.download_to_view'] || 'Faça o download para visualizar o arquivo completo.';
                 viewer.innerHTML = `
                     <div class="preview-placeholder">
-                        <p class="placeholder-texto">Prévia não disponível para ${destino.toUpperCase()}</p>
-                        <p class="placeholder-sub">Faça o download para visualizar.</p>
+                        <p class="placeholder-texto">${notAvail}</p>
+                        <p class="placeholder-sub">${downloadSub}</p>
                     </div>`;
                 if (sub) sub.textContent = destino.toUpperCase();
             }
 
         } catch (err) {
+            const failTitle = dict['preview.failed'] || 'Não foi possível gerar a pré-visualização';
             viewer.innerHTML = `
                 <div class="preview-erro-state">
-                    <span>Não foi possível gerar a prévia</span>
-                    <span class="preview-erro-sub">${err.message || "Tente fazer o download"}</span>
+                    <span>${failTitle}</span>
+                    <span class="preview-erro-sub">${err.message || ""}</span>
                 </div>`;
             if (sub) sub.textContent = "erro";
         }
@@ -206,11 +224,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Helper: embed PDF com spinner sobreposto que some com fade
     function _embedComLoader(viewer, url, subTexto, subEl, cabecalho = "") {
+        const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'pt';
+        const dict = typeof translations !== 'undefined' ? translations[lang] || {} : {};
+        const loadingText = dict['upload.sending'] || 'Carregando...';
+
         viewer.innerHTML = `
             <div style="position:relative;width:100%;height:100%;display:flex;flex-direction:column;">
                 <div class="pdf-loader-overlay" id="pdfLoaderOverlay">
                     <div class="spinner-preview"></div>
-                    <span>Carregando...</span>
+                    <span>${loadingText}</span>
                 </div>
                 ${cabecalho}
                 <embed src="${url}#toolbar=0&navpanes=0&scrollbar=1"
@@ -231,13 +253,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // -- Form de conversao -- Async API com progresso em tempo real -----------
-    // Fluxo:
-    //  1. Intercepta submit do #converterForm
-    //  2. POST /api/converter/async -> recebe job_id
-    //  3. Polling /api/converter/status/<job_id> a cada 800ms
-    //  4. Quando concluido=true -> redirect para /api/converter/download/<job_id>
-    // Fallback: se fetch falhar completamente, o submit normal e acionado.
-
     const converterForm = document.getElementById("converterForm");
     const btnConverter  = document.getElementById("btnConverter");
     const btnOutro      = document.getElementById("btnOutro");
@@ -249,6 +264,9 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         if (!btnConverter || btnConverter.disabled) return;
 
+        const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'pt';
+        const dict = typeof translations !== 'undefined' ? translations[lang] || {} : {};
+
         // Sincroniza orientacao do radio (se disponivel)
         const oriRadio = converterForm.querySelector("input[name='_ori']:checked");
         if (oriRadio) {
@@ -258,20 +276,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Mostrar estado de loading
         btnConverter.disabled = true;
-        btnConverter.innerHTML = '<span>Processando...</span><div class="spinner"></div>';
+        btnConverter.innerHTML = `<span>${dict['upload.sending'] || 'Carregando...'}</span><div class="spinner"></div>`;
         if (progressWrap)  progressWrap.classList.add("ativo");
         if (progressBar)   { progressBar.style.width = "5%"; progressBar.style.background = ""; }
-        if (progressLabel) progressLabel.textContent = "Iniciando...";
+        if (progressLabel) progressLabel.textContent = "...";
 
         let pollInterval = null;
 
         function encerrarErro(msg) {
             clearInterval(pollInterval);
             if (progressBar)  { progressBar.style.width = "100%"; progressBar.style.background = "#f87171"; }
-            if (progressLabel) progressLabel.textContent = msg || "Erro na conversao.";
+            if (progressLabel) progressLabel.textContent = msg || "Erro na conversão.";
             setTimeout(() => {
                 btnConverter.disabled = false;
-                btnConverter.innerHTML = '<span>Converter e baixar</span><span class="botao-arr">\u2193</span>';
+                btnConverter.innerHTML = `<span>${dict['conv.btn.convert'] || 'Converter e Baixar'}</span><span class="botao-arr">\u2193</span>`;
                 if (progressWrap) progressWrap.classList.remove("ativo");
                 if (progressBar)  { progressBar.style.width = "0%"; progressBar.style.background = ""; }
             }, 3000);
@@ -280,14 +298,14 @@ document.addEventListener("DOMContentLoaded", () => {
         function encerrarOk() {
             clearInterval(pollInterval);
             if (progressBar)   progressBar.style.width = "100%";
-            if (progressLabel) progressLabel.textContent = "Concluido!";
+            if (progressLabel) progressLabel.textContent = "✓";
             setTimeout(() => {
                 btnConverter.disabled = false;
-                btnConverter.innerHTML = '<span>Converter e baixar</span><span class="botao-arr">\u2193</span>';
+                btnConverter.innerHTML = `<span>${dict['conv.btn.convert'] || 'Converter e Baixar'}</span><span class="botao-arr">\u2193</span>`;
                 if (progressWrap) progressWrap.classList.remove("ativo");
                 if (progressBar)  progressBar.style.width = "0%";
                 if (btnOutro) btnOutro.style.display = "flex";
-                mostrarToast("Download concluido!");
+                mostrarToast(dict['toast.done'] || 'Download concluído!');
             }, 800);
         }
 
