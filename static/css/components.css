@@ -905,7 +905,8 @@
     box-shadow: 0 0 12px var(--accent-glow);
 }
 
-@media (max-width: 576px), (max-height: 650px) {
+@media (max-width: 576px),
+(max-height: 650px) {
     .theme-modal-overlay {
         padding: 12px;
     }
@@ -1073,6 +1074,43 @@
     gap: 4px;
 }
 
+.hist-timer-expired {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    padding: 2px 8px;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-transform: uppercase;
+}
+
+.btn-retention-restore {
+    background: var(--surface2, #1a1a1a);
+    color: var(--text, #f5f5f5);
+    border: 1px solid var(--border2, #2e2e2e);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-retention-restore:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--surface);
+}
+
 .hist-apagado-badge {
     font-family: var(--mono);
     font-size: 11px;
@@ -1110,7 +1148,851 @@
     box-shadow: 0 0 8px var(--accent-glow);
 }
 
+.hist-hora {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+}
+
+.hist-policy-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border: 1px solid var(--border2);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+    letter-spacing: 0.05em;
+    border-radius: 0;
+    text-transform: uppercase;
+}
+
+.hist-policy-tag.policy-single-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: none;
+}
+
+.hist-policy-tag.policy-instant {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.hist-policy-tag.policy-5min {
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.hist-policy-tag.policy-15min {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.hist-policy-tag.policy-green,
+.hist-timer.hist-timer-green {
+    color: var(--accent) !important;
+    border: 1px solid var(--accent) !important;
+    background: var(--surface) !important;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 0;
+    text-transform: uppercase;
+}
+
+.hist-badge-restored {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    letter-spacing: 0.05em;
+    border-radius: 0;
+    text-transform: uppercase;
+}
+
+.btn-hist-restore {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    text-transform: uppercase;
+}
+
+.btn-hist-restore:hover {
+    background: var(--accent);
+    color: var(--accent-text);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ── Card Estruturado do Histórico de Arquivos (Compact Geometric Layout) ── */
+.historico-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    gap: 10px;
+}
+
+.historico-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 14px var(--accent-glow);
+}
+
+.hist-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+}
+
+.hist-card-top-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.hist-card-top-right {
+    display: flex;
+    align-items: center;
+}
+
+.hist-card-divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    opacity: 0.6;
+}
+
+.hist-card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+}
+
+.hist-card-bottom-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+.hist-card-conversion {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.hist-card-filename {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 500px;
+}
+
+.hist-card-bottom-right {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.btn-hist-icon-download {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    flex-shrink: 0;
+}
+
+.content-wrapper.historico-full-wrapper {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+
+/* ── Grade 2-Colunas do Histórico (65% Lista / 35% Painel Lateral) ── */
+.historico-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 350px !important;
+    gap: 32px !important;
+    width: 100% !important;
+    align-items: start !important;
+}
+
+@media (max-width: 1024px) {
+    .historico-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.hist-policy-tag.policy-instant {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.hist-policy-tag.policy-5min {
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.hist-policy-tag.policy-15min {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.hist-policy-tag.policy-green,
+.hist-timer.hist-timer-green {
+    color: var(--accent) !important;
+    border: 1px solid var(--accent) !important;
+    background: var(--surface) !important;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 0;
+    text-transform: uppercase;
+}
+
+.hist-badge-restored {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    letter-spacing: 0.05em;
+    border-radius: 0;
+    text-transform: uppercase;
+}
+
+.btn-hist-restore {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 4px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    text-transform: uppercase;
+}
+
+.btn-hist-restore:hover {
+    background: var(--accent);
+    color: var(--accent-text);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ── Card Estruturado do Histórico de Arquivos (Compact Geometric Layout) ── */
+.historico-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    gap: 10px;
+}
+
+.historico-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 14px var(--accent-glow);
+}
+
+.hist-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+}
+
+.hist-card-top-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.hist-card-top-right {
+    display: flex;
+    align-items: center;
+}
+
+.hist-card-divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    opacity: 0.6;
+}
+
+.hist-card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+}
+
+.hist-card-bottom-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+.hist-card-conversion {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.hist-card-filename {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 500px;
+}
+
+.hist-card-bottom-right {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.btn-hist-icon-download {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    flex-shrink: 0;
+}
+
+.content-wrapper.historico-full-wrapper {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+
+/* ── Grade 2-Colunas do Histórico (65% Lista / 35% Painel Lateral) ── */
+.historico-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 350px !important;
+    gap: 32px !important;
+    width: 100% !important;
+    align-items: start !important;
+}
+
+@media (max-width: 1024px) {
+    .historico-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.historico-card {
+    cursor: pointer;
+}
+
+.historico-side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    position: sticky;
+    top: 24px;
+}
+
+.side-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    padding: 16px;
+    border-radius: 0;
+    transition: all 0.2s ease;
+}
+
+.side-box-title {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.side-box-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn-side-action {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-side-action:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.btn-side-action.btn-disabled,
+.btn-side-action:disabled,
+.btn-side-action[disabled],
+.btn-disabled {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    background: rgba(20, 20, 20, 0.7) !important;
+    color: var(--muted) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+    transform: none !important;
+    filter: grayscale(100%);
+    pointer-events: auto !important;
+}
+
+.btn-side-action.btn-disabled:hover,
+.btn-side-action:disabled:hover,
+.btn-side-action[disabled]:hover,
+.btn-disabled:hover {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--muted) !important;
+    background: rgba(20, 20, 20, 0.7) !important;
+    box-shadow: none !important;
+    cursor: not-allowed !important;
+}
+
+.btn-danger-action {
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+
+.btn-danger-action:hover {
+    border-color: #ef4444;
+    color: #ffffff;
+    background: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
 
 
 
+.history-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+}
 
+.history-confirm-overlay.open {
+    display: flex;
+}
+
+.history-confirm-card {
+    position: relative;
+    width: min(100%, 460px);
+    padding: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.65), 0 0 18px rgba(239, 68, 68, 0.18);
+}
+
+.history-confirm-marker {
+    height: 3px;
+    position: absolute;
+    inset: 0 0 auto;
+    background: #ef4444;
+}
+
+.history-confirm-card h2 {
+    font-family: var(--sans);
+    font-size: 1.45rem;
+    margin: 0 28px 10px 0;
+}
+
+.history-confirm-card>p:not(.side-box-title) {
+    color: var(--muted);
+    font-size: .9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.history-confirm-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    color: var(--text);
+    border: 1px solid var(--border2);
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.history-confirm-close:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.inspector-help {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.history-confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+    gap: 8px;
+    margin-top: 24px;
+}
+
+.qr-placeholder-box {
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+/* Security & Retention */
+.side-field-label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted2);
+    margin-bottom: 6px;
+}
+
+.retention-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.btn-ret-opt {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    text-align: center;
+}
+
+.btn-ret-opt:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.btn-ret-opt.active {
+    border: 1.5px solid var(--accent) !important;
+    color: var(--accent) !important;
+    background: rgba(200, 255, 0, 0.12) !important;
+    box-shadow: 0 0 12px var(--accent-glow) !important;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 18px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border2);
+    transition: .3s;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+}
+
+input:checked+.toggle-slider {
+    background-color: var(--accent);
+}
+
+.qr-placeholder-box {
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+
+
+/* Security & Retention */
+.side-field-label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted2);
+    margin-bottom: 6px;
+}
+
+.retention-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.btn-ret-opt {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    text-align: center;
+}
+
+.btn-ret-opt:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.btn-ret-opt.active {
+    border: 1.5px solid var(--accent) !important;
+    color: var(--accent) !important;
+    background: rgba(200, 255, 0, 0.12) !important;
+    box-shadow: 0 0 12px var(--accent-glow) !important;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 18px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border2);
+    transition: .3s;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+}
+
+input:checked+.toggle-slider {
+    background-color: var(--accent);
+}
+
+input:checked+.toggle-slider:before {
+    transform: translateX(18px);
+}
+
+.historico-card.selected {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 14px var(--accent-glow) !important;
+}
+
+/* ── Minimalist Wave Header Banner no Histórico ── */
+.history-wave-banner {
+    position: relative;
+    width: 100%;
+    height: 48px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 0;
+    pointer-events: none;
+    user-select: none;
+}
+
+.history-waves-svg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    bottom: 0;
+    left: 0;
+}
+
+.wave-layer {
+    fill: var(--accent);
+    transition: fill 0.3s ease;
+}
+
+.wave-1 {
+    opacity: 0.12;
+    animation: move-wave 22s cubic-bezier(.55, .5, .45, .5) infinite;
+}
+
+.wave-2 {
+    opacity: 0.25;
+    animation: move-wave 14s cubic-bezier(.55, .5, .45, .5) infinite;
+}
+
+.wave-3 {
+    opacity: 0.45;
+    animation: move-wave 9s cubic-bezier(.55, .5, .45, .5) infinite;
+}
+
+.wave-4 {
+    opacity: 0.75;
+    animation: move-wave 5s cubic-bezier(.55, .5, .45, .5) infinite;
+}
+
+@keyframes move-wave {
+    0% {
+        transform: translate3d(-90px, 0, 0);
+    }
+
+    100% {
+        transform: translate3d(85px, 0, 0);
+    }
+}

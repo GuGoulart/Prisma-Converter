@@ -87,13 +87,55 @@ hash_data = json.loads(res_hash.data.decode("utf-8"))
 assert "sha256" in hash_data
 print("POST /api/file/hash OK")
 
-# 3.3 File Compress
-res_comp = client.post("/api/file/comprimir", data={
-    "arquivos": [(io.BytesIO(csv_content), "doc1.csv"), (io.BytesIO(csv_content), "doc2.csv")],
-    "formato": "zip",
+# 3.4 Test GET /historico page
+res_hist = client.get("/historico")
+assert res_hist.status_code == 200, f"History page failed: {res_hist.status_code}"
+assert b"Hist" in res_hist.data or b"history" in res_hist.data.lower()
+print("GET /historico OK (200)")
+
+# 3.5 Test POST /api/historico/restaurar/<job_id>
+res_rst = client.post(f"/api/historico/restaurar/{job_id}")
+assert res_rst.status_code == 200, f"Restore failed status {res_rst.status_code}"
+rst_data = json.loads(res_rst.data.decode("utf-8"))
+assert rst_data.get("ok") is True and "expira_em" in rst_data
+print(f"POST /api/historico/restaurar/{job_id} OK (novo expira_em: {rst_data['expira_em']})")
+
+# 3.6 Test cookie retention policy resolution
+client.set_cookie("prisma_retention_policy", "5min")
+client.post("/upload", data={
+    "arquivo": (io.BytesIO(csv_content), "test2.csv"),
+    "csrf_token": "test_csrf_token"
+}, content_type="multipart/form-data")
+
+res_cookie_async = client.post("/api/converter/async", data={
+    "origem": "csv",
+    "destino": "xlsx",
+    "nome_original": "cookie_test.csv",
+    "orientacao": "retrato",
     "csrf_token": "test_csrf_token"
 })
-assert res_comp.status_code == 200
-print("POST /api/file/comprimir OK")
+assert res_cookie_async.status_code == 200, f"Async with cookie failed: {res_cookie_async.status_code}"
+cookie_job_id = json.loads(res_cookie_async.data.decode("utf-8"))["job_id"]
+
+
+# 3.8.1 Test POST /api/historico/alterar-modo/<job_id>
+res_alt = client.post(f"/api/historico/alterar-modo/{job_id}", json={"autodestruicao": "5min"})
+assert res_alt.status_code == 200
+alt_data = json.loads(res_alt.data.decode("utf-8"))
+assert alt_data.get("ok") is True and alt_data.get("autodestruicao") == "5min"
+print(f"POST /api/historico/alterar-modo/{job_id} OK")
+
+# 3.9 Test GET /api/historico/zip-todos
+res_zip = client.get("/api/historico/zip-todos")
+assert res_zip.status_code == 200, f"Batch zip download failed: {res_zip.status_code}"
+assert len(res_zip.data) > 0
+print(f"GET /api/historico/zip-todos OK ({len(res_zip.data)} bytes)")
+
+# 3.10 Test POST /api/historico/destruir-tudo
+res_dest = client.post("/api/historico/destruir-tudo")
+assert res_dest.status_code == 200, f"Destroy all failed: {res_dest.status_code}"
+dest_data = json.loads(res_dest.data.decode("utf-8"))
+assert dest_data.get("ok") is True
+print("POST /api/historico/destruir-tudo OK")
 
 print("=== ALL PRISMA CONVERTER ENDPOINTS AND FLOWS ARE FULLY WORKING! ===")

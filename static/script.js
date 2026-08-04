@@ -1,18 +1,23 @@
 // ── Variáveis de sessão (injetadas via data-* no body) ────────
 // SEG-008: eliminados scripts inline — nenhum código Jinja2 no .js
 const _bd = document.body ? document.body.dataset : {};
-const origemArquivo = _bd.origem         || '';
-const pastaUUID     = _bd.pastaUuid      || '';   // camelCase: data-pasta-uuid → pastaUuid
+const origemArquivo = _bd.origem || '';
+const pastaUUID = _bd.pastaUuid || '';   // camelCase: data-pasta-uuid → pastaUuid
 const previewInicial = _bd.previewInicial || '';
-const previewTipo    = _bd.previewTipo    || '';
-const tabelaInicial  = _bd.tabelaInicial  === 'true';
+const previewTipo = _bd.previewTipo || '';
+const tabelaInicial = _bd.tabelaInicial === 'true';
 
-// ── Service Worker ────────────────────────────────────────────
+// ── Limpeza de Service Worker & Cache do Navegador ─────────────
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('[SW] registrado', reg.scope))
-            .catch(err => console.error('[SW] erro', err));
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const reg of registrations) {
+            reg.unregister();
+        }
+    });
+}
+if ('caches' in window) {
+    caches.keys().then(keys => {
+        keys.forEach(key => caches.delete(key));
     });
 }
 
@@ -254,10 +259,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // -- Form de conversao -- Async API com progresso em tempo real -----------
     const converterForm = document.getElementById("converterForm");
-    const btnConverter  = document.getElementById("btnConverter");
-    const btnOutro      = document.getElementById("btnOutro");
-    const progressWrap  = document.getElementById("progressWrap");
-    const progressBar   = document.getElementById("progressBar");
+    const btnConverter = document.getElementById("btnConverter");
+    const btnOutro = document.getElementById("btnOutro");
+    const progressWrap = document.getElementById("progressWrap");
+    const progressBar = document.getElementById("progressBar");
     const progressLabel = document.getElementById("progressLabel");
 
     converterForm?.addEventListener("submit", async (e) => {
@@ -277,33 +282,33 @@ document.addEventListener("DOMContentLoaded", () => {
         // Mostrar estado de loading
         btnConverter.disabled = true;
         btnConverter.innerHTML = `<span>${dict['upload.sending'] || 'Carregando...'}</span><div class="spinner"></div>`;
-        if (progressWrap)  progressWrap.classList.add("ativo");
-        if (progressBar)   { progressBar.style.width = "5%"; progressBar.style.background = ""; }
+        if (progressWrap) progressWrap.classList.add("ativo");
+        if (progressBar) { progressBar.style.width = "5%"; progressBar.style.background = ""; }
         if (progressLabel) progressLabel.textContent = "...";
 
         let pollInterval = null;
 
         function encerrarErro(msg) {
             clearInterval(pollInterval);
-            if (progressBar)  { progressBar.style.width = "100%"; progressBar.style.background = "#f87171"; }
+            if (progressBar) { progressBar.style.width = "100%"; progressBar.style.background = "#f87171"; }
             if (progressLabel) progressLabel.textContent = msg || "Erro na conversão.";
             setTimeout(() => {
                 btnConverter.disabled = false;
                 btnConverter.innerHTML = `<span>${dict['conv.btn.convert'] || 'Converter e Baixar'}</span><span class="botao-arr">\u2193</span>`;
                 if (progressWrap) progressWrap.classList.remove("ativo");
-                if (progressBar)  { progressBar.style.width = "0%"; progressBar.style.background = ""; }
+                if (progressBar) { progressBar.style.width = "0%"; progressBar.style.background = ""; }
             }, 3000);
         }
 
         function encerrarOk() {
             clearInterval(pollInterval);
-            if (progressBar)   progressBar.style.width = "100%";
+            if (progressBar) progressBar.style.width = "100%";
             if (progressLabel) progressLabel.textContent = "✓";
             setTimeout(() => {
                 btnConverter.disabled = false;
                 btnConverter.innerHTML = `<span>${dict['conv.btn.convert'] || 'Converter e Baixar'}</span><span class="botao-arr">\u2193</span>`;
                 if (progressWrap) progressWrap.classList.remove("ativo");
-                if (progressBar)  progressBar.style.width = "0%";
+                if (progressBar) progressBar.style.width = "0%";
                 mostrarToast(dict['toast.done'] || 'Download concluído!');
             }, 800);
         }
@@ -353,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     // Atualizar barra de progresso
                     const pct = Math.max(5, Math.min(99, status.percent || 5));
-                    if (progressBar)   progressBar.style.width = pct + "%";
+                    if (progressBar) progressBar.style.width = pct + "%";
                     if (progressLabel) progressLabel.textContent = status.status || "Convertendo...";
 
                     // Conversao concluida!
@@ -418,14 +423,54 @@ document.addEventListener("DOMContentLoaded", () => {
                     const restante = expiraEm - agora;
 
                     const rightContainer = item.querySelector(".historico-item-right");
-                    const timerValSpan   = item.querySelector(".hist-timer-val");
+                    const timerValSpan = item.querySelector(".hist-timer-val");
 
                     if (restante <= 0) {
                         item.setAttribute("data-apagado", "true");
+                        const topLeft = item.querySelector(".hist-card-top-left");
+                        const timerEl = item.querySelector(".hist-timer");
+                        const rightContainer = item.querySelector(".historico-item-right");
+
+                        if (topLeft) {
+                            if (timerEl) timerEl.remove();
+                            if (!topLeft.querySelector(".hist-timer-expired")) {
+                                const expiredTag = document.createElement("span");
+                                expiredTag.className = "hist-timer-expired";
+                                expiredTag.innerHTML = `
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                    <span>TEMPO ESGOTADO</span>`;
+                                const policyTag = topLeft.querySelector(".hist-policy-tag");
+                                if (policyTag && policyTag.nextSibling) {
+                                    topLeft.insertBefore(expiredTag, policyTag.nextSibling);
+                                } else {
+                                    topLeft.appendChild(expiredTag);
+                                }
+                            }
+
+                            const policy = item.getAttribute("data-policy");
+                            const jobId = item.getAttribute("data-job-id");
+                            if ((policy === "5min" || policy === "15min") && jobId && !topLeft.querySelector(".btn-retention-restore")) {
+                                const restoreBtn = document.createElement("button");
+                                restoreBtn.type = "button";
+                                restoreBtn.className = "btn-retention-restore";
+                                restoreBtn.title = "Restaurar Retenção";
+                                restoreBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    window.restaurarArquivo(jobId);
+                                };
+                                restoreBtn.innerHTML = "Restaurar ↺";
+                                topLeft.appendChild(restoreBtn);
+                            }
+                        }
+
                         if (rightContainer) {
                             rightContainer.innerHTML = `
                                 <span class="hist-apagado-badge" data-i18n="conv.history.deleted">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="3 6 5 6 21 6"></polyline>
                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                     </svg>
@@ -447,7 +492,160 @@ document.addEventListener("DOMContentLoaded", () => {
 
     iniciarCronometrosHistorico();
 
+    // ── Função de Restauração de Arquivo em Tempo Real ─────────
+    window.restaurarArquivo = async function (jobId) {
+        if (!jobId) return;
+        try {
+            const resp = await fetch("/api/historico/restaurar/" + jobId, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            });
+            const data = await resp.json();
+            const lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'pt';
+            const dict = typeof translations !== 'undefined' ? translations[lang] || {} : {};
+
+            if (!resp.ok || data.erro) {
+                mostrarToast(data.erro || "Não foi possível restaurar o arquivo.");
+                return;
+            }
+
+            // Atualizar elementos do histórico na DOM
+            const items = document.querySelectorAll(`.historico-item[data-job-id="${jobId}"], #hist-card-${jobId}`);
+            items.forEach((el) => {
+                el.setAttribute("data-expires", data.expira_em);
+                el.setAttribute("data-apagado", "false");
+                const timerVal = el.querySelector(".hist-timer-val");
+                if (timerVal) {
+                    const restante = Math.max(0, data.expira_em - Math.floor(Date.now() / 1000));
+                    const m = Math.floor(restante / 60);
+                    const s = restante % 60;
+                    timerVal.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                }
+            });
+
+            const msg = dict['conv.history.restoreToast'] || data.mensagem || "Arquivo restaurado com sucesso!";
+            mostrarToast(msg);
+        } catch (err) {
+            console.error("Erro ao restaurar arquivo:", err);
+            mostrarToast("Erro de conexão ao restaurar arquivo.");
+        }
+    };
+
     // ── Relógio no rodapé ─────────────────────────────────────
+
+    // ── Painel de ações do histórico ──────────────────────────
+    function atualizarEstadoDownloadLote() {
+        const downloadAllBtn = document.getElementById("downloadAllHistory");
+        if (!downloadAllBtn) return;
+        const histItems = document.querySelectorAll(".historico-item");
+        let temAtivo = false;
+        histItems.forEach((item) => {
+            const isApagado = item.getAttribute("data-apagado") === "true";
+            const policy = item.getAttribute("data-policy");
+            if (!isApagado && (policy === "5min" || policy === "15min")) {
+                temAtivo = true;
+            }
+        });
+        if (temAtivo) {
+            downloadAllBtn.classList.remove("btn-disabled");
+            downloadAllBtn.disabled = false;
+            downloadAllBtn.title = "Baixar todos (ZIP)";
+        } else {
+            downloadAllBtn.classList.add("btn-disabled");
+            downloadAllBtn.disabled = true;
+            downloadAllBtn.title = "Nenhum arquivo ativo disponível para download em lote";
+        }
+    }
+
+    atualizarEstadoDownloadLote();
+
+    document.getElementById("downloadAllHistory")?.addEventListener("click", async (event) => {
+        const btn = document.getElementById("downloadAllHistory");
+        if (btn?.classList.contains("btn-disabled") || btn?.disabled) {
+            event?.preventDefault();
+            mostrarToast("Nenhum arquivo ativo disponível para download em lote.");
+            return;
+        }
+        try {
+            const response = await fetch("/api/historico/zip-todos");
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.erro || "Não há arquivos de 5 ou 15 minutos disponíveis para o ZIP.");
+            }
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "prisma_lote_arquivos.zip";
+            link.click();
+            URL.revokeObjectURL(url);
+            mostrarToast("ZIP pronto para download.");
+        } catch (error) { mostrarToast(error.message || "Não foi possível gerar o ZIP."); }
+    });
+
+    const destroyModal = document.getElementById("destroyHistoryModal");
+    function fecharModalDestruir() {
+        destroyModal?.classList.remove("open");
+        destroyModal?.setAttribute("aria-hidden", "true");
+    }
+    document.getElementById("destroyAllHistory")?.addEventListener("click", () => {
+        destroyModal?.classList.add("open");
+        destroyModal?.setAttribute("aria-hidden", "false");
+    });
+    document.getElementById("closeDestroyModal")?.addEventListener("click", fecharModalDestruir);
+    document.getElementById("cancelDestroyHistory")?.addEventListener("click", fecharModalDestruir);
+    destroyModal?.addEventListener("click", (event) => { if (event.target === destroyModal) fecharModalDestruir(); });
+    document.getElementById("confirmDestroyHistory")?.addEventListener("click", async () => {
+        try {
+            const response = await fetch("/api/historico/destruir-tudo", { method: "POST" });
+            const data = await response.json();
+            if (!response.ok || data.erro) throw new Error(data.erro || "Falha ao destruir os arquivos.");
+            fecharModalDestruir();
+
+            // Atualiza o estado visual das opções de download imediatamente
+            const histItems = document.querySelectorAll(".historico-item");
+            histItems.forEach((item) => item.setAttribute("data-apagado", "true"));
+            atualizarEstadoDownloadLote();
+
+            mostrarToast(data.mensagem || "Arquivos destruídos.");
+            window.setTimeout(() => window.location.reload(), 500);
+        } catch (error) { mostrarToast(error.message || "Não foi possível destruir os arquivos."); }
+    });
+
+    const retentionRoot = document.getElementById("historyRetention");
+    function atualizarRetencaoSelecionada(policy) {
+        retentionRoot?.querySelectorAll(".btn-ret-opt").forEach((button) => button.classList.toggle("active", button.dataset.policy === policy));
+    }
+    atualizarRetencaoSelecionada(document.body.dataset.retentionPolicy || "15min");
+    retentionRoot?.addEventListener("click", async (event) => {
+        const button = event.target.closest(".btn-ret-opt");
+        if (!button) return;
+        const politica = button.dataset.policy;
+        try {
+            const response = await fetch("/api/historico/set-politica", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ politica }) });
+            const data = await response.json();
+            if (!response.ok || data.erro) throw new Error(data.erro || "Falha ao salvar a preferência.");
+            window.ThemeCustomizer?.setRetentionPolicy?.(politica);
+            atualizarRetencaoSelecionada(politica);
+            mostrarToast("Preferência de retenção atualizada.");
+        } catch (error) { mostrarToast(error.message || "Não foi possível salvar a preferência."); }
+    });
+
+    const secureWipeToggle = document.getElementById("secureWipeToggle");
+    if (secureWipeToggle) {
+        secureWipeToggle.checked = document.body.dataset.secureWipe !== "false";
+        secureWipeToggle.addEventListener("change", async () => {
+            const modo_seguro = secureWipeToggle.checked;
+            try {
+                const response = await fetch("/api/historico/set-seguranca", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo_seguro }) });
+                if (!response.ok) throw new Error("Falha ao salvar a preferência de segurança.");
+                mostrarToast(modo_seguro ? "Eliminação segura ativada." : "Eliminação segura desativada.");
+            } catch (error) {
+                secureWipeToggle.checked = !modo_seguro;
+                mostrarToast(error.message || "Não foi possível salvar a preferência.");
+            }
+        });
+    }
 
     const relogio = document.getElementById("relogio");
     if (relogio) {

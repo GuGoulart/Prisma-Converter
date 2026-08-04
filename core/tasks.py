@@ -104,7 +104,7 @@ class _JobStore:
         t = threading.Thread(target=self._limpeza_loop, daemon=True)
         t.start()
 
-    def criar(self, job_id: str, pasta_uid: str, nome_download: str, autodestruicao: str = "15min") -> dict:
+    def criar(self, job_id: str, pasta_uid: str, nome_download: str, autodestruicao: str = "15min", origem: str = "", destino: str = "", tamanho_original: int | None = None) -> dict:
         if autodestruicao not in ("instant", "5min", "15min"):
             autodestruicao = "15min"
         job = {
@@ -116,6 +116,9 @@ class _JobStore:
             "pasta_uid": pasta_uid,
             "nome_download": nome_download,
             "autodestruicao": autodestruicao,
+            "origem": origem,
+            "destino": destino,
+            "tamanho_original": tamanho_original,
             "timestamp": time.time(),
         }
         with self._lock:
@@ -134,6 +137,14 @@ class _JobStore:
     def remover(self, job_id: str):
         with self._lock:
             self._store.pop(job_id, None)
+
+    def renovar_expiracao(self, job_id: str) -> bool:
+        """Reinicia o timestamp de criação do job para estender sua retenção."""
+        with self._lock:
+            if job_id in self._store:
+                self._store[job_id]["timestamp"] = time.time()
+                return True
+            return False
 
     def _limpeza_loop(self):
         """Remove jobs e arquivos expirados conforme a política de autodestruição."""
@@ -160,11 +171,10 @@ class _JobStore:
                             pass
                     if pasta_uid:
                         try:
-                            import shutil
-                            from core.security import validar_nome
+                            from core.cleanup import _remover_item_seguro
                             pasta = os.path.join("uploads", pasta_uid)
                             if os.path.exists(pasta):
-                                shutil.rmtree(pasta, ignore_errors=True)
+                                _remover_item_seguro(pasta)
                         except Exception:
                             pass
             if expirados:
@@ -242,6 +252,7 @@ def executar_conversao_async(
     nome_download: str,
     timeout_segundos: int = 120,
     autodestruicao: str = "15min",
+    tamanho_original: int | None = None,
 ) -> str:
     """
     Enfileira ou inicia a conversão de arquivo de forma assíncrona.
@@ -261,7 +272,10 @@ def executar_conversao_async(
         job_id: Identificador único do job — use para consultar o status.
     """
     job_id = uuid.uuid4().hex
-    job_store.criar(job_id, pasta_uid, nome_download, autodestruicao=autodestruicao)
+    job_store.criar(
+        job_id, pasta_uid, nome_download, autodestruicao=autodestruicao,
+        origem=origem, destino=destino, tamanho_original=tamanho_original,
+    )
 
     if _USE_CELERY and celery_app is not None:
         # Modo Celery: envia para a fila

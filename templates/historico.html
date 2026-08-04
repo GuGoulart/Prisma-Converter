@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma — Histórico de Arquivos</title>
+    <meta name="description"
+        content="Gerencie seus arquivos convertidos, acompanhe contagens de autodestruição e restaure arquivos retidos.">
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ range(1, 100000)|random }}">
+    <script src="{{ url_for('static', filename='i18n.js') }}?v={{ range(1, 100000)|random }}"></script>
+    <script src="{{ url_for('static', filename='theme_customizer.js') }}?v={{ range(1, 100000)|random }}"></script>
+
+    <style>
+        .historico-full-wrapper {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .empty-history-box {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--surface);
+            border: 1px dashed var(--border2);
+            border-radius: 0;
+            width: 100%;
+        }
+
+        .empty-history-icon {
+            margin-bottom: 16px;
+            color: var(--muted);
+        }
+
+        .empty-history-title {
+            font-family: var(--sans);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .empty-history-sub {
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-family: var(--mono);
+            max-width: 440px;
+            margin: 0 auto 24px auto;
+        }
+    </style>
+</head>
+
+<body data-origem="" data-pasta-uuid="" data-retention-policy="{{ session.get('prisma_retention_policy', '15min') }}"
+    data-secure-wipe="{{ 'true' if session.get('prisma_secure_wipe', True) else 'false' }}">
+
+    <div class="bg-grid"></div>
+
+    <div class="toast" id="toast" role="alert" aria-live="polite">
+        <span class="toast-icone">✓</span>
+        <span class="toast-msg" id="toastMsg" data-i18n="conv.history.restoreToast">Arquivo restaurado com
+            sucesso!</span>
+    </div>
+
+    <!-- Minimalist Animated Wave Banner no topo -->
+    <div class="history-wave-banner" aria-hidden="true">
+        <svg class="history-waves-svg" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+            <defs>
+                <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+            </defs>
+            <g class="wave-parallax">
+                <use href="#gentle-wave" x="48" y="0" class="wave-layer wave-1" />
+                <use href="#gentle-wave" x="48" y="3" class="wave-layer wave-2" />
+                <use href="#gentle-wave" x="48" y="5" class="wave-layer wave-3" />
+                <use href="#gentle-wave" x="48" y="7" class="wave-layer wave-4" />
+            </g>
+        </svg>
+    </div>
+
+    <!-- Nav mobile -->
+    <div class="mobile-nav">
+        <span class="mobile-logo">PRISMA</span>
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+
+    <div class="layout">
+
+        <!-- ── SIDEBAR ───────────────────────────────────────── -->
+        <aside class="sidebar" id="sidebar">
+
+            <div class="sidebar-logo">
+                <span class="logo-mark">PRISMA</span>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info" style="gap: 8px;">
+                <p class="sidebar-label" data-i18n="sidebar.menu">Menu</p>
+                <a href="/" class="nav-link" data-i18n="nav.home">Início</a>
+                <a href="/conversor" class="nav-link" data-i18n="nav.converter">Conversor de arquivos</a>
+                <a href="/ferramentas-avancadas" class="nav-link" data-i18n="nav.advanced">Ferramentas Avançadas</a>
+                <a href="/modificar-arquivos" class="nav-link" data-i18n="nav.modify">Modificar Arquivos</a>
+                <a href="/historico" class="nav-link nav-active" data-i18n="nav.history">Histórico de Arquivos</a>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info" style="align-items: center; text-align: center;">
+                <p class="sidebar-label" data-i18n="sidebar.limit">Limite</p>
+                <p class="sidebar-valor">15 MB</p>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
+                <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.language">Idioma</p>
+                <div class="lang-selector-wrap">
+                    <button class="btn-lang-opt" data-lang="pt">PT</button>
+                    <button class="btn-lang-opt" data-lang="en">EN</button>
+                    <button class="btn-lang-opt" data-lang="es">ES</button>
+                </div>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
+                <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.theme">Tema</p>
+                <button id="themeToggle" class="btn-tema-icon" aria-label="Personalizar Aparência"
+                    title="Personalizar Aparência" data-i18n-title="customizer.title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="m18 11-1.5-1.5a2.12 2.12 0 0 0-3 0L3.5 19.5a2.12 2.12 0 0 0 3 3L16.5 13.5a2.12 2.12 0 0 0 0-3Z" />
+                        <path d="m15 5 4 4" />
+                        <path d="m18.5 2.5 3 3" />
+                        <path d="M13 15h.01" />
+                    </svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ── MAIN ───────────────────────────────────────────── -->
+        <main class="main">
+
+            <header class="header-main">
+                <h1 class="titulo-principal" data-i18n="history.header.title">Histórico de <em>Arquivos</em></h1>
+                <p class="titulo-sub" data-i18n="history.header.sub">Gerencie seus arquivos processados, acompanhe a
+                    contagem regressiva de autodestruição e restaure retenções de 5 e 15 minutos.</p>
+            </header>
+
+            <div class="content-wrapper historico-full-wrapper">
+
+                {% if historico %}
+                {% set ns = namespace(tem_ativo=false) %}
+                {% for h_item in historico %}
+                {% if not h_item.apagado and h_item.autodestruicao in ['5min', '15min'] %}
+                {% set ns.tem_ativo = true %}
+                {% endif %}
+                {% endfor %}
+                <div class="historico-grid">
+                    <section class="historico-section" style="width: 100%;">
+                        <div class="section-header-plain">
+                            <span class="section-label-plain" data-i18n="conv.history.title">Arquivos da Sessão</span>
+                            <span class="section-sub-plain">{{ historico|length }} <span
+                                    data-i18n="conv.history.unit">conversão(ões)</span></span>
+                        </div>
+
+                        <div class="historico-lista" style="margin-top: 16px;">
+                            {% for item in historico %}
+                            <div class="historico-card historico-item" id="hist-item-{{ loop.index }}"
+                                data-expires="{{ item.expira_em or '' }}" data-policy="{{ item.autodestruicao or '' }}"
+                                data-job-id="{{ item.job_id or '' }}"
+                                data-apagado="{{ 'true' if item.apagado else 'false' }}" tabindex="0" role="button"
+                                aria-label="Ver detalhes de {{ item.nome }}">
+
+                                <!-- Linha Superior: Badges à esquerda e Horário à direita -->
+                                <div class="hist-card-top">
+                                    <div class="hist-card-top-left">
+                                        {% if item.autodestruicao == 'instant' %}
+                                        <span class="hist-policy-tag policy-green policy-single-download"
+                                            title="Não permite baixar novamente">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                                                <rect x="3" y="11" width="18" height="10" rx="2" />
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                            </svg>
+                                            Download único
+                                        </span>
+                                        {% elif item.autodestruicao == '5min' %}
+                                        <span class="hist-policy-tag policy-green"
+                                            data-i18n="conv.selfdestruct.5min">TIMER 5 MIN</span>
+                                        {% else %}
+                                        <span class="hist-policy-tag policy-green"
+                                            data-i18n="conv.selfdestruct.15min">PADRÃO 15 MIN</span>
+                                        {% endif %}
+
+                                        {% if item.expira_em and not item.apagado %}
+                                        <span class="hist-timer hist-timer-green" id="hist-timer-{{ loop.index }}">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="12 6 12 12 16 14"></polyline>
+                                            </svg>
+                                            <span class="hist-timer-val">--:--</span>
+                                        </span>
+                                        {% elif item.apagado %}
+                                        <span class="hist-timer-expired">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                            </svg>
+                                            <span>TEMPO ESGOTADO</span>
+                                        </span>
+                                        {% if item.autodestruicao in ['5min', '15min'] and not item.destruido_manual %}
+                                        <button type="button" class="btn-retention-restore"
+                                            onclick="event.stopPropagation(); window.restaurarArquivo('{{ item.job_id }}')"
+                                            title="Restaurar Retenção">
+                                            Restaurar ↺
+                                        </button>
+                                        {% endif %}
+                                        {% endif %}
+
+                                        {% if item.restaurado %}
+                                        <span class="hist-badge-restored"
+                                            data-i18n="conv.history.restored">RESTAURADO</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="hist-card-top-right">
+                                        <span class="hist-hora">[{{ item.hora }}]</span>
+                                    </div>
+                                </div>
+
+                                <!-- Linha divisória sutil -->
+                                <div class="hist-card-divider"></div>
+
+                                <!-- Linha Inferior: Formatos, Nome do Arquivo -->
+                                <div class="hist-card-bottom">
+                                    <div class="hist-card-bottom-left">
+                                        <div class="hist-card-conversion">
+                                            <span class="hist-badge badge-{{ item.origem|lower }}">{{ item.origem
+                                                }}</span>
+                                            <span class="hist-seta">→</span>
+                                            <span class="hist-badge badge-{{ item.destino|lower }}">{{ item.destino
+                                                }}</span>
+                                        </div>
+
+                                        <span class="hist-card-filename" title="{{ item.nome }}">{{ item.nome }}</span>
+                                    </div>
+
+                                    <div class="hist-card-bottom-right historico-item-right"
+                                        id="hist-right-{{ loop.index }}">
+                                        {% if item.apagado %}
+                                        <span class="hist-apagado-badge" data-i18n="conv.history.deleted"
+                                            title="Conteúdo Apagado">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path
+                                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                </path>
+                                            </svg>
+                                            Conteúdo Apagado
+                                        </span>
+                                        {% else %}
+                                        <a href="{{ item.download_url }}" class="btn-hist-icon-download"
+                                            title="Baixar arquivo" onclick="event.stopPropagation();">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="7 10 12 15 17 10"></polyline>
+                                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                                            </svg>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                    <aside class="historico-side-panel" aria-label="Ações e detalhes do histórico">
+                        <section class="side-box">
+                            <h2 class="side-box-title" data-i18n="history.batch.title">Ações em lote</h2>
+                            <div class="side-box-buttons">
+                                <button type="button"
+                                    class="btn-side-action {% if not ns.tem_ativo %}btn-disabled{% endif %}"
+                                    id="downloadAllHistory" {% if not ns.tem_ativo %}disabled
+                                    title="Nenhum arquivo ativo disponível para download em lote" {% endif %}>
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" aria-hidden="true">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
+                                    <span data-i18n="history.batch.downloadAll">Baixar todos (ZIP)</span>
+                                </button>
+                                <button type="button" class="btn-side-action btn-danger-action" id="destroyAllHistory">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" aria-hidden="true">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path
+                                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    </svg>
+                                    <span data-i18n="history.batch.destroyAll">Destruir tudo agora</span>
+                                </button>
+                            </div>
+                        </section>
+
+                        <section class="side-box">
+                            <h2 class="side-box-title" data-i18n="conv.security.title">Autodestruição e segurança</h2>
+                            <span class="side-field-label" data-i18n="conv.security.retention">PADRÃO PARA NOVOS
+                                ENVIOS</span>
+                            <div class="retention-selector-grid" id="historyRetention">
+                                <button type="button" class="btn-ret-opt {{ 'active' if retencao_padrao == 'instant' }}"
+                                    data-policy="instant" data-i18n="conv.selfdestruct.instant">Único</button>
+                                <button type="button" class="btn-ret-opt {{ 'active' if retencao_padrao == '5min' }}"
+                                    data-policy="5min" data-i18n="conv.selfdestruct.5min">5 min</button>
+                                <button type="button"
+                                    class="btn-ret-opt {{ 'active' if retencao_padrao == '15min' or not retencao_padrao }}"
+                                    data-policy="15min" data-i18n="conv.selfdestruct.15minDefault">15 min
+                                    (Padrão)</button>
+                            </div>
+                        </section>
+                    </aside>
+                </div>
+                {% else %}
+                <div class="empty-history-box">
+                    <div class="empty-history-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <h3 class="empty-history-title" data-i18n="history.empty.title">Seu histórico está vazio</h3>
+                    <p class="empty-history-sub" data-i18n="history.empty.sub">Faça o upload ou conversão de arquivos
+                        para visualizá-los e gerenciá-los nesta aba.</p>
+                    <a href="/conversor" class="botao botao-conv"
+                        style="display: inline-flex; width: auto; text-decoration: none;">
+                        <span data-i18n="home.card1.btn">Acessar Conversor</span><span class="botao-arr">→</span>
+                    </a>
+                </div>
+                {% endif %}
+
+                <div class="history-confirm-overlay" id="destroyHistoryModal" aria-hidden="true" role="dialog"
+                    aria-modal="true" aria-labelledby="destroyHistoryTitle">
+                    <div class="history-confirm-card">
+                        <div class="history-confirm-marker"></div>
+                        <button type="button" class="history-confirm-close" id="closeDestroyModal"
+                            aria-label="Fechar">×</button>
+                        <p class="side-box-title" data-i18n="history.destroyModal.label">Ação irreversível</p>
+                        <h2 id="destroyHistoryTitle" data-i18n="history.destroyModal.title">Destruir todos os arquivos?
+                        </h2>
+                        <p data-i18n="history.destroyModal.desc">Os arquivos ativos desta sessão serão removidos agora.
+                        </p>
+                        <div class="history-confirm-actions">
+                            <button type="button" class="btn-side-action" id="cancelDestroyHistory"
+                                data-i18n="history.destroyModal.cancel">Cancelar</button>
+                            <button type="button" class="btn-side-action btn-danger-action" id="confirmDestroyHistory"
+                                data-i18n="history.destroyModal.confirm">Destruir permanentemente</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}?v={{ range(1, 100000)|random }}"></script>
+</body>
+
+</html>

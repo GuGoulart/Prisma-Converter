@@ -21,9 +21,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
-    <script src="{{ url_for('static', filename='theme_customizer.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ range(1, 100000)|random }}">
+    <script src="{{ url_for('static', filename='i18n.js') }}?v={{ range(1, 100000)|random }}"></script>
+    <script src="{{ url_for('static', filename='theme_customizer.js') }}?v={{ range(1, 100000)|random }}"></script>
 </head>
 
 <body
@@ -32,6 +32,7 @@
     data-preview-inicial="{{ preview_url if preview_url else '' }}"
     data-preview-tipo="{{ preview_tipo if preview_tipo else '' }}"
     data-tabela-inicial="{{ 'true' if tabela_html else 'false' }}"
+    data-retention-policy="{{ retencao_padrao or '15min' }}"
 >
 
     <div class="bg-grid"></div>
@@ -92,6 +93,7 @@
                 <a href="/conversor" class="nav-link nav-active" data-i18n="nav.converter">Conversor de arquivos</a>
                 <a href="/ferramentas-avancadas" class="nav-link" data-i18n="nav.advanced">Ferramentas Avançadas</a>
                 <a href="/modificar-arquivos" class="nav-link" data-i18n="nav.modify">Modificar Arquivos</a>
+                <a href="/historico" class="nav-link" data-i18n="nav.history">Histórico de Arquivos</a>
             </div>
 
             <div class="sidebar-linha"></div>
@@ -270,54 +272,6 @@
                     </div>
                     {% endif %}
 
-                    <!-- Histórico -->
-                    {% if historico %}
-                    <section class="historico-section">
-                        <div class="section-header-plain">
-                            <span class="section-label-plain" data-i18n="conv.history.title">Histórico da sessão</span>
-                            <span class="section-sub-plain">{{ historico|length }} <span data-i18n="conv.history.unit">conversão(ões)</span></span>
-                        </div>
-                        <div class="historico-lista">
-                            {% for item in historico %}
-                            <div class="historico-item" id="hist-item-{{ loop.index }}" data-expires="{{ item.expira_em or '' }}" data-policy="{{ item.autodestruicao or '' }}" data-download-url="{{ item.download_url or '' }}" data-apagado="{{ 'true' if item.apagado else 'false' }}">
-                                <div class="historico-item-left">
-                                    <span class="hist-badge badge-{{ item.origem|lower }}">{{ item.origem }}</span>
-                                    <span class="hist-seta">→</span>
-                                    <span class="hist-badge badge-{{ item.destino|lower }}">{{ item.destino }}</span>
-                                    <span class="hist-nome" title="{{ item.nome }}">{{ item.nome }}</span>
-                                </div>
-                                <div class="historico-item-right" id="hist-right-{{ loop.index }}">
-                                    {% if item.apagado %}
-                                    <span class="hist-apagado-badge" data-i18n="conv.history.deleted">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                        </svg>
-                                        Conteúdo Apagado
-                                    </span>
-                                    {% else %}
-                                        {% if item.expira_em %}
-                                        <span class="hist-timer" id="hist-timer-{{ loop.index }}">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <circle cx="12" cy="12" r="10"></circle>
-                                                <polyline points="12 6 12 12 16 14"></polyline>
-                                            </svg>
-                                            <span class="hist-timer-val">--:--</span>
-                                        </span>
-                                        {% endif %}
-
-                                        {% if item.download_url %}
-                                        <a href="{{ item.download_url }}" class="btn-hist-download" id="hist-btn-{{ loop.index }}" data-i18n="conv.history.redownload">
-                                            Baixar Novamente ↗
-                                        </a>
-                                        {% endif %}
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </section>
-                    {% endif %}
 
                 </div><!-- /steps-col -->
 

@@ -74,10 +74,19 @@ class _LocalStorageBackend:
         with open(caminho, "rb") as f:
             return f.read()
 
-    def remover(self, caminho: str):
-        """Remove um arquivo local."""
+    def remover(self, caminho: str, modo_seguro: bool = True):
+        """Remove um arquivo local. Por padrão (modo_seguro=True), zera todos os bytes (Zero-Fill) antes de remover do disco."""
         try:
             if os.path.exists(caminho):
+                if modo_seguro:
+                    try:
+                        sz = os.path.getsize(caminho)
+                        with open(caminho, "r+b") as f:
+                            f.write(b"\x00" * sz)
+                            f.flush()
+                            os.fsync(f.fileno())
+                    except Exception as ex:
+                        log.warning("[storage:local] Falha ao sobrescrever bytes em %s: %s", caminho, ex)
                 os.remove(caminho)
         except OSError as e:
             log.warning("[storage:local] Erro ao remover %s: %s", caminho, e)
@@ -139,8 +148,10 @@ class _GCSStorageBackend:
             log.error("[storage:gcs] Erro ao ler: %s — %s", gcs_uri, e)
             raise
 
-    def remover(self, gcs_uri: str):
+    def remover(self, gcs_uri: str, modo_seguro: bool = True):
         """Remove um arquivo do GCS."""
+        # Objetos em GCS não permitem sobrescrita segura em bloco. A exclusão é
+        # delegada ao provedor, que aplica suas políticas de retenção/elimínação.
         try:
             blob = _gcs_bucket_obj.blob(self._extrair_path(gcs_uri))
             blob.delete()

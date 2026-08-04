@@ -13,19 +13,48 @@ _LIMITE_SEGUNDOS = 15 * 60
 _INTERVALO_VARREDURA = 300
 
 
+def _remover_item_seguro(caminho: str):
+    """Zera os bytes de um arquivo ou pasta antes de deletar fisicamente do disco."""
+    try:
+        if os.path.isfile(caminho):
+            sz = os.path.getsize(caminho)
+            with open(caminho, "r+b") as f:
+                f.write(b"\x00" * sz)
+                f.flush()
+                os.fsync(f.fileno())
+            os.remove(caminho)
+        elif os.path.isdir(caminho):
+            for root, _, files in os.walk(caminho, topdown=False):
+                for file_name in files:
+                    fp = os.path.join(root, file_name)
+                    try:
+                        sz = os.path.getsize(fp)
+                        with open(fp, "r+b") as f:
+                            f.write(b"\x00" * sz)
+                            f.flush()
+                            os.fsync(f.fileno())
+                        os.remove(fp)
+                    except Exception:
+                        pass
+            shutil.rmtree(caminho, ignore_errors=True)
+    except Exception:
+        if os.path.exists(caminho):
+            if os.path.isdir(caminho):
+                shutil.rmtree(caminho, ignore_errors=True)
+            else:
+                os.remove(caminho)
+
+
 def _limpar_pasta(pasta: str, agora: float, limite: float):
-    """Apaga arquivos e diretórios mais antigos que `limite` segundos em `pasta`."""
+    """Apaga arquivos e diretórios mais antigos que `limite` segundos em `pasta` com Zero-Fill seguro."""
     if not os.path.exists(pasta):
         return
     for item in os.listdir(pasta):
         caminho = os.path.join(pasta, item)
         try:
             if agora - os.path.getmtime(caminho) > limite:
-                if os.path.isdir(caminho):
-                    shutil.rmtree(caminho, ignore_errors=True)
-                else:
-                    os.remove(caminho)
-                log.debug(f"[cleanup] Removido: {caminho}")
+                _remover_item_seguro(caminho)
+                log.debug(f"[cleanup] Removido com Zero-Fill: {caminho}")
         except Exception as e:
             log.warning(f"[cleanup] Erro ao remover {caminho}: {e}")
 
