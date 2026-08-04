@@ -747,6 +747,55 @@
     color: var(--muted);
 }
 
+/* Seção de Idioma no Modal */
+.theme-lang-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+@media (max-width: 480px) {
+    .theme-lang-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.theme-lang-btn {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 0;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--muted2);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.theme-lang-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.theme-lang-btn.ativo {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-text, #0a0a0a);
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.theme-lang-btn .lang-flag {
+    font-size: 15px;
+    line-height: 1;
+}
+
 /* Modo de Exibição (Quadrado) */
 .theme-mode-grid-square {
     display: grid;

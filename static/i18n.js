@@ -19,7 +19,11 @@ const translations = {
 
         // --- Personalização ---
         "customizer.title": "Personalizar Aparência",
-        "customizer.subtitle": "Escolha o modo de exibição e a cor de destaque do sistema",
+        "customizer.subtitle": "Escolha o idioma, modo de exibição e a cor de destaque do sistema",
+        "customizer.lang.title": "Idioma do Sistema",
+        "customizer.lang.pt": "Português",
+        "customizer.lang.en": "English",
+        "customizer.lang.es": "Español",
         "customizer.mode.title": "Modo de Exibição",
         "customizer.mode.dark": "Escuro",
         "customizer.mode.light": "Claro",
@@ -258,7 +262,11 @@ const translations = {
 
         // --- Customizer ---
         "customizer.title": "Customize Appearance",
-        "customizer.subtitle": "Choose your display mode and system accent color",
+        "customizer.subtitle": "Choose your language, display mode and system accent color",
+        "customizer.lang.title": "System Language",
+        "customizer.lang.pt": "Português",
+        "customizer.lang.en": "English",
+        "customizer.lang.es": "Español",
         "customizer.mode.title": "Display Mode",
         "customizer.mode.dark": "Dark",
         "customizer.mode.light": "Light",
@@ -493,7 +501,11 @@ const translations = {
 
         // --- Personalización ---
         "customizer.title": "Personalizar Apariencia",
-        "customizer.subtitle": "Selecciona el modo de pantalla y el color de acento del sistema",
+        "customizer.subtitle": "Selecciona el idioma, modo de pantalla y color de acento del sistema",
+        "customizer.lang.title": "Idioma del Sistema",
+        "customizer.lang.pt": "Português",
+        "customizer.lang.en": "English",
+        "customizer.lang.es": "Español",
         "customizer.mode.title": "Modo de Interfaz",
         "customizer.mode.dark": "Oscuro",
         "customizer.mode.light": "Claro",
@@ -780,3 +792,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+window.i18n = {
+    setLanguage,
+    getCurrentLang,
+    get currentLang() { return getCurrentLang(); },
+    aplicarTraducoes: () => setLanguage(getCurrentLang()),
+    translations
+};
+

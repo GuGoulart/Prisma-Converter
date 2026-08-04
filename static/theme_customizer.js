@@ -105,7 +105,7 @@
                 <div class="theme-modal-header">
                     <div class="theme-modal-header-left">
                         <h3 id="themeModalTitle" class="theme-modal-title" data-i18n="customizer.title">Personalizar Aparência</h3>
-                        <p class="theme-modal-subtitle" data-i18n="customizer.subtitle">Escolha o modo de exibição, retenção de arquivos e cores</p>
+                        <p class="theme-modal-subtitle" data-i18n="customizer.subtitle">Escolha o idioma, modo de exibição e cor de destaque do sistema</p>
                     </div>
                     <button type="button" class="theme-modal-close" id="closeCustomizerBtn" aria-label="Fechar">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -116,6 +116,27 @@
                 </div>
 
                 <div class="theme-modal-body">
+                    <!-- Seção Idioma -->
+                    <div class="theme-section">
+                        <div class="theme-section-head-bar">
+                            <label class="theme-section-label" data-i18n="customizer.lang.title">Idioma do Sistema</label>
+                        </div>
+                        <div class="theme-lang-grid">
+                            <button type="button" class="btn-lang-opt theme-lang-btn" data-lang="pt">
+                                <span class="lang-flag">🇧🇷</span>
+                                <span data-i18n="customizer.lang.pt">Português</span>
+                            </button>
+                            <button type="button" class="btn-lang-opt theme-lang-btn" data-lang="en">
+                                <span class="lang-flag">🇺🇸</span>
+                                <span data-i18n="customizer.lang.en">English</span>
+                            </button>
+                            <button type="button" class="btn-lang-opt theme-lang-btn" data-lang="es">
+                                <span class="lang-flag">🇪🇸</span>
+                                <span data-i18n="customizer.lang.es">Español</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Seção Modo de Exibição -->
                     <div class="theme-section">
                         <div class="theme-section-head-bar">
@@ -231,6 +252,15 @@
             }
         });
 
+        const currentLang = (window.i18n && window.i18n.currentLang) || "pt";
+        document.querySelectorAll("#themeCustomizerModal .btn-lang-opt").forEach((btn) => {
+            if (btn.getAttribute("data-lang") === currentLang) {
+                btn.classList.add("ativo");
+            } else {
+                btn.classList.remove("ativo");
+            }
+        });
+
         const sub = document.getElementById("themeAccentSub");
         if (sub) {
             const isLight = mode === "light";
@@ -282,6 +312,12 @@
             });
         });
 
+        window.addEventListener("languageChanged", () => {
+            const mode = getSavedTheme();
+            const accent = getSavedAccent(mode);
+            updateModalUI(mode, accent);
+        });
+
         document.addEventListener("click", (e) => {
             if (e.target.closest("#closeCustomizerBtn") || e.target.closest("#doneCustomizerBtn")) {
                 closeModal();
@@ -320,3 +356,4 @@
         setRetentionPolicy: setSavedRetentionPolicy
     };
 })();
+
