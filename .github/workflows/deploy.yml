@@ -20,9 +20,17 @@ jobs:
       - name: ⚙️ Configurando SDK do Google
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: 🔓 Autenticar Docker no Google Container Registry
+      - name: 🛠️ Garantir repositório no Artifact Registry
         run: |
-          gcloud auth configure-docker gcr.io --quiet
+          gcloud artifacts repositories create cloud-run-source-deploy \
+            --repository-format=docker \
+            --location=us-central1 \
+            --description="Repositório de imagens Docker" \
+            --quiet || true
+
+      - name: 🔓 Autenticar Docker no Artifact Registry
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
       - name: 🏗️ Configurar Buildx para Cache no GitHub
         uses: docker/setup-buildx-action@v3
@@ -33,8 +41,8 @@ jobs:
           context: .
           push: true
           tags: |
-            gcr.io/prisma-501720/prisma:${{ github.sha }}
-            gcr.io/prisma-501720/prisma:latest
+            us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:${{ github.sha }}
+            us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -43,7 +51,7 @@ jobs:
         with:
           service: prisma
           region: us-central1
-          image: gcr.io/prisma-501720/prisma:${{ github.sha }}
+          image: us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:${{ github.sha }}
           flags: '--allow-unauthenticated --memory=2Gi --timeout=120'
           env_vars: |
             SECRET_KEY=${{ secrets.SECRET_KEY }}
@@ -51,4 +59,5 @@ jobs:
             GCS_BUCKET=${{ secrets.GCS_BUCKET }}
             GCS_PREFIX=${{ secrets.GCS_PREFIX }}
             MAX_PARALELAS=${{ secrets.MAX_PARALELAS }}
+
 
