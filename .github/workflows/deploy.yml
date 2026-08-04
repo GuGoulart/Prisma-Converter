@@ -20,12 +20,30 @@ jobs:
       - name: ⚙️ Configurando SDK do Google
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: 🔓 Autenticar Docker no Google Container Registry
+        run: |
+          gcloud auth configure-docker gcr.io --quiet
+
+      - name: 🏗️ Configurar Buildx para Cache no GitHub
+        uses: docker/setup-buildx-action@v3
+
+      - name: 📦 Build e Push da Imagem Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            gcr.io/prisma-501720/prisma:${{ github.sha }}
+            gcr.io/prisma-501720/prisma:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: 🚀 Deploy no Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: prisma
           region: us-central1
-          source: .
+          image: gcr.io/prisma-501720/prisma:${{ github.sha }}
           flags: '--allow-unauthenticated --memory=2Gi --timeout=120'
           env_vars: |
             SECRET_KEY=${{ secrets.SECRET_KEY }}
@@ -33,3 +51,4 @@ jobs:
             GCS_BUCKET=${{ secrets.GCS_BUCKET }}
             GCS_PREFIX=${{ secrets.GCS_PREFIX }}
             MAX_PARALELAS=${{ secrets.MAX_PARALELAS }}
+
