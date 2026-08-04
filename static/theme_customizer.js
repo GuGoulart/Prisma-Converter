@@ -123,15 +123,36 @@
                         </div>
                         <div class="theme-lang-grid">
                             <button type="button" class="btn-lang-opt theme-lang-btn" data-lang="pt">
-                                <span class="lang-flag">🇧🇷</span>
-                                <span data-i18n="customizer.lang.pt">Português</span>
+                                <span class="lang-flag-symbol" aria-hidden="true">
+                                    <svg width="22" height="15" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="flag-icon-svg">
+                                        <rect x="1" y="1" width="22" height="14" rx="1"/>
+                                        <polygon points="12,3.5 20.5,8 12,12.5 3.5,8"/>
+                                        <circle cx="12" cy="8" r="2.5"/>
+                                    </svg>
+                                </span>
+                                <span data-i18n="customizer.lang.pt">Português (Brasil)</span>
                             </button>
                             <button type="button" class="btn-lang-opt theme-lang-btn" data-lang="en">
-                                <span class="lang-flag">🇺🇸</span>
+                                <span class="lang-flag-symbol" aria-hidden="true">
+                                    <svg width="22" height="15" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="flag-icon-svg">
+                                        <rect x="1" y="1" width="22" height="14" rx="1"/>
+                                        <rect x="1" y="1" width="9" height="7"/>
+                                        <line x1="10" y1="3.8" x2="23" y2="3.8"/>
+                                        <line x1="1" y1="11" x2="23" y2="11"/>
+                                        <line x1="10" y1="7.4" x2="23" y2="7.4"/>
+                                    </svg>
+                                </span>
                                 <span data-i18n="customizer.lang.en">English</span>
                             </button>
                             <button type="button" class="btn-lang-opt theme-lang-btn" data-lang="es">
-                                <span class="lang-flag">🇪🇸</span>
+                                <span class="lang-flag-symbol" aria-hidden="true">
+                                    <svg width="22" height="15" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="flag-icon-svg">
+                                        <rect x="1" y="1" width="22" height="14" rx="1"/>
+                                        <line x1="1" y1="4.8" x2="23" y2="4.8"/>
+                                        <line x1="1" y1="11.2" x2="23" y2="11.2"/>
+                                        <rect x="5.5" y="6.5" width="2.5" height="3" rx="0.5"/>
+                                    </svg>
+                                </span>
                                 <span data-i18n="customizer.lang.es">Español</span>
                             </button>
                         </div>
