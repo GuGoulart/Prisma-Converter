@@ -42,7 +42,7 @@ def comprimir_arquivos(caminhos: list, saida: str, formato: str = "zip"):
     if not os.path.exists(saida) or os.path.getsize(saida) == 0:
         raise RuntimeError("Erro ao gerar o arquivo comprimido.")
 
-    log.info(f"Compressão OK: {len(caminhos)} arquivo(s) → {formato}")
+    log.info(f"Compressão OK: {len(caminhos)} arquivo(s) -> {formato}")
 
 
 # ─── ZIP com Senha (AES-256) ─────────────────────────────────

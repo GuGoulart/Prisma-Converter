@@ -1282,7 +1282,7 @@ def converter():
         # QC-005: usa lock para incremento thread-safe do contador
         with _lock_contador:
             contador_conversoes += 1
-        log.info(f"OK: {nome_original} | {origem.upper()}→{destino.upper()} | {ip}")
+        log.info(f"OK: {nome_original} | {origem.upper()}->{destino.upper()} | {ip}")
 
         if "historico" not in session:
             session["historico"] = []
@@ -1329,6 +1329,7 @@ def converter():
 @rate_limit_required
 def api_converter_async():
     """Inicia uma conversão assíncrona e retorna um job_id para polling."""
+    global _conversoes_ativas
     if not validar_csrf(request.form.get("csrf_token", "")):
         return jsonify({"erro": "Token inválido. Recarregue a página."}), 403
 
@@ -1385,7 +1386,7 @@ def api_converter_async():
             autodestruicao=autodestruicao,
         )
 
-        log.info("[async] Job %s iniciado: %s→%s (%s) [Autodestruição: %s]", job_id[:8], origem, destino, nome_original, autodestruicao)
+        log.info("[async] Job %s iniciado: %s->%s (%s) [Autodestruição: %s]", job_id[:8], origem, destino, nome_original, autodestruicao)
         return jsonify({"ok": True, "job_id": job_id})
 
     except Exception as e:
@@ -1417,6 +1418,7 @@ def api_converter_status(job_id):
 @app.route("/api/converter/download/<job_id>", methods=["GET"])
 def api_converter_download(job_id):
     """Retorna o arquivo convertido quando a conversão estiver concluída."""
+    global contador_conversoes
     if not re.match(r'^[a-f0-9]{32}$', job_id):
         return jsonify({"erro": "Job ID inválido."}), 400
 

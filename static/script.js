@@ -304,7 +304,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 btnConverter.innerHTML = `<span>${dict['conv.btn.convert'] || 'Converter e Baixar'}</span><span class="botao-arr">\u2193</span>`;
                 if (progressWrap) progressWrap.classList.remove("ativo");
                 if (progressBar)  progressBar.style.width = "0%";
-                if (btnOutro) btnOutro.style.display = "flex";
                 mostrarToast(dict['toast.done'] || 'Download concluído!');
             }, 800);
         }

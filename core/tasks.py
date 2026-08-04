@@ -192,7 +192,7 @@ def _executar_conversao(
     from core.converter import converter_arquivo
 
     try:
-        log.info("[tasks:%s] Iniciando: %s→%s (%s)", job_id[:8], origem, destino, os.path.basename(entrada))
+        log.info("[tasks:%s] Iniciando: %s->%s (%s)", job_id[:8], origem, destino, os.path.basename(entrada))
         job_store.atualizar(job_id, percent=10.0, status="Preparando conversão...")
 
         # Conversão principal (bloqueante)
