@@ -40,7 +40,13 @@ else:
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 _sec_key = (os.environ.get("SECRET_KEY") or "").strip()
-app.secret_key = _sec_key if _sec_key else "prisma_converter_default_secret_key_dev_2026"
+if not _sec_key:
+    if os.environ.get("PORT") and not app.debug:
+        log.warning("[seguranca] SECRET_KEY não configurada no ambiente de produção. Gerando chave temporária randômica.")
+        _sec_key = secrets.token_hex(32)
+    else:
+        _sec_key = "prisma_converter_default_secret_key_dev_2026"
+app.secret_key = _sec_key
 
 UPLOAD_FOLDER   = "uploads"
 DOWNLOAD_FOLDER = "downloads"
@@ -373,6 +379,9 @@ def historico_page():
 @app.route("/api/historico/restaurar/<job_id>", methods=["POST"])
 def api_restaurar_historico(job_id):
     """Restaura a retenção de um arquivo no histórico enviado para 5min ou 15min."""
+    if not validar_csrf():
+        return jsonify({"erro": "Token CSRF inválido ou ausente."}), 403
+
     if not re.match(r'^[a-f0-9]{32}$', job_id):
         return jsonify({"erro": "ID de arquivo inválido."}), 404
 
@@ -420,6 +429,9 @@ def api_restaurar_historico(job_id):
 
 @app.route("/api/historico/set-politica", methods=["POST"])
 def api_set_politica():
+    if not validar_csrf():
+        return jsonify({"erro": "Token CSRF inválido ou ausente."}), 403
+
     politica = request.json.get("politica") if request.is_json else request.form.get("politica")
     politica = (politica or "15min").strip().lower()
     if politica not in ("instant", "5min", "15min"):
@@ -433,6 +445,8 @@ def api_set_politica():
 
 @app.route("/api/historico/set-seguranca", methods=["POST"])
 def api_set_seguranca_historico():
+    if not validar_csrf():
+        return jsonify({"erro": "Token CSRF inválido ou ausente."}), 403
     payload = request.get_json(silent=True) or {}
     modo_seguro = bool(payload.get("modo_seguro", True))
     session["prisma_secure_wipe"] = modo_seguro
@@ -442,6 +456,8 @@ def api_set_seguranca_historico():
 
 @app.route("/api/historico/alterar-modo/<job_id>", methods=["POST"])
 def api_alterar_modo_historico(job_id):
+    if not validar_csrf():
+        return jsonify({"erro": "Token CSRF inválido ou ausente."}), 403
     if not re.match(r'^[a-f0-9]{32}$', job_id):
         return jsonify({"erro": "ID de arquivo inválido."}), 404
 
@@ -523,6 +539,8 @@ def api_historico_zip_todos():
 
 @app.route("/api/historico/destruir-tudo", methods=["POST"])
 def api_historico_destruir_tudo():
+    if not validar_csrf():
+        return jsonify({"erro": "Token CSRF inválido ou ausente."}), 403
     historico = session.get("historico", [])
     destruidos = 0
     modo_seguro = session.get("prisma_secure_wipe", True)
@@ -610,6 +628,13 @@ def registrar_saida_historico(saida_path, nome_download, origem_fmt, destino_fmt
     return job_id
 
 
+def _limpar_pasta_upload(pp):
+    @after_this_request
+    def _cleanup(response):
+        shutil.rmtree(pp, ignore_errors=True)
+        return response
+
+
 @app.route("/api/pdf/mesclar", methods=["POST"])
 @rate_limit_required
 def api_mesclar():
@@ -634,10 +659,7 @@ def api_mesclar():
     try:
         mesclar_pdfs(caminhos, saida)
         job_id = registrar_saida_historico(saida, "Prisma_Mesclado.pdf", "PDF", "PDF", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Mesclado.pdf")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -666,10 +688,7 @@ def api_dividir():
     try:
         dividir_pdf(entrada, saida, modo, parametro)
         job_id = registrar_saida_historico(saida, "Prisma_Dividido.zip", "PDF", "ZIP", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Dividido.zip")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -696,10 +715,7 @@ def api_proteger():
     try:
         proteger_pdf(entrada, senha, saida)
         job_id = registrar_saida_historico(saida, "Prisma_Protegido.pdf", "PDF", "PDF", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Protegido.pdf")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -726,10 +742,7 @@ def api_desproteger():
     try:
         desproteger_pdf(entrada, senha, saida)
         job_id = registrar_saida_historico(saida, "Prisma_Desprotegido.pdf", "PDF", "PDF", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Desprotegido.pdf")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -758,10 +771,7 @@ def api_comprimir():
         comprimir_pdf(entrada, saida, nivel=nivel)
         sz_orig = os.path.getsize(entrada) if os.path.exists(entrada) else None
         job_id = registrar_saida_historico(saida, "Prisma_Comprimido.pdf", "PDF", "PDF", tamanho_orig=sz_orig, pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Comprimido.pdf")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -788,10 +798,7 @@ def api_marca_dagua():
     try:
         adicionar_marca_dagua(entrada, texto, saida)
         job_id = registrar_saida_historico(saida, "Prisma_Marcado.pdf", "PDF", "PDF", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Marcado.pdf")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -817,10 +824,7 @@ def api_extrair_imagens():
     try:
         extrair_imagens_pdf(entrada, saida)
         job_id = registrar_saida_historico(saida, "Prisma_Imagens_PDF.zip", "PDF", "ZIP", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Imagens_PDF.zip")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -849,10 +853,7 @@ def api_manipular_paginas():
     try:
         manipular_paginas_pdf(entrada, saida, remover, rotacionar)
         job_id = registrar_saida_historico(saida, "Prisma_Paginas_Manipuladas.pdf", "PDF", "PDF", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Paginas_Manipuladas.pdf")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -886,10 +887,7 @@ def api_mp4_para_mp3():
         mp4_para_mp3(entrada, saida, bitrate=bitrate)
         sz_orig = os.path.getsize(entrada) if os.path.exists(entrada) else None
         job_id = registrar_saida_historico(saida, "Prisma_Audio.mp3", "MP4", "MP3", tamanho_orig=sz_orig, pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Audio.mp3")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -933,10 +931,7 @@ def api_mp4_para_gif():
         mp4_para_gif(entrada, saida, fps=fps, largura=largura)
         sz_orig = os.path.getsize(entrada) if os.path.exists(entrada) else None
         job_id = registrar_saida_historico(saida, "Prisma_Animacao.gif", "MP4", "GIF", tamanho_orig=sz_orig, pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Animacao.gif")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -967,10 +962,7 @@ def api_gerar_qr():
         from core.qr_tools import gerar_qrcode
         gerar_qrcode(texto, saida, cor_frente=cor_frente, cor_fundo=cor_fundo)
         job_id = registrar_saida_historico(saida, "Prisma_QRCode.png", "TXT", "PNG", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_QRCode.png")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -1074,10 +1066,7 @@ def api_comprimir_arquivos():
         from core.file_tools import comprimir_arquivos
         comprimir_arquivos(caminhos, saida, formato=formato)
         job_id = registrar_saida_historico(saida, f"Prisma_Comprimido.{ext_saida}", "FILE", ext_saida.upper(), pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name=f"Prisma_Comprimido.{ext_saida}")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -1113,10 +1102,7 @@ def api_zip_senha():
         from core.file_tools import zip_com_senha
         zip_com_senha(caminhos, saida, senha)
         job_id = registrar_saida_historico(saida, "Prisma_Protegido.zip", "FILE", "ZIP", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Protegido.zip")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -1147,10 +1133,7 @@ def api_criptografar():
         criptografar_arquivo(entrada, saida, senha)
         sz_orig = os.path.getsize(entrada) if os.path.exists(entrada) else None
         job_id = registrar_saida_historico(saida, f"Prisma_{nome_seguro}.enc", "FILE", "ENC", tamanho_orig=sz_orig, pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name=f"Prisma_{nome_seguro}.enc")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -1189,10 +1172,7 @@ def api_descriptografar():
         descriptografar_arquivo(entrada, saida, senha)
         sz_orig = os.path.getsize(entrada) if os.path.exists(entrada) else None
         job_id = registrar_saida_historico(saida, nome_dl, "ENC", "FILE", tamanho_orig=sz_orig, pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name=nome_dl)
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -1256,10 +1236,7 @@ def api_renomear_lote():
         from core.file_tools import renomear_em_lote
         renomear_em_lote(caminhos, padrao, saida)
         job_id = registrar_saida_historico(saida, "Prisma_Renomeados.zip", "FILE", "ZIP", pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name="Prisma_Renomeados.zip")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -1292,10 +1269,7 @@ def api_mesclar_planilhas():
     try:
         mesclar_planilhas(caminhos, saida, formato)
         job_id = registrar_saida_historico(saida, f"Prisma_Planilhas_Mescladas.{formato}", "XLSX", formato.upper(), pasta_uid=uid)
-        @after_this_request
-        def cleanup(response):
-            threading.Thread(target=lambda: (time.sleep(2), shutil.rmtree(pp, ignore_errors=True))).start()
-            return response
+        _limpar_pasta_upload(pp)
         resp = send_file(saida, as_attachment=True, download_name=f"Prisma_Planilhas_Mescladas.{formato}")
         resp.headers["Cache-Control"] = "no-store"
         return resp
@@ -1325,30 +1299,7 @@ def download_app():
         if os.path.exists(caminho):
             return send_file(caminho, as_attachment=True, download_name=os.path.basename(caminho))
 
-    # Tenta compilar localmente no Windows se o .exe ainda não estiver na pasta dist/
-    if sys.platform.startswith("win"):
-        logging.info("[download-app] Gerando Prisma.exe na pasta dist/...")
-        try:
-            import subprocess
-            ico_p = os.path.abspath("static/logo.ico")
-            cmd = [
-                sys.executable, "-m", "PyInstaller",
-                "--noconfirm", "--onefile", "--windowed", "--name=Prisma",
-                f"--icon={ico_p}" if os.path.exists(ico_p) else None,
-                "--add-data=templates;templates",
-                "--add-data=static;static",
-                "--add-data=core;core",
-                "desktop_app.py"
-            ]
-            cmd = [c for c in cmd if c is not None]
-            res = subprocess.run(cmd, capture_output=True, text=True)
-            exe_gerado = os.path.join("dist", "Prisma.exe")
-            if os.path.exists(exe_gerado):
-                return send_file(exe_gerado, as_attachment=True, download_name="Prisma.exe")
-        except Exception as e:
-            logging.error(f"[download-app] Erro na compilação automática: {e}")
-
-    # Se estiver na nuvem (Linux/DuckDNS/Cloud Run) e não houver o .exe localmente
+    # Redirecionamento seguro para a release oficial (evita PyInstaller em runtime via HTTP DoS)
     release_url = os.environ.get("GITHUB_RELEASE_URL", "https://github.com/GuGoulart/Prisma-Converter/releases/latest/download/Prisma.exe")
     return redirect(release_url)
 
@@ -1424,7 +1375,7 @@ def preview_convert(pasta_uuid, destino):
         if not done.is_set():
             abort(504)
         if err[0] or not os.path.exists(prev_path):
-            abort(500, description=str(err[0]) if err[0] else "Erro ao gerar prévia")
+            abort(500, description=_erro_seguro(err[0]) if err[0] else "Erro ao gerar prévia")
 
     return send_file(prev_path)
 

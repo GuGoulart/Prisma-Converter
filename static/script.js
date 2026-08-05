@@ -5,7 +5,7 @@ const origemArquivo = _bd.origem || '';
 const pastaUUID = _bd.pastaUuid || '';   // camelCase: data-pasta-uuid → pastaUuid
 const previewInicial = _bd.previewInicial || '';
 const previewTipo = _bd.previewTipo || '';
-const tabelaInicial = _bd.tabelaInicial === 'true';
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 // ── Limpeza de Service Worker & Cache do Navegador ─────────────
 if ('serviceWorker' in navigator) {
@@ -233,6 +233,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const dict = typeof translations !== 'undefined' ? translations[lang] || {} : {};
         const loadingText = dict['upload.sending'] || 'Carregando...';
 
+        const pdfTag = isMobileDevice
+            ? `<iframe src="${url}" class="pdf-embed" style="flex:1;min-height:200px;border:none;"></iframe>`
+            : `<embed src="${url}#toolbar=0&navpanes=0&scrollbar=1" type="application/pdf" class="pdf-embed" style="flex:1;min-height:200px;">`;
+
         viewer.innerHTML = `
             <div style="position:relative;width:100%;height:100%;display:flex;flex-direction:column;">
                 <div class="pdf-loader-overlay" id="pdfLoaderOverlay">
@@ -240,10 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span>${loadingText}</span>
                 </div>
                 ${cabecalho}
-                <embed src="${url}#toolbar=0&navpanes=0&scrollbar=1"
-                       type="application/pdf"
-                       class="pdf-embed"
-                       style="flex:1;min-height:200px;">
+                ${pdfTag}
             </div>`;
         if (subEl) subEl.textContent = subTexto;
 

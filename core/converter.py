@@ -810,10 +810,44 @@ _MAPA_DE_PDF = {
     "heic": pdf_para_heic,
 }
 
-# Funções wrapper para conversões via PDF
-def csv_para_docx(e, s):  _via_pdf(e, s, "csv",  "docx")
+def csv_para_docx(entrada, saida):
+    try:
+        import pandas as pd
+        from docx import Document
+    except ImportError:
+        _via_pdf(entrada, saida, "csv", "docx")
+        return
+    enc = detectar_encoding(entrada)
+    df = _carregar_csv(entrada, enc).fillna("")
+    doc = Document()
+    t = doc.add_table(rows=len(df) + 1, cols=len(df.columns))
+    t.style = 'Table Grid'
+    for j, col_name in enumerate(df.columns):
+        t.cell(0, j).text = str(col_name)
+    for i, row in enumerate(df.itertuples(index=False)):
+        for j, val in enumerate(row):
+            t.cell(i + 1, j).text = str(val)
+    doc.save(saida)
+
+def xlsx_para_docx(entrada, saida):
+    try:
+        import pandas as pd
+        from docx import Document
+    except ImportError:
+        _via_pdf(entrada, saida, "xlsx", "docx")
+        return
+    df = pd.read_excel(entrada, engine="openpyxl").fillna("")
+    doc = Document()
+    t = doc.add_table(rows=len(df) + 1, cols=len(df.columns))
+    t.style = 'Table Grid'
+    for j, col_name in enumerate(df.columns):
+        t.cell(0, j).text = str(col_name)
+    for i, row in enumerate(df.itertuples(index=False)):
+        for j, val in enumerate(row):
+            t.cell(i + 1, j).text = str(val)
+    doc.save(saida)
+
 def csv_para_pptx(e, s):  _via_pdf(e, s, "csv",  "pptx")
-def xlsx_para_docx(e, s): _via_pdf(e, s, "xlsx", "docx")
 def xlsx_para_pptx(e, s): _via_pdf(e, s, "xlsx", "pptx")
 def json_para_docx(e, s): _via_pdf(e, s, "json", "docx")
 def json_para_pptx(e, s): _via_pdf(e, s, "json", "pptx")
