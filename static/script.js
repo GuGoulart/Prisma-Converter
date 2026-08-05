@@ -718,8 +718,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="dog-modal-card">
                     <button class="dog-modal-close" id="closeDogModal">&times;</button>
                     <img src="/static/dog_easter_egg.png" alt="Cachorro de Chapéu" class="dog-modal-img">
-                    <div class="dog-modal-title">🤠 Prisma Guardião 🐶</div>
-                    <div class="dog-modal-sub">Você ativou o segredo do Prisma!</div>
+                    <div class="dog-modal-text">cuidado</div>
                 </div>
             `;
             document.body.appendChild(overlay);
