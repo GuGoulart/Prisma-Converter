@@ -689,11 +689,30 @@ document.addEventListener("DOMContentLoaded", () => {
     menuBtn?.addEventListener("click", toggleDrawer);
     overlay?.addEventListener("click", fecharDrawer);
 
-    // ── Clique em Instalar App Desktop (Baixa diretamente o executável Prisma.exe) ──
+    // ── Clique em Instalar App (Adaptativo entre Celular e Computador) ──
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     document.querySelectorAll("#btnInstallApp").forEach(btn => {
+        if (isMobileDevice) {
+            const span = btn.querySelector("span");
+            if (span) span.textContent = "Baixar App Celular (.apk)";
+            btn.setAttribute("href", "/download-apk");
+        }
+
         btn.addEventListener("click", (e) => {
-            // Garante o download direto do arquivo executável .exe
-            window.location.href = "/download-app";
+            e.preventDefault();
+            if (isMobileDevice) {
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                if (isIOS) {
+                    mostrarToast("No iPhone: toque em Compartilhar no Safari e selecione 'Adicionar à Tela de Início'");
+                    return;
+                }
+                // No Android: faz o download direto do Prisma.apk
+                window.location.href = "/download-apk";
+            } else {
+                // No Computador (Desktop): faz o download do Prisma.exe
+                window.location.href = "/download-app";
+            }
         });
     });
 
