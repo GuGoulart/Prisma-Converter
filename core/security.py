@@ -36,18 +36,10 @@ def extrair_ip_cliente(req=None):
 
 
 def verificar_rate_limit(ip):
-    """
-    Rate limiting in-memory (10 req/60s por IP).
-
-    LIMITAÇÃO CONHECIDA: Este controle é por instância de processo. Em ambientes
-    com múltiplas réplicas (ex: Cloud Run com escala horizontal), o limite é
-    aplicado individualmente por réplica, não de forma global.
-    Para rate limiting global, migrar para Flask-Limiter com backend Redis.
-    """
     agora = time.time()
     with _lock_rate:
         _contagem_ip[ip] = [t for t in _contagem_ip[ip] if agora - t < 60]
-        if len(_contagem_ip[ip]) >= 10:
+        if len(_contagem_ip[ip]) >= 60:
             return False
         _contagem_ip[ip].append(agora)
         return True
