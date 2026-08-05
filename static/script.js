@@ -689,47 +689,22 @@ document.addEventListener("DOMContentLoaded", () => {
     menuBtn?.addEventListener("click", toggleDrawer);
     overlay?.addEventListener("click", fecharDrawer);
 
-    // ── Captura o prompt nativo PWA do celular ──
-    let deferredPwaPrompt = null;
-    window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredPwaPrompt = e;
-    });
-
-    // ── Clique em Instalar App (Adaptativo: Celular PWA x PC .exe) ──
+    // ── Oculta a opção no celular e exibe 'Instalar App Desktop (.exe)' apenas no PC ──
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     document.querySelectorAll("#btnInstallApp").forEach(btn => {
-        const span = btn.querySelector("span");
         if (isMobileDevice) {
-            if (span) span.textContent = "Instalar App no Celular";
-            btn.setAttribute("href", "#");
+            // No celular: oculta completamente a opção da barra lateral
+            btn.style.display = "none";
         } else {
+            // No computador: exibe a opção de download do Prisma.exe
+            const span = btn.querySelector("span");
             if (span) span.textContent = "Instalar App Desktop (.exe)";
             btn.setAttribute("href", "/download-app");
-        }
-
-        btn.addEventListener("click", (e) => {
-            if (isMobileDevice) {
-                e.preventDefault();
-                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                if (isIOS) {
-                    mostrarToast("No iPhone: toque no ícone de Compartilhar do Safari e selecione 'Adicionar à Tela de Início'");
-                    return;
-                }
-                if (deferredPwaPrompt) {
-                    deferredPwaPrompt.prompt();
-                    deferredPwaPrompt.userChoice.then(() => {
-                        deferredPwaPrompt = null;
-                    });
-                } else {
-                    mostrarToast("No Android: toque no menu do navegador (3 pontinhos) e escolha 'Instalar aplicativo'");
-                }
-            } else {
-                // No Computador (Desktop): faz o download direto do Prisma.exe
+            btn.addEventListener("click", () => {
                 window.location.href = "/download-app";
-            }
-        });
+            });
+        }
     });
 
 }); // fim DOMContentLoaded
