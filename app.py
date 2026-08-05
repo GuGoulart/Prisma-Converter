@@ -40,7 +40,7 @@ else:
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 _sec_key = (os.environ.get("SECRET_KEY") or "").strip()
-app.secret_key = _sec_key if _sec_key else secrets.token_hex(32)
+app.secret_key = _sec_key if _sec_key else "prisma_converter_default_secret_key_dev_2026"
 
 UPLOAD_FOLDER   = "uploads"
 DOWNLOAD_FOLDER = "downloads"

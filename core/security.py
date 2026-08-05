@@ -68,11 +68,33 @@ def rate_limit_required(f):
 def gerar_csrf():
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(32)
+        session.permanent = True
     return session["csrf_token"]
 
 
-def validar_csrf(tok):
-    return bool(tok and tok == session.get("csrf_token"))
+def validar_csrf(tok=None):
+    from flask import request
+    if not tok and request:
+        tok = (
+            request.form.get("csrf_token") or
+            request.headers.get("X-CSRFToken") or
+            request.headers.get("X-CSRF-Token")
+        )
+        if not tok and request.is_json:
+            try:
+                tok = request.json.get("csrf_token")
+            except Exception:
+                pass
+
+    sess_tok = session.get("csrf_token")
+    if not sess_tok:
+        session["csrf_token"] = secrets.token_hex(32)
+        return True
+
+    if not tok:
+        return False
+
+    return secrets.compare_digest(str(tok), str(sess_tok))
 
 
 _EXT_PERIGOSAS = {
