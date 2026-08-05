@@ -689,32 +689,15 @@ document.addEventListener("DOMContentLoaded", () => {
     menuBtn?.addEventListener("click", toggleDrawer);
     overlay?.addEventListener("click", fecharDrawer);
 
-    // ── Suporte a Instalação do App (PWA Prompt / Executável Desktop) ──
+    // ── Clique em Instalar App Desktop (Baixa diretamente o executável Prisma.exe) ──
     document.querySelectorAll("#btnInstallApp").forEach(btn => {
         btn.addEventListener("click", (e) => {
-            if (window.deferredPwaPrompt) {
-                e.preventDefault();
-                window.deferredPwaPrompt.prompt();
-                window.deferredPwaPrompt.userChoice.then((choice) => {
-                    if (choice.outcome !== "accepted") {
-                        window.location.href = "/download-app";
-                    }
-                    window.deferredPwaPrompt = null;
-                });
-            }
+            // Garante o download direto do arquivo executável .exe
+            window.location.href = "/download-app";
         });
     });
 
 }); // fim DOMContentLoaded
-
-// Captura evento de instalação PWA
-window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    window.deferredPwaPrompt = e;
-    document.querySelectorAll("#btnInstallApp").forEach(btn => {
-        btn.classList.add("pwa-ready");
-    });
-});
 
 
 // ── Funções globais ───────────────────────────────────────────

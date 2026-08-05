@@ -1348,15 +1348,9 @@ def download_app():
         except Exception as e:
             logging.error(f"[download-app] Erro na compilação automática: {e}")
 
-    # Se estiver no Cloud Run e não tiver Release publicada no GitHub ainda
-    release_url = os.environ.get("GITHUB_RELEASE_URL", "")
-    if release_url:
-        return redirect(release_url)
-
-    return jsonify({
-        "status": "info",
-        "message": "O executável desktop Prisma.exe está em compilação na pasta 'dist/'. Execute 'python build_desktop.py' para gerar."
-    }), 200
+    # Se estiver na nuvem (Linux/DuckDNS/Cloud Run) e não houver o .exe localmente
+    release_url = os.environ.get("GITHUB_RELEASE_URL", "https://github.com/GuGoulart/Prisma-Converter/releases/latest/download/Prisma.exe")
+    return redirect(release_url)
 
 
 @app.route("/preview/<pasta_uuid>/<preview_file>")
