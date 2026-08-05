@@ -1,71 +1,69 @@
 # ── Core Flask ───────────────────────────────────────────────────────────────
-blinker==1.9.0
-click==8.4.2
-Flask==3.1.3
-itsdangerous==2.2.0
-Jinja2==3.1.6
-MarkupSafe==3.0.3
-Werkzeug==3.1.8
-gunicorn==23.0.0
+Flask>=3.0.0
+gunicorn>=21.0.0
+Jinja2>=3.0.0
+Werkzeug>=3.0.0
+itsdangerous>=2.0.0
+click>=8.0.0
+blinker>=1.6.0
+MarkupSafe>=2.0.0
 
 # ── Segurança e utilitários ───────────────────────────────────────────────────
-cffi==2.0.0
-cryptography==49.0.0
-pycparser==3.0
-python-dotenv==1.2.2
-six==1.17.0
-typing_extensions==4.15.0
+cryptography>=41.0.0
+cffi
+pycparser
+python-dotenv>=1.0.0
+six
+typing_extensions
 
 # ── Processamento de texto / encoding ────────────────────────────────────────
-chardet==7.4.3
-charset-normalizer==3.4.7
-colorama==0.4.6
+chardet
+charset-normalizer
+colorama
 
 # ── Dados e planilhas ─────────────────────────────────────────────────────────
-et_xmlfile==2.0.0
-fire==0.7.1
-numpy==2.4.6
-openpyxl==3.1.5
-pandas==3.0.3
-python-dateutil==2.9.0.post0
-termcolor==3.3.0
-tqdm==4.68.3
-tzdata==2026.2
-xlsxwriter==3.2.9
+pandas>=2.0.0
+numpy>=1.24.0
+openpyxl>=3.1.0
+xlsxwriter>=3.1.0
+python-dateutil
+et_xmlfile
+fire
+termcolor
+tqdm
+tzdata
 
 # ── PDF ───────────────────────────────────────────────────────────────────────
-fonttools==4.63.0
-lxml==6.1.1
-pdf2docx==0.5.13
-pdf2image==1.17.0
-pdfminer.six==20260107
-pdfplumber==0.11.10
-pymupdf==1.28.0
-pypdfium2==5.11.0
-xhtml2pdf==0.2.17
+pdf2docx>=0.5.6
+pdf2image>=1.16.0
+pdfplumber>=0.10.0
+pymupdf>=1.23.0
+pypdfium2>=4.0.0
+pdfminer.six
+xhtml2pdf
+fonttools
+lxml
 
 # ── Imagens ───────────────────────────────────────────────────────────────────
-opencv-python-headless==4.13.0.92
-pillow==12.3.0
-pillow-heif==1.4.0
-extcolors==1.0.0
+pillow>=10.0.0
+opencv-python-headless>=4.8.0.76
+pillow-heif>=0.13.0
+extcolors
 
 # ── Documentos Office ────────────────────────────────────────────────────────
-python-docx==1.2.0
-python-pptx==1.0.2
-ebooklib==0.20
+python-docx>=1.0.0
+python-pptx>=0.8.11
+ebooklib
 
 # ── OCR ──────────────────────────────────────────────────────────────────────
-pytesseract==0.3.13
+pytesseract>=0.3.10
 
-# ── QR Code / Compressão / Criptografia de arquivo ──────────────────────────
-qrcode[pil]==8.2
-pyzbar==0.1.9
-pyzipper==0.4.0
+# ── QR Code / Compressão / Criptografia ─────────────────────────────────────
+qrcode[pil]>=7.4
+pyzbar>=0.1.9
+pyzipper>=0.3.6
 
-# ── Fase 3: Tarefas assíncronas + Rate limiting + Cloud Storage ───────────────
-# Sem fixar versão — pip resolve a versão disponível no ambiente de build.
-# Fallback graceful: o app funciona sem esses pacotes (usa modo in-memory/local).
+# ── Tarefas assíncronas + Rate limiting + Cloud Storage ──────────────────────
 celery[redis]
 flask-limiter[redis]
 google-cloud-storage
