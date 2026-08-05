@@ -1325,37 +1325,38 @@ def download_app():
         if os.path.exists(caminho):
             return send_file(caminho, as_attachment=True, download_name=os.path.basename(caminho))
 
-    # Tenta compilação local se estiver rodando em ambiente local com Windows
+    # Tenta compilar localmente no Windows se o .exe ainda não estiver na pasta dist/
     if sys.platform.startswith("win"):
-        with _lock_build_desktop:
-            for caminho in possiveis_caminhos:
-                if os.path.exists(caminho):
-                    return send_file(caminho, as_attachment=True, download_name=os.path.basename(caminho))
+        logging.info("[download-app] Gerando Prisma.exe na pasta dist/...")
+        try:
+            import subprocess
+            ico_p = os.path.abspath("static/logo.ico")
+            cmd = [
+                sys.executable, "-m", "PyInstaller",
+                "--noconfirm", "--onefile", "--windowed", "--name=Prisma",
+                f"--icon={ico_p}" if os.path.exists(ico_p) else None,
+                "--add-data=templates;templates",
+                "--add-data=static;static",
+                "--add-data=core;core",
+                "desktop_app.py"
+            ]
+            cmd = [c for c in cmd if c is not None]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            exe_gerado = os.path.join("dist", "Prisma.exe")
+            if os.path.exists(exe_gerado):
+                return send_file(exe_gerado, as_attachment=True, download_name="Prisma.exe")
+        except Exception as e:
+            logging.error(f"[download-app] Erro na compilação automática: {e}")
 
-            logging.info("[download-app] Compilando executavel Prisma.exe automaticamente...")
-            try:
-                import subprocess
-                ico_p = os.path.abspath("static/logo.ico")
-                cmd = [
-                    sys.executable, "-m", "PyInstaller",
-                    "--noconfirm", "--onefile", "--windowed", "--name=Prisma",
-                    f"--icon={ico_p}" if os.path.exists(ico_p) else None,
-                    "--add-data=templates;templates",
-                    "--add-data=static;static",
-                    "--add-data=core;core",
-                    "desktop_app.py"
-                ]
-                cmd = [c for c in cmd if c is not None]
-                res = subprocess.run(cmd, capture_output=True, text=True)
-                exe_gerado = os.path.join("dist", "Prisma.exe")
-                if os.path.exists(exe_gerado):
-                    return send_file(exe_gerado, as_attachment=True, download_name="Prisma.exe")
-            except Exception as e:
-                logging.error(f"[download-app] Erro na geracao automatica: {e}")
+    # Se estiver no Cloud Run e não tiver Release publicada no GitHub ainda
+    release_url = os.environ.get("GITHUB_RELEASE_URL", "")
+    if release_url:
+        return redirect(release_url)
 
-    # Se estiver em nuvem/Linux (Cloud Run), redireciona para a Release do GitHub
-    github_release_url = "https://github.com/GuGoulart/Prisma-Converter/releases/latest/download/Prisma.exe"
-    return redirect(github_release_url)
+    return jsonify({
+        "status": "info",
+        "message": "O executável desktop Prisma.exe está em compilação na pasta 'dist/'. Execute 'python build_desktop.py' para gerar."
+    }), 200
 
 
 @app.route("/preview/<pasta_uuid>/<preview_file>")
