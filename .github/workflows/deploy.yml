@@ -55,10 +55,6 @@ jobs:
           image: us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:${{ github.sha }}
           flags: '--allow-unauthenticated --memory=2Gi --cpu=2 --port=8080 --timeout=120'
           env_vars: |
-            SECRET_KEY=${{ secrets.SECRET_KEY }}
-            REDIS_URL=${{ secrets.REDIS_URL }}
-            GCS_BUCKET=${{ secrets.GCS_BUCKET }}
-            GCS_PREFIX=${{ secrets.GCS_PREFIX }}
-            MAX_PARALELAS=${{ secrets.MAX_PARALELAS }}
+            PYTHONUNBUFFERED=1
 
 
