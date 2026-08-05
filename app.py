@@ -1352,6 +1352,20 @@ def download_app():
     release_url = os.environ.get("GITHUB_RELEASE_URL", "https://github.com/GuGoulart/Prisma-Converter/releases/latest/download/Prisma.exe")
     return redirect(release_url)
 
+@app.route("/download-apk")
+def download_apk():
+    possiveis_apk = [
+        os.path.join("dist", "Prisma.apk"),
+        os.path.join("static", "Prisma.apk"),
+        "Prisma.apk"
+    ]
+    for apk_path in possiveis_apk:
+        if os.path.exists(apk_path):
+            return send_file(apk_path, as_attachment=True, download_name="Prisma.apk", mimetype="application/vnd.android.package-archive")
+
+    github_apk_url = os.environ.get("GITHUB_APK_URL", "https://github.com/GuGoulart/Prisma-Converter/releases/latest/download/Prisma.apk")
+    return redirect(github_apk_url)
+
 
 @app.route("/preview/<pasta_uuid>/<preview_file>")
 def preview_arquivo(pasta_uuid, preview_file):
