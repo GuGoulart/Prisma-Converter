@@ -29,7 +29,14 @@ def _formatar_tamanho(b):
 
 load_dotenv()
 
-app = Flask(__name__)
+if getattr(sys, 'frozen', False):
+    bundle_dir = sys._MEIPASS
+    app = Flask(__name__,
+                template_folder=os.path.join(bundle_dir, 'templates'),
+                static_folder=os.path.join(bundle_dir, 'static'))
+else:
+    app = Flask(__name__)
+
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 _sec_key = (os.environ.get("SECRET_KEY") or "").strip()
@@ -51,6 +58,36 @@ if os.environ.get("PORT"):
 
 os.makedirs(UPLOAD_FOLDER,   exist_ok=True)
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+
+def obter_pasta_downloads_usuario():
+    pasta = os.path.join(os.path.expanduser('~'), 'Downloads')
+    if os.name == 'nt':
+        try:
+            import winreg
+            sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, sub_key) as key:
+                pasta = winreg.QueryValueEx(key, '{374DE290-123F-4565-9164-39C4925E467B}')[0]
+        except Exception:
+            pass
+    return pasta
+
+def copiar_para_downloads_desktop(caminho_arquivo, download_name):
+    if os.environ.get("PRISMA_DESKTOP") == "1" and os.path.exists(caminho_arquivo):
+        try:
+            pasta_dl = obter_pasta_downloads_usuario()
+            os.makedirs(pasta_dl, exist_ok=True)
+            dest = os.path.join(pasta_dl, download_name)
+            shutil.copy2(caminho_arquivo, dest)
+            logging.info(f"[desktop-app] Arquivo copiado para a pasta Downloads: {dest}")
+        except Exception as e:
+            logging.warning(f"[desktop-app] Erro ao copiar para Downloads: {e}")
+
+@app.context_processor
+def inject_desktop_flag():
+    return dict(
+        is_desktop_app=bool(os.environ.get("PRISMA_DESKTOP") == "1"),
+        pasta_downloads_usuario=obter_pasta_downloads_usuario()
+    )
 
 contador_conversoes = 0
 _lock_contador      = Lock()  # QC-005: protege o contador contra race conditions
@@ -1274,6 +1311,52 @@ def serve_manifest():
 def serve_sw():
     return send_file("static/sw.js", mimetype="application/javascript")
 
+_lock_build_desktop = Lock()
+
+@app.route("/download-app")
+def download_app():
+    possiveis_caminhos = [
+        os.path.join("dist", "Prisma.exe"),
+        os.path.join("dist", "Prisma", "Prisma.exe"),
+        os.path.join("dist", "Prisma-Setup.exe"),
+        os.path.join("dist", "Prisma_Desktop.zip")
+    ]
+    for caminho in possiveis_caminhos:
+        if os.path.exists(caminho):
+            return send_file(caminho, as_attachment=True, download_name=os.path.basename(caminho))
+
+    # Tenta compilação local se estiver rodando em ambiente local com Windows
+    if sys.platform.startswith("win"):
+        with _lock_build_desktop:
+            for caminho in possiveis_caminhos:
+                if os.path.exists(caminho):
+                    return send_file(caminho, as_attachment=True, download_name=os.path.basename(caminho))
+
+            logging.info("[download-app] Compilando executavel Prisma.exe automaticamente...")
+            try:
+                import subprocess
+                ico_p = os.path.abspath("static/logo.ico")
+                cmd = [
+                    sys.executable, "-m", "PyInstaller",
+                    "--noconfirm", "--onefile", "--windowed", "--name=Prisma",
+                    f"--icon={ico_p}" if os.path.exists(ico_p) else None,
+                    "--add-data=templates;templates",
+                    "--add-data=static;static",
+                    "--add-data=core;core",
+                    "desktop_app.py"
+                ]
+                cmd = [c for c in cmd if c is not None]
+                res = subprocess.run(cmd, capture_output=True, text=True)
+                exe_gerado = os.path.join("dist", "Prisma.exe")
+                if os.path.exists(exe_gerado):
+                    return send_file(exe_gerado, as_attachment=True, download_name="Prisma.exe")
+            except Exception as e:
+                logging.error(f"[download-app] Erro na geracao automatica: {e}")
+
+    # Se estiver em nuvem/Linux (Cloud Run), redireciona para a Release do GitHub
+    github_release_url = "https://github.com/GuGoulart/Prisma-Converter/releases/latest/download/Prisma.exe"
+    return redirect(github_release_url)
+
 
 @app.route("/preview/<pasta_uuid>/<preview_file>")
 def preview_arquivo(pasta_uuid, preview_file):
@@ -1817,6 +1900,7 @@ def api_converter_download(job_id):
         global contador_conversoes
         contador_conversoes += 1
 
+    copiar_para_downloads_desktop(saida, nome_download)
     resp = send_file(saida, as_attachment=True, download_name=nome_download)
     resp.headers["Cache-Control"] = "no-store"
     return resp

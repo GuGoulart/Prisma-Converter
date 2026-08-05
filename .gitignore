@@ -26,6 +26,11 @@ __pycache__/
 .idea/
 *.code-workspace
 
+# PyInstaller & Compilação Desktop
+build/
+dist/
+*.spec
+
 # Sistema Operacional
 Thumbs.db
 desktop.ini
