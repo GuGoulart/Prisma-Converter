@@ -344,9 +344,9 @@ def erro_interno_servidor(e):
     return render_template("500.html"), 500
 
 @app.route('/health')
+@app.route('/ping')
 def health_check():
-    # BACK-003: usa jsonify explicitamente para consistência
-    return jsonify({"status": "ok"}), 200
+    return jsonify({"status": "ok", "timestamp": time.time()}), 200
 
 @app.route('/favicon.ico')
 def favicon():
