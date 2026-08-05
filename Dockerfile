@@ -32,6 +32,7 @@ RUN useradd -m appuser && \
     chown -R appuser:appuser /app uploads downloads
 
 USER appuser
+ENV HOME=/home/appuser
 
 # ── Porta ────────────────────────────────────────────────────────────────────
 # O Cloud Run injeta PORT dinamicamente (padrão 8080)
