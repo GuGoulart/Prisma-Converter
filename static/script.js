@@ -707,6 +707,39 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // ── Easter Egg: Cachorro de Chapéu de Cowboy no botão do logo ──
+    function abrirModalDog() {
+        let overlay = document.getElementById("dogEasterEggModal");
+        if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.id = "dogEasterEggModal";
+            overlay.className = "dog-modal-overlay";
+            overlay.innerHTML = `
+                <div class="dog-modal-card">
+                    <button class="dog-modal-close" id="closeDogModal">&times;</button>
+                    <img src="/static/dog_easter_egg.png" alt="Cachorro de Chapéu" class="dog-modal-img">
+                    <div class="dog-modal-title">🤠 Prisma Guardião 🐶</div>
+                    <div class="dog-modal-sub">Você ativou o segredo do Prisma!</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            overlay.querySelector("#closeDogModal").addEventListener("click", () => {
+                overlay.classList.remove("ativo");
+            });
+            overlay.addEventListener("click", (e) => {
+                if (e.target === overlay) overlay.classList.remove("ativo");
+            });
+        }
+        overlay.classList.add("ativo");
+    }
+
+    document.querySelectorAll(".hud-reactor-core, .core-glyph, .core-ring, .sidebar-logo, .mobile-logo").forEach(el => {
+        el.style.cursor = "pointer";
+        el.addEventListener("click", () => {
+            abrirModalDog();
+        });
+    });
+
 }); // fim DOMContentLoaded
 
 
