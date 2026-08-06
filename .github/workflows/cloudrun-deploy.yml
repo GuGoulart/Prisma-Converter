@@ -1,3 +1,4 @@
+# Deploy para Google Cloud Run — atualizado 2026-08-06
 name: Deploy to Cloud Run
 
 on:
@@ -26,7 +27,7 @@ jobs:
           gcloud artifacts repositories create cloud-run-source-deploy \
             --repository-format=docker \
             --location=us-central1 \
-            --description="Repositório de imagens Docker" \
+            --description="Repositorio de imagens Docker" \
             --quiet || true
 
       - name: 🔓 Autenticar Docker no Artifact Registry
