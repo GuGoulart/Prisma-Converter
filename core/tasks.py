@@ -227,6 +227,7 @@ def _executar_conversao(
             job_id,
             percent=0.0,
             status="Erro na conversão.",
+            concluido=True,  # CRÍTICO: sinaliza fim para o cliente parar o polling
             erro=str(e),
         )
 
@@ -301,6 +302,7 @@ def executar_conversao_async(
                     job_id,
                     percent=0.0,
                     status="Tempo de conversão excedido.",
+                    concluido=True,  # CRÍTICO: sinaliza fim para o cliente parar o polling
                     erro="A conversão demorou mais do que o esperado. Tente um arquivo menor.",
                 )
 

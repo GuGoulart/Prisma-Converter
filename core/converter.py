@@ -276,37 +276,144 @@ def _office_ppt_para_pdf(entrada, saida):
         pythoncom.CoUninitialize()
 
 
-# ─── PDF → DOCX ───────────────────────────────────────────────
+# ─── PDF → DOCX ──────────────────────────────────────────────────
 
-def pdf_para_docx(entrada, saida):
+def _pdf2docx_worker(entrada: str, saida: str, inicio: int = 0, fim: int = None):
     """
-    Converte PDF para DOCX usando estratégia multicamadas (Resiliente a erros e limite de RAM):
-    1. pdf2docx (Preserva layout visual complexo)
-    2. LibreOffice Headless (Fallback nativo do sistema)
-    3. PyMuPDF + python-docx (Fallback de emergência para extração de texto)
+    Worker isolado para pdf2docx — executado em subprocess separado para
+    garantir que pode ser morto por timeout sem travar o processo principal.
     """
-    # Desativa multi-threading do OpenCV se instalado para economizar RAM e prevenir deadlocks no Docker
+    import sys
     try:
-        import cv2
-        cv2.setNumThreads(0)
-    except Exception:
-        pass
+        # Desabilita threads do OpenCV para reduzir RAM
+        try:
+            import cv2
+            cv2.setNumThreads(0)
+        except Exception:
+            pass
 
-    # 1ª Tentativa: pdf2docx
-    try:
         from pdf2docx import Converter as PDF2DOCXConverter
         cv = PDF2DOCXConverter(entrada)
         try:
-            cv.convert(saida)
+            kwargs = {"start": inicio}
+            if fim is not None:
+                kwargs["end"] = fim
+            cv.convert(saida, **kwargs)
         finally:
             cv.close()
 
-        if os.path.exists(saida) and os.path.getsize(saida) > 0:
-            log.info(f"[pdf_para_docx] Conversão concluída via pdf2docx: {os.path.basename(saida)}")
-            return
-        log.warning("[pdf_para_docx] pdf2docx não produziu um arquivo válido. Tentando fallback...")
+        if not (os.path.exists(saida) and os.path.getsize(saida) > 0):
+            sys.exit(2)  # arquivo vazio = erro
+        sys.exit(0)
+    except Exception as ex:
+        print(f"pdf2docx error: {ex}", file=sys.stderr)
+        sys.exit(1)
+
+
+def pdf_para_docx(entrada, saida):
+    """
+    Converte PDF para DOCX usando estratégia multicamadas resiliente:
+    1. pdf2docx em subprocess com timeout de 90s (isolado para poder matar)
+    2. LibreOffice Headless (fallback nativo do sistema)
+    3. PyMuPDF + python-docx (fallback de emergência — texto puro)
+
+    Para PDFs grandes (>10 páginas), a conversão com pdf2docx é feita em
+    blocos de 10 páginas para evitar estouro de memória no Cloud Run.
+    """
+    import multiprocessing
+    import tempfile
+
+    PDF2DOCX_TIMEOUT = 90  # segundos por tentativa
+    MAX_PAGINAS_BLOCO = 10  # páginas por bloco para PDFs grandes
+
+    # Detectar número de páginas do PDF
+    try:
+        doc_info = fitz.open(entrada)
+        total_paginas = doc_info.page_count
+        doc_info.close()
+    except Exception:
+        total_paginas = 0
+
+    log.info("[pdf_para_docx] PDF com %d página(s): %s", total_paginas, os.path.basename(entrada))
+
+    # 1ª Tentativa: pdf2docx via subprocess com timeout
+    try:
+        if total_paginas <= MAX_PAGINAS_BLOCO:
+            # Conversão direta para PDFs pequenos
+            p = multiprocessing.Process(
+                target=_pdf2docx_worker,
+                args=(os.path.abspath(entrada), os.path.abspath(saida))
+            )
+            p.start()
+            p.join(timeout=PDF2DOCX_TIMEOUT)
+
+            if p.is_alive():
+                p.terminate()
+                p.join(timeout=5)
+                if p.is_alive():
+                    p.kill()
+                log.warning("[pdf_para_docx] pdf2docx ultrapassou timeout de %ds. Usando fallback.", PDF2DOCX_TIMEOUT)
+            elif p.exitcode == 0 and os.path.exists(saida) and os.path.getsize(saida) > 0:
+                log.info("[pdf_para_docx] Conversão concluída via pdf2docx.")
+                return
+            else:
+                log.warning("[pdf_para_docx] pdf2docx falhou (exit=%s). Iniciando fallback.", p.exitcode)
+
+        else:
+            # PDFs grandes: divide em blocos e une no final
+            log.info("[pdf_para_docx] PDF grande (%d págs). Convertendo em blocos de %d.", total_paginas, MAX_PAGINAS_BLOCO)
+            from docx import Document
+            from docx.shared import Pt
+            import copy
+
+            doc_final = Document()
+            doc_dir = os.path.dirname(os.path.abspath(saida))
+            blocos_ok = 0
+
+            for inicio in range(0, total_paginas, MAX_PAGINAS_BLOCO):
+                fim = min(inicio + MAX_PAGINAS_BLOCO, total_paginas)
+                temp_saida = os.path.join(doc_dir, f"_bloco_{inicio}_{fim}.docx")
+
+                p = multiprocessing.Process(
+                    target=_pdf2docx_worker,
+                    args=(os.path.abspath(entrada), temp_saida, inicio, fim)
+                )
+                p.start()
+                p.join(timeout=PDF2DOCX_TIMEOUT)
+
+                if p.is_alive():
+                    p.terminate()
+                    p.join(timeout=5)
+                    if p.is_alive(): p.kill()
+                    log.warning("[pdf_para_docx] Bloco %d-%d: timeout. Pulando.", inicio, fim)
+                    continue
+
+                if p.exitcode == 0 and os.path.exists(temp_saida) and os.path.getsize(temp_saida) > 0:
+                    # Mesclar bloco no documento final
+                    try:
+                        bloco = Document(temp_saida)
+                        if blocos_ok > 0:
+                            doc_final.add_page_break()
+                        for elemento in bloco.paragraphs:
+                            p_novo = doc_final.add_paragraph()
+                            for run in elemento.runs:
+                                r_novo = p_novo.add_run(run.text)
+                                r_novo.bold = run.bold
+                                r_novo.italic = run.italic
+                        blocos_ok += 1
+                    except Exception as ex_merge:
+                        log.warning("[pdf_para_docx] Erro ao mesclar bloco %d-%d: %s", inicio, fim, ex_merge)
+                    finally:
+                        try: os.remove(temp_saida)
+                        except Exception: pass
+
+            if blocos_ok > 0:
+                doc_final.save(saida)
+                if os.path.exists(saida) and os.path.getsize(saida) > 0:
+                    log.info("[pdf_para_docx] Conversão em blocos concluída (%d blocos).", blocos_ok)
+                    return
     except Exception as e:
-        log.warning(f"[pdf_para_docx] pdf2docx falhou ({e}). Iniciando fallback...")
+        log.warning("[pdf_para_docx] Falha na etapa pdf2docx: %s. Iniciando fallback.", e)
 
     # 2ª Tentativa (Fallback): LibreOffice
     if SOFFICE:
@@ -314,39 +421,60 @@ def pdf_para_docx(entrada, saida):
             log.info("[pdf_para_docx] Tentando conversão via LibreOffice...")
             _soffice_convert(entrada, saida, "docx")
             if os.path.exists(saida) and os.path.getsize(saida) > 0:
-                log.info(f"[pdf_para_docx] Conversão concluída via LibreOffice: {os.path.basename(saida)}")
+                log.info("[pdf_para_docx] Conversão concluída via LibreOffice.")
                 return
-            log.warning("[pdf_para_docx] Fallback via LibreOffice não gerou arquivo válido.")
+            log.warning("[pdf_para_docx] LibreOffice não gerou arquivo válido.")
         except Exception as e_soffice:
-            log.warning(f"[pdf_para_docx] Fallback LibreOffice falhou ({e_soffice}).")
+            log.warning("[pdf_para_docx] Fallback LibreOffice falhou: %s", e_soffice)
 
-    # 3ª Tentativa (Fallback de Emergência): PyMuPDF + python-docx
+    # 3ª Tentativa (Emergência): PyMuPDF + python-docx (texto puro)
     try:
-        log.info("[pdf_para_docx] Tentando fallback de emergência (extração de texto PyMuPDF)...")
+        log.info("[pdf_para_docx] Tentando fallback de emergência (extração de texto)...")
         from docx import Document
+        from docx.shared import Pt
+
         doc_pdf = fitz.open(entrada)
         doc_docx = Document()
-        texto_encontrado = False
 
+        # Estilo de parágrafo simples para melhor legibilidade
+        estilo = doc_docx.styles["Normal"]
+        estilo.font.size = Pt(11)
+        estilo.font.name = "Calibri"
+
+        texto_encontrado = False
         for i, page in enumerate(doc_pdf):
-            texto = page.get_text("text")
-            if texto.strip():
+            blocos = page.get_text("blocks")  # Retorna lista de blocos com coordenadas
+            if blocos:
                 if i > 0:
                     doc_docx.add_page_break()
-                doc_docx.add_paragraph(texto)
-                texto_encontrado = True
+                for bloco in blocos:
+                    texto_bloco = bloco[4].strip()  # bloco[4] = texto do bloco
+                    if texto_bloco:
+                        doc_docx.add_paragraph(texto_bloco)
+                        texto_encontrado = True
 
         doc_pdf.close()
 
         if texto_encontrado:
             doc_docx.save(saida)
             if os.path.exists(saida) and os.path.getsize(saida) > 0:
-                log.info(f"[pdf_para_docx] Conversão concluída via Fallback PyMuPDF: {os.path.basename(saida)}")
+                log.info("[pdf_para_docx] Conversão concluída via fallback PyMuPDF (texto).")
                 return
+        else:
+            log.warning("[pdf_para_docx] PDF sem texto selecionável (provavelmente scanneado).")
+            raise RuntimeError(
+                "Este PDF parece ser um documento digitalizado (imagem). "
+                "Não é possível extrair texto. Tente um PDF com texto selecionável."
+            )
+    except RuntimeError:
+        raise
     except Exception as e_emergencia:
-        log.error(f"[pdf_para_docx] Fallback de emergência falhou: {e_emergencia}")
+        log.error("[pdf_para_docx] Fallback de emergência falhou: %s", e_emergencia)
 
-    raise RuntimeError("Não foi possível converter o arquivo PDF para Word (DOCX). O arquivo pode estar vazio ou corrompido.")
+    raise RuntimeError(
+        "Não foi possível converter o arquivo PDF para Word (DOCX). "
+        "Verifique se o PDF contém texto selecionável e não está corrompido."
+    )
 
 
 
