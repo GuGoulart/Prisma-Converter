@@ -1,0 +1,61 @@
+# Workflow alternativo: executa a cada 30 minutos E on workflow_dispatch
+# Usado quando o push trigger nao esta funcionando por limitacao de token
+name: Scheduled Deploy to Cloud Run
+
+on:
+  schedule:
+    # Executa a cada 30 minutos
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixando Codigo
+        uses: actions/checkout@v4
+
+      - name: Autenticando no Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Configurando SDK do Google
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Garantir repositorio no Artifact Registry
+        run: |
+          gcloud artifacts repositories create cloud-run-source-deploy \
+            --repository-format=docker \
+            --location=us-central1 \
+            --description="Repositorio de imagens Docker" \
+            --quiet || true
+
+      - name: Autenticar Docker no Artifact Registry
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Configurar Buildx para Cache no GitHub
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build e Push da Imagem Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:${{ github.sha }}
+            us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy no Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: prisma
+          project_id: prisma-501720
+          region: us-central1
+          image: us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:${{ github.sha }}
+          flags: '--allow-unauthenticated --memory=4Gi --cpu=4 --port=8080 --timeout=300 --no-cpu-throttling --cpu-boost'
+          env_vars: |
+            PYTHONUNBUFFERED=1
