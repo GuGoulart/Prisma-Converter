@@ -30,8 +30,11 @@ jobs:
             --quiet || true
 
       - name: 🔓 Autenticar Docker no Artifact Registry
-        run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+        uses: docker/login-action@v3
+        with:
+          registry: us-central1-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: 🏗️ Configurar Buildx para Cache no GitHub
         uses: docker/setup-buildx-action@v3
@@ -54,7 +57,7 @@ jobs:
           project_id: prisma-501720
           region: us-central1
           image: us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:${{ github.sha }}
-          flags: '--allow-unauthenticated --memory=4Gi --cpu=4 --port=8080 --timeout=300 --no-cpu-throttling --cpu-boost'
+          flags: '--allow-unauthenticated --memory=4Gi --cpu=4 --port=8080 --timeout=300'
           env_vars: |
             PYTHONUNBUFFERED=1
 
