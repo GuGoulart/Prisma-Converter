@@ -11,7 +11,7 @@
 [![Python Version](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask Framework](https://img.shields.io/badge/Framework-Flask-000000.svg?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Google Cloud Run](https://img.shields.io/badge/Deploy-Cloud%20Run-4285F4.svg?style=for-the-badge&logo=googlecloud&logoColor=white)](https://prisma-app.duckdns.org/)
-[![Privacy First](https://img.shields.io/badge/Privacy-100%25%20Local-success.svg?style=for-the-badge&logo=shield&logoColor=white)](#-segurança-e-privacidade-em-camadas)
+[![Privacy First](https://img.shields.io/badge/Privacy-Tempor%C3%A1rio%20%26%20Seguro-success.svg?style=for-the-badge&logo=shield&logoColor=white)](#-segurança-e-privacidade-em-camadas)
 
 [🚀 Demonstração Online](https://prisma-app.duckdns.org/) • [✨ Funcionalidades](#-funcionalidades-do-sistema) • [🛠️ Instalação Local](#%EF%B8%8F-instalação-e-execução-local)
 
