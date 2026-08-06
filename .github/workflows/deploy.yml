@@ -21,44 +21,17 @@ jobs:
       - name: ⚙️ Configurando SDK do Google
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: 🛠️ Garantir repositório no Artifact Registry
-        run: |
-          gcloud artifacts repositories create cloud-run-source-deploy \
-            --repository-format=docker \
-            --location=us-central1 \
-            --description="Repositório de imagens Docker" \
-            --quiet || true
-
-      - name: 🔓 Autenticar Docker no Artifact Registry
-        uses: docker/login-action@v3
-        with:
-          registry: us-central1-docker.pkg.dev
-          username: _json_key
-          password: ${{ secrets.GCP_CREDENTIALS }}
-
-      - name: 🏗️ Configurar Buildx para Cache no GitHub
-        uses: docker/setup-buildx-action@v3
-
-      - name: 📦 Build e Push da Imagem Docker
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:${{ github.sha }}
-            us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: 🚀 Deploy no Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: prisma
-          project_id: prisma-501720
-          region: us-central1
-          image: us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:${{ github.sha }}
-          flags: '--allow-unauthenticated --memory=4Gi --cpu=4 --port=8080 --timeout=300'
-          env_vars: |
-            PYTHONUNBUFFERED=1
+        run: |
+          gcloud run deploy prisma \
+            --source . \
+            --project prisma-501720 \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --memory 4Gi \
+            --cpu 4 \
+            --port 8080 \
+            --timeout 300 \
+            --quiet
 
 
