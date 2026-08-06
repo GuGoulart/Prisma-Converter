@@ -48,5 +48,5 @@ ENV PYTHONUNBUFFERED=1
 ENV NUMEXPR_NUM_THREADS=1
 
 # ── Worker ───────────────────────────────────────────────────────────────────
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --threads 4 --timeout 120 app:app"]
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 8 --timeout 120 app:app"]
 

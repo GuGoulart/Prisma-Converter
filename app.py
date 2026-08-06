@@ -18,6 +18,9 @@ from dotenv import load_dotenv
 
 import os, re, secrets, shutil, time, uuid, logging, threading, traceback, zipfile, hashlib
 
+logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
+log = logging.getLogger(__name__)
+
 def _formatar_tamanho(b):
     if not isinstance(b, (int, float)):
         return "Indisponível"
