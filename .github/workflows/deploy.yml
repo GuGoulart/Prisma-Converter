@@ -53,7 +53,7 @@ jobs:
           project_id: prisma-501720
           region: us-central1
           image: us-central1-docker.pkg.dev/prisma-501720/cloud-run-source-deploy/prisma:${{ github.sha }}
-          flags: '--allow-unauthenticated --memory=2Gi --cpu=2 --port=8080 --timeout=120 --no-cpu-throttling --cpu-boost'
+          flags: '--allow-unauthenticated --memory=4Gi --cpu=4 --port=8080 --timeout=300 --no-cpu-throttling --cpu-boost'
           env_vars: |
             PYTHONUNBUFFERED=1
 
