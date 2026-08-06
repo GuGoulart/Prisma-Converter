@@ -27,7 +27,7 @@ class TestAPI(unittest.TestCase):
 
     def test_paginas_principais(self):
         for path in ["/", "/conversor", "/ferramentas-avancadas", "/modificar-arquivos", "/historico"]:
-            res = self.client.get(path)
+            res = self.client.get(path, follow_redirects=True)
             self.assertEqual(res.status_code, 200, f"Rota {path} falhou com código {res.status_code}")
 
 if __name__ == "__main__":

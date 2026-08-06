@@ -39,14 +39,15 @@ ENV HOME=/home/appuser
 ENV PORT=8080
 EXPOSE 8080
 
-# ── Prevenção de deadlocks (libs C++ multi-thread: OpenCV, NumPy) ─────────────
+# ── Prevenção de deadlocks e estouro de RAM (libs C++ multi-thread: OpenCV, PyMuPDF, NumPy) ─
 ENV OMP_NUM_THREADS=1
 ENV OPENBLAS_NUM_THREADS=1
 ENV MKL_NUM_THREADS=1
 ENV VECLIB_MAXIMUM_THREADS=1
 ENV PYTHONUNBUFFERED=1
 ENV NUMEXPR_NUM_THREADS=1
+ENV OPENCV_FOR_THREADS_NUM=1
 
 # ── Worker ───────────────────────────────────────────────────────────────────
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 8 --timeout 120 app:app"]
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 8 --timeout 300 --graceful-timeout 30 --max-requests 50 --max-requests-jitter 10 app:app"]
 

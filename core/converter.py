@@ -279,11 +279,75 @@ def _office_ppt_para_pdf(entrada, saida):
 # ─── PDF → DOCX ───────────────────────────────────────────────
 
 def pdf_para_docx(entrada, saida):
-    try: from pdf2docx import Converter as PDF2DOCXConverter
-    except ImportError: raise RuntimeError("pdf2docx não instalado.")
-    cv = PDF2DOCXConverter(entrada)
-    try:    cv.convert(saida)
-    finally: cv.close()
+    """
+    Converte PDF para DOCX usando estratégia multicamadas (Resiliente a erros e limite de RAM):
+    1. pdf2docx (Preserva layout visual complexo)
+    2. LibreOffice Headless (Fallback nativo do sistema)
+    3. PyMuPDF + python-docx (Fallback de emergência para extração de texto)
+    """
+    # Desativa multi-threading do OpenCV se instalado para economizar RAM e prevenir deadlocks no Docker
+    try:
+        import cv2
+        cv2.setNumThreads(0)
+    except Exception:
+        pass
+
+    # 1ª Tentativa: pdf2docx
+    try:
+        from pdf2docx import Converter as PDF2DOCXConverter
+        cv = PDF2DOCXConverter(entrada)
+        try:
+            cv.convert(saida)
+        finally:
+            cv.close()
+
+        if os.path.exists(saida) and os.path.getsize(saida) > 0:
+            log.info(f"[pdf_para_docx] Conversão concluída via pdf2docx: {os.path.basename(saida)}")
+            return
+        log.warning("[pdf_para_docx] pdf2docx não produziu um arquivo válido. Tentando fallback...")
+    except Exception as e:
+        log.warning(f"[pdf_para_docx] pdf2docx falhou ({e}). Iniciando fallback...")
+
+    # 2ª Tentativa (Fallback): LibreOffice
+    if SOFFICE:
+        try:
+            log.info("[pdf_para_docx] Tentando conversão via LibreOffice...")
+            _soffice_convert(entrada, saida, "docx")
+            if os.path.exists(saida) and os.path.getsize(saida) > 0:
+                log.info(f"[pdf_para_docx] Conversão concluída via LibreOffice: {os.path.basename(saida)}")
+                return
+            log.warning("[pdf_para_docx] Fallback via LibreOffice não gerou arquivo válido.")
+        except Exception as e_soffice:
+            log.warning(f"[pdf_para_docx] Fallback LibreOffice falhou ({e_soffice}).")
+
+    # 3ª Tentativa (Fallback de Emergência): PyMuPDF + python-docx
+    try:
+        log.info("[pdf_para_docx] Tentando fallback de emergência (extração de texto PyMuPDF)...")
+        from docx import Document
+        doc_pdf = fitz.open(entrada)
+        doc_docx = Document()
+        texto_encontrado = False
+
+        for i, page in enumerate(doc_pdf):
+            texto = page.get_text("text")
+            if texto.strip():
+                if i > 0:
+                    doc_docx.add_page_break()
+                doc_docx.add_paragraph(texto)
+                texto_encontrado = True
+
+        doc_pdf.close()
+
+        if texto_encontrado:
+            doc_docx.save(saida)
+            if os.path.exists(saida) and os.path.getsize(saida) > 0:
+                log.info(f"[pdf_para_docx] Conversão concluída via Fallback PyMuPDF: {os.path.basename(saida)}")
+                return
+    except Exception as e_emergencia:
+        log.error(f"[pdf_para_docx] Fallback de emergência falhou: {e_emergencia}")
+
+    raise RuntimeError("Não foi possível converter o arquivo PDF para Word (DOCX). O arquivo pode estar vazio ou corrompido.")
+
 
 
 # ─── PDF → PNG (primeira página) ─────────────────────────────

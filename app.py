@@ -966,7 +966,7 @@ def api_paleta_cores():
 
 @app.route("/modificar-arquivos")
 def modificar_arquivos_page():
-    return redirect(url_for("ferramentas_avancadas_page"))
+    return redirect(url_for("ferramentas_pdf_page"))
 
 @app.route("/api/file/comprimir", methods=["POST"])
 @rate_limit_required
