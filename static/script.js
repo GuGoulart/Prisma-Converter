@@ -690,23 +690,7 @@ document.addEventListener("DOMContentLoaded", () => {
     menuBtn?.addEventListener("click", toggleDrawer);
     overlay?.addEventListener("click", fecharDrawer);
 
-    // ── Oculta a opção no celular e exibe 'Instalar App Desktop (.exe)' apenas no PC ──
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    document.querySelectorAll("#btnInstallApp").forEach(btn => {
-        if (isMobileDevice) {
-            // No celular: oculta completamente a opção da barra lateral
-            btn.style.display = "none";
-        } else {
-            // No computador: exibe a opção de download do Prisma.exe
-            const span = btn.querySelector("span");
-            if (span) span.textContent = "Instalar App Desktop (.exe)";
-            btn.setAttribute("href", "/download-app");
-            btn.addEventListener("click", () => {
-                window.location.href = "/download-app";
-            });
-        }
-    });
 
     // ── Easter Egg: Cachorro de Chapéu de Cowboy no botão do logo ──
     function abrirModalDog() {

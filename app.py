@@ -868,83 +868,7 @@ def api_manipular_paginas():
         log.warning(f"api_manipular_paginas error: {e}")
         return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
-@app.route("/api/media/mp4-para-mp3", methods=["POST"])
-@rate_limit_required
-def api_mp4_para_mp3():
-    if not validar_csrf(request.form.get('csrf_token', '')):
-        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
-    f = request.files.get("arquivo")
-    if not f or not f.filename:
-        return render_template("pdf_tools.html", erro="Selecione um arquivo de vídeo MP4."), 400
-    
-    bitrate = request.form.get("bitrate", "192k")
-    if bitrate not in ("128k", "192k", "320k"):
-        bitrate = "192k"
-    
-    uid = criar_pasta()
-    pp = pasta_path(uid)
-    nome_seguro = secure_filename(f.filename) or "video.mp4"
-    entrada = os.path.join(pp, nome_seguro)
-    f.save(entrada)
-    
-    saida = os.path.join(DOWNLOAD_FOLDER, f"{uuid.uuid4().hex}_Prisma_Audio.mp3")
-    try:
-        from core.media_tools import mp4_para_mp3
-        mp4_para_mp3(entrada, saida, bitrate=bitrate)
-        sz_orig = os.path.getsize(entrada) if os.path.exists(entrada) else None
-        job_id = registrar_saida_historico(saida, "Prisma_Audio.mp3", "MP4", "MP3", tamanho_orig=sz_orig, pasta_uid=uid)
-        _limpar_pasta_upload(pp)
-        resp = send_file(saida, as_attachment=True, download_name="Prisma_Audio.mp3")
-        resp.headers["Cache-Control"] = "no-store"
-        return resp
-    except Exception as e:
-        log.warning(f"api_mp4_para_mp3 error: {e}")
-        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
-
-@app.route("/api/media/mp4-para-gif", methods=["POST"])
-@rate_limit_required
-def api_mp4_para_gif():
-    if not validar_csrf(request.form.get('csrf_token', '')):
-        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
-
-    f = request.files.get("arquivo")
-    if not f or not f.filename:
-        return render_template("pdf_tools.html", erro="Selecione um arquivo de vídeo MP4."), 400
-    
-    try:
-        fps = int(request.form.get("fps", 15))
-        if fps not in (10, 15, 20):
-            fps = 15
-    except (ValueError, TypeError):
-        fps = 15
-
-    try:
-        largura = int(request.form.get("largura", 480))
-        if largura not in (320, 480, 640, 0):
-            largura = 480
-    except (ValueError, TypeError):
-        largura = 480
-
-    uid = criar_pasta()
-    pp = pasta_path(uid)
-    nome_seguro = secure_filename(f.filename) or "video.mp4"
-    entrada = os.path.join(pp, nome_seguro)
-    f.save(entrada)
-    
-    saida = os.path.join(DOWNLOAD_FOLDER, f"{uuid.uuid4().hex}_Prisma_Animacao.gif")
-    try:
-        from core.media_tools import mp4_para_gif
-        mp4_para_gif(entrada, saida, fps=fps, largura=largura)
-        sz_orig = os.path.getsize(entrada) if os.path.exists(entrada) else None
-        job_id = registrar_saida_historico(saida, "Prisma_Animacao.gif", "MP4", "GIF", tamanho_orig=sz_orig, pasta_uid=uid)
-        _limpar_pasta_upload(pp)
-        resp = send_file(saida, as_attachment=True, download_name="Prisma_Animacao.gif")
-        resp.headers["Cache-Control"] = "no-store"
-        return resp
-    except Exception as e:
-        log.warning(f"api_mp4_para_gif error: {e}")
-        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 
 
@@ -1042,13 +966,13 @@ def api_paleta_cores():
 
 @app.route("/modificar-arquivos")
 def modificar_arquivos_page():
-    return render_template("file_tools.html")
+    return redirect(url_for("ferramentas_avancadas_page"))
 
 @app.route("/api/file/comprimir", methods=["POST"])
 @rate_limit_required
 def api_comprimir_arquivos():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     arquivos = request.files.getlist("arquivos")
     formato = request.form.get("formato", "zip")
@@ -1079,13 +1003,13 @@ def api_comprimir_arquivos():
         return resp
     except Exception as e:
         log.warning(f"api_comprimir_arquivos error: {e}")
-        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/file/zip-senha", methods=["POST"])
 @rate_limit_required
 def api_zip_senha():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     arquivos = request.files.getlist("arquivos")
     senha = request.form.get("senha", "")
@@ -1115,13 +1039,13 @@ def api_zip_senha():
         return resp
     except Exception as e:
         log.warning(f"api_zip_senha error: {e}")
-        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/file/criptografar", methods=["POST"])
 @rate_limit_required
 def api_criptografar():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
     senha = request.form.get("senha", "")
@@ -1146,13 +1070,13 @@ def api_criptografar():
         return resp
     except Exception as e:
         log.warning(f"api_criptografar error: {e}")
-        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/file/descriptografar", methods=["POST"])
 @rate_limit_required
 def api_descriptografar():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     f = request.files.get("arquivo")
     senha = request.form.get("senha", "")
@@ -1185,7 +1109,7 @@ def api_descriptografar():
         return resp
     except Exception as e:
         log.warning(f"api_descriptografar error: {e}")
-        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/file/hash", methods=["POST"])
 @rate_limit_required
@@ -1216,7 +1140,7 @@ def api_calcular_hash():
 @rate_limit_required
 def api_renomear_lote():
     if not validar_csrf(request.form.get('csrf_token', '')):
-        return render_template("file_tools.html", erro="Token inválido. Recarregue a página."), 403
+        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
 
     arquivos = request.files.getlist("arquivos")
     # SEC-PATH: sanitiza o padrão de nome para prevenir Path Traversal.
@@ -1249,7 +1173,7 @@ def api_renomear_lote():
         return resp
     except Exception as e:
         log.warning(f"api_renomear_lote error: {e}")
-        return render_template("file_tools.html", erro=_erro_seguro(e)), 400
+        return render_template("pdf_tools.html", erro=_erro_seguro(e)), 400
 
 @app.route("/api/data/mesclar-planilhas", methods=["POST"])
 @rate_limit_required
@@ -1292,23 +1216,7 @@ def serve_manifest():
 def serve_sw():
     return send_file("static/sw.js", mimetype="application/javascript")
 
-_lock_build_desktop = Lock()
 
-@app.route("/download-app")
-def download_app():
-    possiveis_caminhos = [
-        os.path.join("dist", "Prisma.exe"),
-        os.path.join("dist", "Prisma", "Prisma.exe"),
-        os.path.join("dist", "Prisma-Setup.exe"),
-        os.path.join("dist", "Prisma_Desktop.zip")
-    ]
-    for caminho in possiveis_caminhos:
-        if os.path.exists(caminho):
-            return send_file(caminho, as_attachment=True, download_name=os.path.basename(caminho))
-
-    # Redirecionamento seguro para a release oficial (evita PyInstaller em runtime via HTTP DoS)
-    release_url = os.environ.get("GITHUB_RELEASE_URL", "https://github.com/GuGoulart/Prisma-Converter/releases/latest/download/Prisma.exe")
-    return redirect(release_url)
 
 @app.route("/download-apk")
 def download_apk():

@@ -701,14 +701,7 @@ def json_para_pdf(entrada, saida, orientacao="retrato"):
 
 
 
-# ─── Mídia ──────────────────────────────────────────────────────
-def mp4_para_mp3_conv(entrada: str, saida: str):
-    from core.media_tools import mp4_para_mp3
-    mp4_para_mp3(entrada, saida)
 
-def mp4_para_gif_conv(entrada: str, saida: str):
-    from core.media_tools import mp4_para_gif
-    mp4_para_gif(entrada, saida)
 
 # ─── Mesclar Planilhas ──────────────────────────────────────────
 def mesclar_planilhas(arquivos: list, saida: str, formato: str = "xlsx"):
@@ -984,9 +977,7 @@ _MAPA = {
     ("heic", "docx"): heic_para_docx,
     ("heic", "pptx"): heic_para_pptx,
     ("heic", "txt"):  imagem_para_txt_ocr,
-    # MP4
-    ("mp4",  "mp3"):  mp4_para_mp3_conv,
-    ("mp4",  "gif"):  mp4_para_gif_conv,
+
 }
 
 _ACEITA_ORIENTACAO = {("xlsx","pdf"), ("xls","pdf"), ("csv","pdf"), ("json","pdf")}
