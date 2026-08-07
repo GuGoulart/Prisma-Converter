@@ -27,6 +27,12 @@ services:
       - key: OPENCV_FOR_THREADS_NUM
         value: "1"
 
+      # Limites adaptativos para 512 MB RAM / 0.1 CPU
+      - key: MAX_MB
+        value: "10"              # Limite de upload (MB). 0 = sem limite (modo desktop)
+      - key: MAX_OUTPUT_MB
+        value: "50"              # Limite do arquivo gerado (MB). 0 = sem limite
+
       # Chave secreta do Flask — GERE UM VALOR SEGURO e defina como secret no dashboard
       - key: SECRET_KEY
         generateValue: true   # Render gera automaticamente (recomendado)

@@ -120,7 +120,7 @@
 
             <div class="sidebar-info" style="align-items: center; text-align: center;">
                 <p class="sidebar-label" data-i18n="sidebar.limit">Limite</p>
-                <p class="sidebar-valor">15 MB</p>
+                <p class="sidebar-valor">{{ 'Sem limite' if max_mb == 0 else (max_mb|string + ' MB') }}</p>
             </div>
 
 

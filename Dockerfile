@@ -48,10 +48,14 @@ ENV PYTHONUNBUFFERED=1
 ENV NUMEXPR_NUM_THREADS=1
 ENV OPENCV_FOR_THREADS_NUM=1
 
+# ── Variáveis de configuração adaptativa ─────────────────────────────────────
+ENV MAX_MB=10
+ENV MAX_OUTPUT_MB=50
+
 # ── Worker ───────────────────────────────────────────────────────────────────
-# Configuração otimizada para o Render:
-# - 1 worker para minimizar uso de RAM (plano Starter: 512 MB)
-# - 4 threads para servir requisições simultâneas sem overhead de processos
+# Configuração otimizada para o Render (512 MB RAM / 0.1 CPU):
+# - 1 worker para minimizar uso de RAM
+# - 2 threads: menos contenção de CPU que 4 (0.1 CPU não suporta mais)
 # - timeout 300s para conversões pesadas (LibreOffice, PDF)
 # - max-requests 100 + jitter para evitar vazamento de memória a longo prazo
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 1 --threads 4 --timeout 300 --graceful-timeout 30 --max-requests 100 --max-requests-jitter 20 --log-level info app:app"]
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 1 --threads 2 --timeout 300 --graceful-timeout 30 --max-requests 100 --max-requests-jitter 20 --log-level info app:app"]

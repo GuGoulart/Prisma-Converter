@@ -7,6 +7,15 @@ const previewInicial = _bd.previewInicial || '';
 const previewTipo = _bd.previewTipo || '';
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+// ── Helper: fetch com CSRF token automático ────────────────────
+// Lê o token da <meta name="csrf-token"> e injeta no header X-CSRFToken.
+// Usar em TODOS os fetches POST/DELETE que o backend valida CSRF.
+function csrfFetch(url, options = {}) {
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const headers = Object.assign({ 'X-CSRFToken': token }, options.headers || {});
+    return fetch(url, Object.assign({}, options, { headers }));
+}
+
 // ── Limpeza de Service Worker & Cache do Navegador ─────────────
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(registrations => {
@@ -497,7 +506,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.restaurarArquivo = async function (jobId) {
         if (!jobId) return;
         try {
-            const resp = await fetch("/api/historico/restaurar/" + jobId, {
+            const resp = await csrfFetch("/api/historico/restaurar/" + jobId, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" }
             });
@@ -598,7 +607,7 @@ document.addEventListener("DOMContentLoaded", () => {
     destroyModal?.addEventListener("click", (event) => { if (event.target === destroyModal) fecharModalDestruir(); });
     document.getElementById("confirmDestroyHistory")?.addEventListener("click", async () => {
         try {
-            const response = await fetch("/api/historico/destruir-tudo", { method: "POST" });
+            const response = await csrfFetch("/api/historico/destruir-tudo", { method: "POST" });
             const data = await response.json();
             if (!response.ok || data.erro) throw new Error(data.erro || "Falha ao destruir os arquivos.");
             fecharModalDestruir();
@@ -623,7 +632,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!button) return;
         const politica = button.dataset.policy;
         try {
-            const response = await fetch("/api/historico/set-politica", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ politica }) });
+            const response = await csrfFetch("/api/historico/set-politica", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ politica }) });
             const data = await response.json();
             if (!response.ok || data.erro) throw new Error(data.erro || "Falha ao salvar a preferência.");
             window.ThemeCustomizer?.setRetentionPolicy?.(politica);
@@ -638,7 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
         secureWipeToggle.addEventListener("change", async () => {
             const modo_seguro = secureWipeToggle.checked;
             try {
-                const response = await fetch("/api/historico/set-seguranca", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo_seguro }) });
+                const response = await csrfFetch("/api/historico/set-seguranca", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo_seguro }) });
                 if (!response.ok) throw new Error("Falha ao salvar a preferência de segurança.");
                 mostrarToast(modo_seguro ? "Eliminação segura ativada." : "Eliminação segura desativada.");
             } catch (error) {

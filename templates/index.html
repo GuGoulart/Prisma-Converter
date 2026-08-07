@@ -101,7 +101,7 @@
 
             <div class="sidebar-info" style="align-items: center; text-align: center;">
                 <p class="sidebar-label" data-i18n="sidebar.limit">Limite</p>
-                <p class="sidebar-valor">15 MB</p>
+                <p class="sidebar-valor">{{ 'Sem limite' if max_mb == 0 else (max_mb|string + ' MB') }}</p>
             </div>
 
             <div class="sidebar-linha"></div>
@@ -211,14 +211,40 @@
                             <!-- Opções de destino -->
                             <div class="opcoes-grid">
                                 {% for c in conversoes %}
-                                <label class="opcao-card">
+                                {% set tem_aviso = avisos_output is defined and c in avisos_output %}
+                                <label class="opcao-card{% if tem_aviso %} opcao-card-aviso{% endif %}" {% if tem_aviso %}title="Conversão pesada: output estimado pode exceder {{ max_output_mb }} MB"{% endif %}>
                                     <input type="radio" name="destino" value="{{ c }}" {% if loop.first %}checked{%
                                         endif %}>
                                     <span class="opcao-ext badge-text-{{ c }}">{{ c.upper() }}</span>
+                                    {% if tem_aviso %}
+                                    <span class="opcao-aviso-badge" title="Output estimado grande">⚠️</span>
+                                    {% else %}
                                     <span class="opcao-check">✓</span>
+                                    {% endif %}
                                 </label>
                                 {% endfor %}
                             </div>
+
+                            <!-- Banner de aviso de output grande -->
+                            {% if avisos_output is defined and avisos_output %}
+                            <div class="aviso-output-banner">
+                                <span class="aviso-output-icone">⚠️</span>
+                                <div class="aviso-output-texto">
+                                    <strong>Atenção: conversões marcadas com ⚠️ podem ser muito pesadas para o servidor.</strong>
+                                    <ul class="aviso-sugestoes">
+                                        {% set ns = namespace(sugs=[]) %}
+                                        {% for fmt, sugs in avisos_output.items() %}
+                                            {% for s in sugs %}
+                                                {% if s not in ns.sugs %}
+                                                    {% set ns.sugs = ns.sugs + [s] %}
+                                                    <li>{{ s }}</li>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            {% endif %}
 
                             <!-- Orientação (só XLSX/CSV → PDF) -->
                             {% if origem in ['xlsx','xls','csv'] %}

@@ -211,6 +211,33 @@ def _executar_conversao(
         if not os.path.exists(saida) or os.path.getsize(saida) == 0:
             raise RuntimeError("Arquivo de saída não foi gerado ou está vazio.")
 
+        # Guard de tamanho de output (Render: 512 MB RAM)
+        _max_output_mb = int((os.environ.get("MAX_OUTPUT_MB") or "50").strip())
+        _is_web = os.environ.get("PRISMA_DESKTOP") != "1"
+        if _is_web and _max_output_mb > 0:
+            sz = os.path.getsize(saida)
+            if sz > _max_output_mb * 1024 * 1024:
+                try:
+                    os.remove(saida)
+                except Exception:
+                    pass
+                msg = (
+                    f"O arquivo convertido ficou muito grande ({sz // (1024*1024)} MB) e "
+                    f"ultrapassou o limite do servidor ({_max_output_mb} MB). "
+                    f"Sugestões: 🗜️ Comprima o arquivo primeiro | ✂️ Divida em partes menores "
+                    f"| 📏 Use um arquivo menor (até 5 MB para esta conversão)."
+                )
+                job_store.atualizar(
+                    job_id,
+                    percent=0.0,
+                    status="Output muito grande — rejeitado.",
+                    concluido=True,
+                    erro=msg,
+                )
+                log.warning("[tasks:%s] Output rejeitado: %d MB > %d MB máx.",
+                            job_id[:8], sz // (1024*1024), _max_output_mb)
+                return
+
         job_store.atualizar(
             job_id,
             percent=100.0,

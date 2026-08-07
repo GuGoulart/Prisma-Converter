@@ -56,16 +56,77 @@ if not _sec_key:
     else:
         _sec_key = "prisma_converter_default_secret_key_dev_2026"
 app.secret_key = _sec_key
-
 UPLOAD_FOLDER   = "uploads"
 DOWNLOAD_FOLDER = "downloads"
-MAX_MB          = 15
+
+# ── Modo de execução ──────────────────────────────────────────────────────────
+# PRISMA_DESKTOP=1  → app local, sem limites de tamanho
+# Sem PRISMA_DESKTOP → web (Render), limites conservadores para 512 MB RAM
+_IS_DESKTOP = os.environ.get("PRISMA_DESKTOP") == "1"
+_IS_WEB     = not _IS_DESKTOP
+
+# Limite de upload: sem limite no desktop, 10 MB na web
+MAX_MB = 0 if _IS_DESKTOP else int((os.environ.get("MAX_MB") or "10").strip())
+if MAX_MB <= 0:
+    MAX_MB = 0  # 0 = sem limite
+
+# Limite de saída estimada: previne conversões que explodem a RAM
+# (ex: PDF 7 MB → DOCX 60 MB crashando o servidor)
+MAX_OUTPUT_MB = 0 if _IS_DESKTOP else int((os.environ.get("MAX_OUTPUT_MB") or "50").strip())
+
 TIMEOUT_CONV    = 120
 TIMEOUT_PREVIEW = 40
 
+# ── Fatores de expansão por conversão ────────────────────────────────────────
+# Multiplicador conservador: tamanho_entrada × fator ≈ tamanho_saida estimado
+# Usados para rejeitar conversões antes de iniciar se a estimativa ultrapassar MAX_OUTPUT_MB.
+_FATORES_EXPANSAO = {
+    # Conversões que expandem muito (PDF com imagens → documentos editáveis)
+    ("pdf",  "docx"): 10.0,
+    ("pdf",  "doc"):  10.0,
+    ("pdf",  "xlsx"): 6.0,
+    ("pdf",  "csv"):  4.0,
+    ("pdf",  "pptx"): 8.0,
+    ("pdf",  "png"):  8.0,
+    ("pdf",  "jpg"):  6.0,
+    ("pdf",  "jpeg"): 6.0,
+    # Documentos Office → PDF (expansão moderada)
+    ("docx", "pdf"):  1.5,
+    ("doc",  "pdf"):  1.5,
+    ("xlsx", "pdf"):  2.0,
+    ("xls",  "pdf"):  2.0,
+    ("pptx", "pdf"):  1.5,
+    ("ppt",  "pdf"):  1.5,
+    # Imagens → PDF (comprime)
+    ("png",  "pdf"):  0.9,
+    ("jpg",  "pdf"):  1.0,
+    ("jpeg", "pdf"):  1.0,
+    ("webp", "pdf"):  1.0,
+    ("heic", "pdf"):  1.2,
+}
+
+def _estimar_tamanho_output(tamanho_bytes: int, origem: str, destino: str) -> int:
+    """Estima o tamanho do arquivo de saída com base nos fatores de expansão conhecidos."""
+    fator = _FATORES_EXPANSAO.get((origem.lower(), destino.lower()), 2.0)
+    return int(tamanho_bytes * fator)
+
+def _sugestoes_arquivo_grande(origem: str, destino: str) -> list[str]:
+    """Retorna sugestões contextuais quando a conversão seria muito pesada."""
+    sugestoes = []
+    origem = origem.lower()
+    destino = destino.lower()
+    if origem == "pdf":
+        sugestoes.append("🗜️ Comprima o PDF primeiro usando a ferramenta 'Comprimir PDF'")
+        sugestoes.append("✂️ Divida o PDF em partes menores e converta separadamente")
+        if destino in ("docx", "doc", "xlsx"):
+            sugestoes.append("📋 Para extrair apenas o texto, tente converter para CSV primeiro")
+    sugestoes.append("📏 Use um arquivo menor (recomendado: até 5 MB para esta conversão)")
+    return sugestoes
+
 app.config["UPLOAD_FOLDER"]      = UPLOAD_FOLDER
 app.config["DOWNLOAD_FOLDER"]    = DOWNLOAD_FOLDER
-app.config["MAX_CONTENT_LENGTH"] = MAX_MB * 1024 * 1024
+# MAX_CONTENT_LENGTH: 0 no desktop (sem limite), MAX_MB×1MB na web
+app.config["MAX_CONTENT_LENGTH"] = (MAX_MB * 1024 * 1024) if MAX_MB > 0 else None
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 if os.environ.get("PORT"):
@@ -101,7 +162,9 @@ def copiar_para_downloads_desktop(caminho_arquivo, download_name):
 def inject_desktop_flag():
     return dict(
         is_desktop_app=bool(os.environ.get("PRISMA_DESKTOP") == "1"),
-        pasta_downloads_usuario=obter_pasta_downloads_usuario()
+        pasta_downloads_usuario=obter_pasta_downloads_usuario(),
+        max_mb=MAX_MB,
+        max_output_mb=MAX_OUTPUT_MB,
     )
 
 contador_conversoes = 0
@@ -136,30 +199,29 @@ def _get_env_int(key, default):
     val = (os.environ.get(key) or "").strip()
     return int(val) if val.isdigit() else default
 
-MAX_PARALELAS = _get_env_int("MAX_PARALELAS", 4)
+# MAX_PARALELAS: 1 no Render (512 MB RAM) para evitar OOM, 4 no desktop
+MAX_PARALELAS = _get_env_int("MAX_PARALELAS", 1 if _IS_WEB else 4)
 
+LIMITES_POR_TIPO = {}
+NOMES_LIMITES = {}
+_TIPOS_SUPORTADOS = [
+    "pdf", "docx", "xlsx", "pptx", "csv", "ppt", "doc", "xls",
+    "png", "jpg", "jpeg", "json", "webp", "heic", "mp4", "mp3", "enc"
+]
+if _IS_DESKTOP:
+    # Desktop: sem limites
+    LIMITES_POR_TIPO = {k: float("inf") for k in _TIPOS_SUPORTADOS}
+    NOMES_LIMITES    = {k: "Sem limite" for k in _TIPOS_SUPORTADOS}
+else:
+    # Web: limite em bytes por tipo
+    _lim_bytes = MAX_MB * 1024 * 1024
+    LIMITES_POR_TIPO = {k: _lim_bytes for k in _TIPOS_SUPORTADOS}
+    NOMES_LIMITES    = {k: f"{MAX_MB} MB" for k in _TIPOS_SUPORTADOS}
 
-LIMITES_POR_TIPO = {
-    "pdf":  MAX_MB * 1024 * 1024,
-    "docx": MAX_MB * 1024 * 1024,
-    "xlsx": MAX_MB * 1024 * 1024,
-    "pptx": MAX_MB * 1024 * 1024,
-    "csv":  MAX_MB * 1024 * 1024,
-    "ppt":  MAX_MB * 1024 * 1024,
-    "doc":  MAX_MB * 1024 * 1024,
-    "xls":  MAX_MB * 1024 * 1024,
-    "png":  MAX_MB * 1024 * 1024,
-    "jpg":  MAX_MB * 1024 * 1024,
-    "jpeg": MAX_MB * 1024 * 1024,
-    "json": MAX_MB * 1024 * 1024,
-    "webp": MAX_MB * 1024 * 1024,
-    "heic": MAX_MB * 1024 * 1024,
-    "mp4":  MAX_MB * 1024 * 1024,
-    "mp3":  MAX_MB * 1024 * 1024,
-    "enc":  MAX_MB * 1024 * 1024,
-}
-NOMES_LIMITES = {k: f"{MAX_MB} MB" for k in LIMITES_POR_TIPO}
-
+log.info("[config] Modo: %s | Upload máx: %s | Output máx: %s",
+         "Desktop (sem limites)" if _IS_DESKTOP else "Web (Render)",
+         "sem limite" if MAX_MB == 0 else f"{MAX_MB} MB",
+         "sem limite" if MAX_OUTPUT_MB == 0 else f"{MAX_OUTPUT_MB} MB")
 
 # ── Flask-Limiter com Redis (quando disponível) ──────────────────────────────────────
 # Modo: sem REDIS_URL → rate limiting in-memory (limitado a uma instância).
@@ -235,9 +297,10 @@ def _erro_seguro(e: Exception) -> str:
 
 # ── Health Check (Render) ─────────────────────────────────────────────────────
 @app.route("/health")
+@app.route("/ping")
 def health_check():
     """Endpoint leve para o Render verificar se o serviço está respondendo."""
-    return jsonify({"status": "ok", "service": "prisma-converter"}), 200
+    return jsonify({"status": "ok", "service": "prisma-converter", "timestamp": time.time()}), 200
 
 
 def criar_pasta():
@@ -357,10 +420,6 @@ def pagina_nao_encontrada(e):
 def erro_interno_servidor(e):
     return render_template("500.html"), 500
 
-@app.route('/health')
-@app.route('/ping')
-def health_check():
-    return jsonify({"status": "ok", "timestamp": time.time()}), 200
 
 @app.route('/favicon.ico')
 def favicon():
@@ -1382,10 +1441,11 @@ def upload():
         conteudo = arq.read()
         tamanho  = len(conteudo)
 
-        limite = LIMITES_POR_TIPO.get(ext, MAX_MB * 1024 * 1024)
-        if tamanho > limite:
+        limite = LIMITES_POR_TIPO.get(ext, MAX_MB * 1024 * 1024 if MAX_MB > 0 else float("inf"))
+        if limite != float("inf") and tamanho > limite:
             return render_template("index.html",
-                erro=f"Arquivo muito grande para '{ext.upper()}'. Limite: {NOMES_LIMITES.get(ext, f'{MAX_MB} MB')}.")
+                erro=f"Arquivo muito grande para '{ext.upper()}'. Limite: {NOMES_LIMITES.get(ext, f'{MAX_MB} MB')}."
+            )
 
         uid    = criar_pasta()
         pp     = pasta_path(uid)
@@ -1415,8 +1475,19 @@ def upload():
         session["pasta_upload"] = uid
         session["arquivo_nome"] = nome_i
         session["arquivo_ext"]  = ext
+        session["arquivo_tamanho"] = tamanho
         session.modified = True
         log.info(f"Upload OK: {nome_original} ({tamanho}b) — {ip}")
+
+        # ── Alertas de output estimado ──────────────────────────────────────────
+        # Calcula alertas de output para cada conversão possível, antes de iniciar
+        avisos_output = {}
+        if _IS_WEB and MAX_OUTPUT_MB > 0:
+            for conv in (conversoes or []):
+                dest_fmt = conv if isinstance(conv, str) else conv.get("formato", "")
+                estimado = _estimar_tamanho_output(tamanho, ext, dest_fmt)
+                if estimado > MAX_OUTPUT_MB * 1024 * 1024:
+                    avisos_output[dest_fmt] = _sugestoes_arquivo_grande(ext, dest_fmt)
 
         # ── Preview inicial ──────────────────────────────────────
         preview_url  = None
@@ -1457,6 +1528,8 @@ def upload():
             preview_url=preview_url,
             preview_tipo=preview_tipo,
             tabela_html=tabela_html,
+            avisos_output=avisos_output,
+            max_output_mb=MAX_OUTPUT_MB,
         )
 
     except Exception as e:
@@ -1532,6 +1605,26 @@ def converter():
                                    erro="Tempo excedido. Tente com um arquivo menor.")
         if err[0]:
             raise err[0]
+
+        # Guard de tamanho de output (proteção pós-conversão)
+        if _IS_WEB and MAX_OUTPUT_MB > 0 and saida and os.path.exists(saida):
+            sz_saida = os.path.getsize(saida)
+            if sz_saida > MAX_OUTPUT_MB * 1024 * 1024:
+                try:
+                    os.remove(saida)
+                    shutil.rmtree(pp, ignore_errors=True)
+                except Exception:
+                    pass
+                sugs = _sugestoes_arquivo_grande(origem, destino)
+                sugs_texto = " | ".join(sugs)
+                log.warning("[converter] Output muito grande (%d MB) para %s→%s — rejeitado.",
+                            sz_saida // (1024*1024), origem, destino)
+                with _lock_conv:
+                    _conversoes_ativas -= 1
+                return render_template("index.html",
+                    erro=f"O arquivo convertido ficou muito grande ({sz_saida // (1024*1024)} MB) e "
+                         f"ultrapassou o limite do servidor ({MAX_OUTPUT_MB} MB). "
+                         f"Sugestões: {sugs_texto}")
 
         @after_this_request
         def deletar(resp):
