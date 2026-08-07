@@ -213,7 +213,8 @@ def _executar_conversao(
 
         # Guard de tamanho de output (Render: 512 MB RAM)
         _max_output_mb = int((os.environ.get("MAX_OUTPUT_MB") or "50").strip())
-        _is_web = os.environ.get("PRISMA_DESKTOP") != "1"
+        _is_render = os.environ.get("RENDER") in ("true", "1") or bool(os.environ.get("RENDER_SERVICE_ID"))
+        _is_web = _is_render and os.environ.get("PRISMA_DESKTOP") != "1"
         if _is_web and _max_output_mb > 0:
             sz = os.path.getsize(saida)
             if sz > _max_output_mb * 1024 * 1024:
@@ -224,8 +225,8 @@ def _executar_conversao(
                 msg = (
                     f"O arquivo convertido ficou muito grande ({sz // (1024*1024)} MB) e "
                     f"ultrapassou o limite do servidor ({_max_output_mb} MB). "
-                    f"Sugestões: 🗜️ Comprima o arquivo primeiro | ✂️ Divida em partes menores "
-                    f"| 📏 Use um arquivo menor (até 5 MB para esta conversão)."
+                    f"Sugestões: Comprima o arquivo primeiro | Divida em partes menores "
+                    f"| Use um arquivo menor (até 5 MB para esta conversão)."
                 )
                 job_store.atualizar(
                     job_id,

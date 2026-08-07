@@ -60,19 +60,17 @@ UPLOAD_FOLDER   = "uploads"
 DOWNLOAD_FOLDER = "downloads"
 
 # ── Modo de execução ──────────────────────────────────────────────────────────
-# PRISMA_DESKTOP=1  → app local, sem limites de tamanho
-# Sem PRISMA_DESKTOP → web (Render), limites conservadores para 512 MB RAM
-_IS_DESKTOP = os.environ.get("PRISMA_DESKTOP") == "1"
+# Detecta se está hospedado no Render (Web Produção).
+# Em localhost / desenvolvimento, o app roda em modo local (sem limites e sem avisos).
+_IS_RENDER  = os.environ.get("RENDER") in ("true", "1") or bool(os.environ.get("RENDER_SERVICE_ID"))
+_IS_DESKTOP = (os.environ.get("PRISMA_DESKTOP") == "1") or (not _IS_RENDER)
 _IS_WEB     = not _IS_DESKTOP
 
-# Limite de upload: sem limite no desktop, 10 MB na web
-MAX_MB = 0 if _IS_DESKTOP else int((os.environ.get("MAX_MB") or "10").strip())
-if MAX_MB <= 0:
-    MAX_MB = 0  # 0 = sem limite
+# Limite de upload: sem limite em localhost/desktop (0), 10 MB no Render
+MAX_MB = int((os.environ.get("MAX_MB") or "10").strip()) if _IS_WEB else 0
 
-# Limite de saída estimada: previne conversões que explodem a RAM
-# (ex: PDF 7 MB → DOCX 60 MB crashando o servidor)
-MAX_OUTPUT_MB = 0 if _IS_DESKTOP else int((os.environ.get("MAX_OUTPUT_MB") or "50").strip())
+# Limite de saída estimada: previne conversões que explodem a RAM (50 MB no Render, 0 em localhost)
+MAX_OUTPUT_MB = int((os.environ.get("MAX_OUTPUT_MB") or "50").strip()) if _IS_WEB else 0
 
 TIMEOUT_CONV    = 120
 TIMEOUT_PREVIEW = 40
@@ -116,11 +114,11 @@ def _sugestoes_arquivo_grande(origem: str, destino: str) -> list[str]:
     origem = origem.lower()
     destino = destino.lower()
     if origem == "pdf":
-        sugestoes.append("🗜️ Comprima o PDF primeiro usando a ferramenta 'Comprimir PDF'")
-        sugestoes.append("✂️ Divida o PDF em partes menores e converta separadamente")
+        sugestoes.append("Comprima o PDF primeiro usando a ferramenta 'Comprimir PDF'")
+        sugestoes.append("Divida o PDF em partes menores e converta separadamente")
         if destino in ("docx", "doc", "xlsx"):
-            sugestoes.append("📋 Para extrair apenas o texto, tente converter para CSV primeiro")
-    sugestoes.append("📏 Use um arquivo menor (recomendado: até 5 MB para esta conversão)")
+            sugestoes.append("Para extrair apenas o texto, tente converter para CSV primeiro")
+    sugestoes.append("Use um arquivo menor (recomendado: até 5 MB para esta conversão)")
     return sugestoes
 
 app.config["UPLOAD_FOLDER"]      = UPLOAD_FOLDER

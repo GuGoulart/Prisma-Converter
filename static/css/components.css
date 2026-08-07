@@ -306,6 +306,49 @@
     border-color: var(--accent)
 }
 
+/* ── Aviso de Output Grande ── */
+.opcao-card-aviso {
+    border-color: rgba(255, 170, 0, 0.4);
+}
+.opcao-aviso-badge {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    color: #ffaa00;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.aviso-output-banner {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 16px;
+    margin-top: 12px;
+    background: rgba(255, 170, 0, 0.08);
+    border: 1px solid rgba(255, 170, 0, 0.3);
+    border-radius: 4px;
+    color: #ffaa00;
+}
+.aviso-output-icone {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+.aviso-output-texto {
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+.aviso-sugestoes {
+    margin: 8px 0 0 16px;
+    padding: 0;
+    list-style-type: disc;
+}
+.aviso-sugestoes li {
+    margin-bottom: 4px;
+    color: var(--text);
+    font-size: 0.82rem;
+}
+
 /* ── Orientação ── */
 .orientacao-wrap {
     display: none;
