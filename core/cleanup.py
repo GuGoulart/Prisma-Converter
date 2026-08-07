@@ -86,9 +86,9 @@ def limpar_residuos_loop(upload_folder: str, download_folder: str):
     Loop de limpeza periódica (a cada 5 minutos).
     Remove arquivos com mais de 15 minutos de `upload_folder` e `download_folder`.
 
-    NOTA ARQUITETURAL: Em ambientes com múltiplas réplicas (Cloud Run escalonado),
+    NOTA ARQUITETURAL: Em ambientes com múltiplas réplicas (Render escalonado),
     cada instância limpa apenas os seus próprios arquivos. Para compartilhamento
-    de estado de arquivos, considerar Google Cloud Storage como backend de uploads.
+    de estado entre instâncias, configure um Render Disk persistente ou Redis.
     """
     while True:
         time.sleep(_INTERVALO_VARREDURA)

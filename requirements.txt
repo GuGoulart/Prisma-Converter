@@ -63,8 +63,7 @@ qrcode[pil]>=7.4
 pyzbar>=0.1.9
 pyzipper>=0.3.6
 
-# ── Tarefas assíncronas + Rate limiting + Cloud Storage ──────────────────────
+# ── Tarefas assíncronas + Rate limiting ─────────────────────────────────────
 celery[redis]
 flask-limiter[redis]
-google-cloud-storage
 redis

@@ -1,0 +1,59 @@
+# render.yaml — Configuração de deploy do Prisma Converter no Render
+# Documentação: https://render.com/docs/render-yaml-spec
+
+services:
+  - type: web
+    name: prisma-converter
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon          # Altere para: frankfurt, singapore, ohio, virginia
+    plan: starter           # Opções: free, starter, standard, pro
+    healthCheckPath: /health
+
+    # ── Variáveis de Ambiente ─────────────────────────────────────────────────
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+      - key: VECLIB_MAXIMUM_THREADS
+        value: "1"
+      - key: NUMEXPR_NUM_THREADS
+        value: "1"
+      - key: OPENCV_FOR_THREADS_NUM
+        value: "1"
+
+      # Chave secreta do Flask — GERE UM VALOR SEGURO e defina como secret no dashboard
+      - key: SECRET_KEY
+        generateValue: true   # Render gera automaticamente (recomendado)
+
+      # URL pública do app (necessária para QR Codes)
+      # Descomente e ajuste se precisar forçar a URL:
+      # - key: PRISMA_PUBLIC_URL
+      #   value: https://prisma-converter.onrender.com
+
+      # Redis para rate limiting distribuído e Celery (opcional)
+      # Configure via Render Add-on Redis ou URL externa:
+      # - key: REDIS_URL
+      #   fromService:
+      #     type: redis
+      #     name: prisma-redis
+      #     property: connectionString
+
+    # ── Disco Persistente (opcional) ─────────────────────────────────────────
+    # Por padrão o Render usa disco efêmero (dados se perdem no deploy).
+    # Para uploads persistentes entre deploys, habilite um disco:
+    # disk:
+    #   name: prisma-data
+    #   mountPath: /app/uploads
+    #   sizeGB: 1
+
+    # ── Auto-Deploy ───────────────────────────────────────────────────────────
+    autoDeploy: true
+
+    # ── Build Command ─────────────────────────────────────────────────────────
+    # Não é necessário para Docker — o Dockerfile cuida do build.

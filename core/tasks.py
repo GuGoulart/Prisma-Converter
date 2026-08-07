@@ -5,7 +5,7 @@ Modo de operação (selecionado automaticamente):
 ─────────────────────────────────────────────────────────────────────────────
 • Sem REDIS_URL → tarefas executam em threads do processo (sem infra extra).
   Comportamento idêntico ao atual + rastreamento de status por job_id.
-  Adequado para uso individual e Cloud Run com instância única.
+  Adequado para uso individual e Render com instância única.
 
 • Com REDIS_URL → tarefas são enviadas ao Celery com broker Redis.
   Permite múltiplos workers, retry automático e persistência de estado.

@@ -233,6 +233,13 @@ def _erro_seguro(e: Exception) -> str:
 
 
 
+# ── Health Check (Render) ─────────────────────────────────────────────────────
+@app.route("/health")
+def health_check():
+    """Endpoint leve para o Render verificar se o serviço está respondendo."""
+    return jsonify({"status": "ok", "service": "prisma-converter"}), 200
+
+
 def criar_pasta():
     uid = uuid.uuid4().hex
     os.makedirs(os.path.join(UPLOAD_FOLDER, uid), exist_ok=True)
@@ -1555,7 +1562,7 @@ def converter():
         resp = send_file(saida, as_attachment=True, download_name=nome_saida)
         resp.headers["Cache-Control"] = "no-store"  # DL-002
         if download_token:
-            # SEG-011: Secure=True em produção (PORT definida = Cloud Run)
+            # SEG-011: Secure=True em produção (PORT definida = Render/produção)
             is_secure = bool(os.environ.get("PORT"))
             resp.set_cookie("downloadToken", download_token,
                             max_age=60, samesite="Lax", secure=is_secure)

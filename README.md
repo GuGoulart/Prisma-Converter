@@ -10,7 +10,7 @@
 
 [![Python Version](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask Framework](https://img.shields.io/badge/Framework-Flask-000000.svg?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Google Cloud Run](https://img.shields.io/badge/Deploy-Cloud%20Run-4285F4.svg?style=for-the-badge&logo=googlecloud&logoColor=white)](https://prisma-app.duckdns.org/)
+[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7.svg?style=for-the-badge&logo=render&logoColor=white)](https://prisma-app.duckdns.org/)
 [![Privacy First](https://img.shields.io/badge/Privacy-Tempor%C3%A1rio%20%26%20Seguro-success.svg?style=for-the-badge&logo=shield&logoColor=white)](#-segurança-e-privacidade-em-camadas)
 
 [🚀 Demonstração Online](https://prisma-app.duckdns.org/) • [✨ Funcionalidades](#-funcionalidades-do-sistema) • [🛠️ Instalação Local](#%EF%B8%8F-instalação-e-execução-local)
@@ -63,7 +63,7 @@ Conversões instantâneas com retenção de formatação e suporte a motor tabul
 | **Manipulação de Dados**| pandas + openpyxl | Processamento de planilhas CSV, XLSX e JSON |
 | **Imagens & Cores** | Pillow (PIL) | Processamento de imagens e análise de cores |
 | **Segurança & Cifra** | cryptography / hashlib | Criptografia AES-256-CBC e hashes MD5/SHA256 |
-| **Servidor HTTP & Deploy**| Gunicorn + Docker + Cloud Run | Servidor WSGI containerizado e hospedado no Google Cloud |
+| **Servidor HTTP & Deploy**| Gunicorn + Docker + Render | Servidor WSGI containerizado e hospedado no Render |
 
 ---
 
@@ -114,7 +114,7 @@ Prisma-Converter/
 │   ├── pdf_tools.py            # Manipulação avançada de PDF (PyMuPDF)
 │   ├── qr_tools.py             # Leitor e gerador de QR Code
 │   ├── security.py             # Validação de Magic Bytes, CSRF e Rate Limiting
-│   └── storage.py              # Backend de armazenamento local / Cloud Storage
+│   └── storage.py              # Backend de armazenamento local em disco
 ├── static/                     # Ativos visuais e scripts de interface
 │   ├── favicon.svg             # Logotipo oficial em vetor SVG
 │   ├── i18n.js                 # Sistema internacionalizador (PT, EN, ES)
@@ -128,8 +128,9 @@ Prisma-Converter/
 │   ├── home.html               # Página inicial com cards de navegação
 │   ├── index.html              # Conversor de arquivos principal
 │   └── pdf_tools.html          # Central de Ferramentas Avançadas
-├── .github/workflows/          # Automação de CI/CD para Cloud Run
-├── Dockerfile                  # Imagem Docker otimizada para o Cloud Run
+├── .github/workflows/          # Automação de CI/CD para deploy no Render
+├── Dockerfile                  # Imagem Docker otimizada para o Render
+├── render.yaml                 # Configuração nativa de deploy no Render
 ├── requirements.txt            # Dependências Python do projeto
 └── app.py                      # Ponto de entrada do aplicativo Flask
 ```

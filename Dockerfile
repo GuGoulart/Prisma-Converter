@@ -35,9 +35,9 @@ USER appuser
 ENV HOME=/home/appuser
 
 # ── Porta ────────────────────────────────────────────────────────────────────
-# O Cloud Run injeta PORT dinamicamente (padrão 8080)
-ENV PORT=8080
-EXPOSE 8080
+# O Render injeta PORT dinamicamente (padrão 10000 no Render, 8080 fallback)
+ENV PORT=10000
+EXPOSE 10000
 
 # ── Prevenção de deadlocks e estouro de RAM (libs C++ multi-thread: OpenCV, PyMuPDF, NumPy) ─
 ENV OMP_NUM_THREADS=1
@@ -49,5 +49,9 @@ ENV NUMEXPR_NUM_THREADS=1
 ENV OPENCV_FOR_THREADS_NUM=1
 
 # ── Worker ───────────────────────────────────────────────────────────────────
-CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 8 --timeout 300 --graceful-timeout 30 --max-requests 50 --max-requests-jitter 10 app:app"]
-
+# Configuração otimizada para o Render:
+# - 1 worker para minimizar uso de RAM (plano Starter: 512 MB)
+# - 4 threads para servir requisições simultâneas sem overhead de processos
+# - timeout 300s para conversões pesadas (LibreOffice, PDF)
+# - max-requests 100 + jitter para evitar vazamento de memória a longo prazo
+CMD ["sh", "-c", "exec gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 1 --threads 4 --timeout 300 --graceful-timeout 30 --max-requests 100 --max-requests-jitter 20 --log-level info app:app"]

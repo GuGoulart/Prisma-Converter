@@ -318,7 +318,7 @@ def pdf_para_docx(entrada, saida):
     3. PyMuPDF + python-docx (fallback de emergência — texto puro)
 
     Para PDFs grandes (>10 páginas), a conversão com pdf2docx é feita em
-    blocos de 10 páginas para evitar estouro de memória no Cloud Run.
+    blocos de 10 páginas para evitar estouro de memória no Render.
     """
     import multiprocessing
     import tempfile
