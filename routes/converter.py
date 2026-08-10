@@ -26,12 +26,16 @@ from core.utils import (
 log = logging.getLogger(__name__)
 converter_bp = Blueprint("converter", __name__)
 
-MAX_MB = int(os.environ.get("MAX_MB", "10")) if os.environ.get("RENDER") else 0
-MAX_OUTPUT_MB = int(os.environ.get("MAX_OUTPUT_MB", "50"))
+_IS_RENDER = os.environ.get("RENDER") in ("true", "1") or bool(os.environ.get("RENDER_SERVICE_ID"))
+_IS_DESKTOP = (os.environ.get("PRISMA_DESKTOP") == "1") or (not _IS_RENDER)
+_IS_WEB = not _IS_DESKTOP
+
+MAX_MB = int(os.environ.get("MAX_MB", "10")) if _IS_WEB else 0
+MAX_OUTPUT_MB = int(os.environ.get("MAX_OUTPUT_MB", "50")) if _IS_WEB else 0
 
 TIMEOUT_CONV = 120
 TIMEOUT_PREVIEW = 40
-MAX_PARALELAS = 5
+MAX_PARALELAS = 1 if _IS_WEB else 5
 
 _conversoes_ativas = 0
 _lock_conv = threading.Lock()
@@ -92,6 +96,8 @@ def _copiar_para_downloads_desktop(origem, nome_download):
 
 
 def estimar_avisos_output(ext_origem, tamanho_bytes, conversoes, max_output_mb=50):
+    if not _IS_WEB:
+        return {}
     avisos = {}
     tamanho_mb = (tamanho_bytes / (1024 * 1024)) if tamanho_bytes else 0
     formatos_imagem = {"png", "jpg", "jpeg", "webp", "heic"}
