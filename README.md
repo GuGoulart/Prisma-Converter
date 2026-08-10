@@ -1,19 +1,21 @@
-# 🌐 PRISMA CONVERTER
-
 <div align="center">
 
-![Prisma Logo](static/favicon.svg)
+# 🌐 PRISMA CONVERTER
 
 ### **Suíte Universal de Processamento, Conversão e Segurança de Arquivos**
 
-*Você pensa. O Prisma faz. De conversões de documentos a utilitários avançados de segurança, tudo em uma única plataforma web moderna e ultrarrápida.*
+[![Português](https://img.shields.io/badge/Idioma-Portugu%C3%Aas-blue?style=for-the-badge)](README.md)
+[![English](https://img.shields.io/badge/Language-English-red?style=for-the-badge)](README.en.md)
+[![Español](https://img.shields.io/badge/Idioma-Espa%C3%B1ol-yellow?style=for-the-badge)](README.es.md)
 
-[![Python Version](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Flask Framework](https://img.shields.io/badge/Framework-Flask-000000.svg?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7.svg?style=for-the-badge&logo=render&logoColor=white)](https://prisma-app.duckdns.org/)
-[![Privacy First](https://img.shields.io/badge/Privacy-Tempor%C3%A1rio%20%26%20Seguro-success.svg?style=for-the-badge&logo=shield&logoColor=white)](#-segurança-e-privacidade-em-camadas)
+<br/>
 
-[🚀 Demonstração Online](https://prisma-app.duckdns.org/) • [✨ Funcionalidades](#-funcionalidades-do-sistema) • [🛠️ Instalação Local](#%EF%B8%8F-instalação-e-execução-local)
+[![Python Version](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask Framework](https://img.shields.io/badge/Framework-Flask-000000.svg?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7.svg?style=flat-square&logo=render&logoColor=white)](https://prisma-app.duckdns.org/)
+[![Privacy First](https://img.shields.io/badge/Privacidade-100%25%20Seguro-success.svg?style=flat-square&logo=shield&logoColor=white)](#-privacidade--segurança)
+
+[🚀 Demonstração Online](https://prisma-app.duckdns.org/) • [✨ Funcionalidades](#-funcionalidades) • [⚡ Início Rápido](#-início-rápido-no-windows) • [🏗️ Arquitetura](#%EF%B8%8F-arquitetura-do-projeto)
 
 </div>
 
@@ -21,146 +23,84 @@
 
 ## 📖 Sobre o Projeto
 
-O **Prisma Converter** é uma plataforma web completa voltada para **conversão universal de arquivos**, **manipulação avançada de documentos PDF**, **criptografia de dados** e **análise de integridade de arquivos**.
+O **Prisma Converter** é uma plataforma web completa para **conversão universal de arquivos**, **manipulação avançada de documentos PDF**, **criptografia AES-256** e **análise de integridade de dados**.
 
-Desenvolvido com foco total em **Privacidade em Primeiro Lugar (Privacy-First)** e alta velocidade, o Prisma realiza transformações complexas diretamente no servidor com isolamento temporário via UUID v4 e **expurgo automático imediato** de todos os arquivos após o processamento.
-
----
-
-## ✨ Funcionalidades do Sistema
-
-### 1. 🔄 Conversor Universal de Arquivos (50+ Rotas Cruzadas)
-Conversões instantâneas com retenção de formatação e suporte a motor tabular inteligente:
-- **Documentos & Planilhas:** `PDF ↔ DOCX, XLSX, CSV, PPTX, PNG, JPG`
-- **Apresentações:** `PPT, PPTX → PDF, DOCX, PNG, JPG`
-- **Estruturas de Dados:** `JSON ↔ CSV, XLSX, PDF`
-- **Imagens Modernas:** `HEIC, WEBP, PNG, JPG → PDF, PNG, JPG`
-
-### 2. ⚡ Ferramentas Avançadas (Tudo em Um Só Lugar)
-- 📄 **Mesclar PDFs:** Unificação de múltiplos arquivos PDF em um único documento.
-- ✂️ **Dividir PDF:** Separação por intervalos customizados ou páginas individuais em pacote ZIP.
-- 🔒 **Proteger / Desproteger PDF:** Adição e remoção de criptografia de senhas em PDF.
-- 💧 **Marca d'Água:** Inserção de marcas d'água de texto personalizadas em documentos.
-- 🖼️ **Extração de Mídia:** Extração de todas as imagens internas de um PDF.
-- 🔳 **QR Code (Gerador & Leitor):** Criação de QR Codes e decodificação instantânea por imagem.
-- 🎨 **Extrator de Paleta de Cores:** Análise de cores dominantes com códigos HEX e amostragem visual.
-- 📦 **Comprimir Arquivos (ZIP / TAR.GZ):** Agrupamento e compressão de múltiplos arquivos.
-- 🔐 **ZIP com Senha:** Criação de arquivos ZIP protegidos com criptografia AES-256.
-- 🛡️ **Criptografia AES-256-CBC:** Criptografe e descriptografe qualquer arquivo com segurança.
-- 🔢 **Calculadora de Hash / Checksum:** Geração de assinaturas `MD5`, `SHA-1` e `SHA-256`.
-- ✏️ **Renomear em Lote:** Padronização automatizada de nomeação de conjuntos de arquivos.
+Projetado com foco total em **Privacidade em Primeiro Lugar (Privacy-First)** e alta performance, o sistema realiza transformações com isolamento de sessão via UUID v4 e expurgo automático de arquivos temporários.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## ✨ Funcionalidades
 
-| Camada | Tecnologia | Função Principal |
-|---|---|---|
-| **Linguagem Principal** | Python 3.11+ | Execução do servidor e rotinas de conversão |
-| **Framework Web** | Flask 3.1+ | Roteamento HTTP, sessões e APIs |
-| **Motor de PDF** | PyMuPDF (`fitz`) | Renderização, mesclagem, divisão e criptografia de PDFs |
-| **Inteligência Tabular**| pdfplumber | Extração precisa de tabelas em PDF para XLSX/CSV |
-| **Manipulação de Dados**| pandas + openpyxl | Processamento de planilhas CSV, XLSX e JSON |
-| **Imagens & Cores** | Pillow (PIL) | Processamento de imagens e análise de cores |
-| **Segurança & Cifra** | cryptography / hashlib | Criptografia AES-256-CBC e hashes MD5/SHA256 |
-| **Servidor HTTP & Deploy**| Gunicorn + Docker + Render | Servidor WSGI containerizado e hospedado no Render |
+### 🔄 Conversor Universal de Arquivos
+* **Documentos & Planilhas:** `PDF ↔ DOCX, XLSX, CSV, PPTX, PNG, JPG`
+* **Apresentações:** `PPT, PPTX → PDF, DOCX, PNG, JPG`
+* **Estruturas de Dados:** `JSON ↔ CSV, XLSX, PDF`
+* **Imagens Modernas:** `HEIC, WEBP, PNG, JPG → PDF, PNG, JPG`
+
+### 🛠️ Ferramentas Avançadas de PDF & Arquivos
+| Categoria | Funcionalidades |
+|---|---|
+| 📄 **PDFs** | Mesclar, Dividir, Proteger/Desproteger com senha, Comprimir e Adicionar Marca d'Água |
+| 🖼️ **Imagens** | Extração de mídia em lote de PDFs, Leitor/Gerador de QR Code e Extrator de Paleta de Cores |
+| 🔒 **Segurança** | Criptografia AES-256-CBC, Geração de Hash (MD5, SHA1, SHA256) e ZIP com senha |
+| 📁 **Utilitários** | Renomeação em lote automatizada e Mesclagem de planilhas Excel/CSV |
 
 ---
 
-## 💻 Instalação e Execução Local
+## ⚡ Início Rápido no Windows
 
-### 1. Clonar o Repositório
-```bash
-git clone https://github.com/GuGoulart/Prisma-Converter.git
-cd Prisma-Converter
-```
+### 1-Clique Automático (Modo Desktop)
+1. Clone este repositório:
+   ```bash
+   git clone https://github.com/GuGoulart/Prisma-Converter.git
+   cd Prisma-Converter
+   ```
+2. Dê **2 cliques no arquivo `Prisma.bat`**.
+   > O sistema criará automaticamente o atalho na sua Área de Trabalho, iniciará o servidor e abrirá o navegador. Ao fechar o navegador, o servidor é encerrado sozinho em segundo plano!
 
-### 2. Criar e Ativar Ambiente Virtual
-
-**No Windows (PowerShell):**
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-```
-
-**No Linux / macOS:**
+### Execução via Terminal / Linux / macOS
 ```bash
 python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Instalar Dependências
-```bash
+source venv/bin/activate  # No Windows: .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
-
-### 4. Iniciar a Aplicação
-
-**No Windows (1-Clique):**
-Dê **2 cliques no arquivo `Prisma.bat`** (ou execute `.\Prisma.bat`). O aplicativo criará o atalho na sua Área de Trabalho e abrirá o navegador automaticamente!
-
-**Via Terminal / Linux / macOS:**
-```bash
 python app.py
 ```
-Acesse no navegador em: `http://127.0.0.1:5000`
+Acesse no navegador: `http://127.0.0.1:5000`
 
 ---
 
-
-## 📂 Estrutura de Pastas
+## 🏗️ Arquitetura do Projeto
 
 ```text
 Prisma-Converter/
-├── core/                       # Módulos de regras de negócio
-│   ├── cleanup.py              # Rotina automática de expurgo de arquivos
-│   ├── converter.py            # Hub de conversão universal de formatos
-│   ├── file_tools.py           # Ferramentas de Hash, AES-256 e ZIP
-│   ├── image_tools.py          # Extrator de paleta de cores de imagem
-│   ├── pdf_tools.py            # Manipulação avançada de PDF (PyMuPDF)
-│   ├── qr_tools.py             # Leitor e gerador de QR Code
-│   ├── security.py             # Validação de Magic Bytes, CSRF e Rate Limiting
-│   └── storage.py              # Backend de armazenamento local em disco
-├── static/                     # Ativos visuais e scripts de interface
-│   ├── favicon.svg             # Logotipo oficial em vetor SVG
-│   ├── i18n.js                 # Sistema internacionalizador (PT, EN, ES)
-│   ├── script.js               # Interações e manipuladores de UI
-│   ├── style.css               # Estilização responsiva e temas
-│   └── theme_customizer.js     # Personalizador dinâmico de cores e temas
-├── templates/                  # Templates Jinja2 HTML5
-│   ├── 404.html                # Página de erro 404 customizada
-│   ├── 500.html                # Página de erro 500 customizada
-│   ├── historico.html          # Histórico de arquivos da sessão
-│   ├── home.html               # Página inicial com cards de navegação
-│   ├── index.html              # Conversor de arquivos principal
-│   └── pdf_tools.html          # Central de Ferramentas Avançadas
-├── .github/workflows/          # Automação de CI/CD para deploy no Render
-├── Dockerfile                  # Imagem Docker otimizada para o Render
-├── render.yaml                 # Configuração nativa de deploy no Render
-├── requirements.txt            # Dependências Python do projeto
-└── app.py                      # Ponto de entrada do aplicativo Flask
+├── app.py                      # Ponto de entrada modular da aplicação
+├── routes/                     # Blueprints organizados por contexto
+│   ├── views.py                # Rotas de páginas HTML e PWA
+│   ├── converter.py            # Conversão universal de arquivos
+│   ├── pdf.py                  # Ferramentas avançadas de PDF
+│   ├── file_tools.py           # Compressão, Criptografia e Planilhas
+│   ├── tools.py                # QR Code e Paleta de Cores
+│   └── history.py              # Histórico de sessão e retenção
+├── core/                       # Regras de negócio e motores
+│   ├── utils.py                # Funções utilitárias centralizadas
+│   ├── security.py             # Validação CSRF, Rate-limit e Magic Bytes
+│   ├── converter.py            # Motores de conversão de arquivos
+│   ├── pdf_tools.py            # Manipulação de PDFs via PyMuPDF
+│   └── tasks.py                # Processamento assíncrono de tarefas
+├── static/                     # CSS, JavaScript e assets visuais
+├── templates/                  # Templates HTML5 responsivos
+└── scripts/                    # Scripts de inicialização do sistema
 ```
 
 ---
 
-## 🔒 Segurança e Privacidade em Camadas
+## 🔒 Privacidade & Segurança
 
-- **Proteção CSRF Integrada:** Validação de tokens de segurança em todas as requisições de formulário.
-- **Isolamento por UUID v4:** Cada sessão gera diretórios totalmente isolados (`uploads/<uuid>/`).
-- **Expurgo Automatizado:** Arquivos temporários são incinerados logo após o download (`@after_this_request`) e por tarefas em background.
-- **Sanitização de Nomes:** Todos os nomes de arquivos enviados passam por `secure_filename()` para prevenir Path Traversal.
+* 🗑️ **Expurgo Automático:** Arquivos temporários possuem ciclo de vida configurável (Instantâneo, 5 min ou 15 min) com exclusão definitiva.
+* 🛡️ **Defesa em Profundidade:** Proteção contra Zip Bombs, validação de Magic Bytes e sanitize de nomes contra Path Traversal.
 
 ---
 
-## 📄 Licença
+## 📜 Licença
 
-**Todos os direitos reservados.**  
-Propriedade de [Gustavo Goulart Bretas](https://github.com/GuGoulart).
-
----
-
-<div align="center">
-
-*Desenvolvido com excelência por <a href="https://github.com/GuGoulart">Gustavo Goulart Bretas</a>*
-
-</div>
+Distribuído sob a licença **MIT**.
