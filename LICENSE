@@ -1,0 +1,44 @@
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+ Copyright (C) 2026 Gustavo Goulart Bretas <https://github.com/GuGoulart/Prisma-Converter>
+
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+                            Preamble
+
+  The GNU General Public License is a free, copyleft license for
+software and other kinds of works.
+
+  The licenses for most software and other practical works are designed
+to take away your freedom to share and change the works.  By contrast,
+the GNU General Public License is intended to guarantee your freedom to
+share and change all versions of a program--to make sure it remains free
+software for all its users.
+
+  This license explicitly protects the software against commercial exploitation,
+unauthorized closed-source distribution, and commercial reselling by third parties.
+Any modified version or derivative work MUST remain free, open-source, and under
+the exact same GPL v3 license terms.
+
+===============================================================================
+TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+===============================================================================
+
+  0. Definitions.
+
+  "This License" refers to version 3 of the GNU General Public License.
+  "Copyright" also means copyright-like laws that apply to other kinds of works.
+  "The Program" refers to any copyrightable work licensed under this License.
+  "Gustavo Goulart Bretas" is the original creator and author of Prisma Converter.
+
+  1. Source Code and Copyleft Protection.
+  You may copy, distribute and modify the software under the condition that any
+  derivative work, fork, or distribution MUST disclose the full source code and
+  be distributed under the GNU GPL v3 license. Commercial sale, closed-source
+  packaging, or monetized reselling of the software without prior written consent
+  from the author is strictly prohibited.
+
+  For full terms of the GNU General Public License v3, visit:
+  <https://www.gnu.org/licenses/gpl-3.0.html>

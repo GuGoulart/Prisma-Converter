@@ -14,8 +14,10 @@
 [![Flask Framework](https://img.shields.io/badge/Framework-Flask-000000.svg?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Render](https://img.shields.io/badge/Deploy-Render-46E3B7.svg?style=flat-square&logo=render&logoColor=white)](https://prisma-app.duckdns.org/)
 [![Privacy First](https://img.shields.io/badge/Privacy-100%25%20Secure-success.svg?style=flat-square&logo=shield&logoColor=white)](#-privacy--security)
+[![License: GPL v3](https://img.shields.io/badge/License-GNU%20GPL%20v3-blue.svg?style=flat-square&logo=gnu)](LICENSE)
 
 [🚀 Live Demo](https://prisma-app.duckdns.org/) • [✨ Features](#-features) • [⚡ Quick Start](#-quick-start-on-windows) • [🏗️ Architecture](#%EF%B8%8F-project-architecture)
+
 
 </div>
 
@@ -103,4 +105,6 @@ Prisma-Converter/
 
 ## 📜 License
 
-Distributed under the **MIT** License.
+Distributed under the **GNU General Public License v3.0 (GPLv3)**.
+This license guarantees the code remains open-source and strictly prohibits unauthorized commercial reselling by third parties. See [LICENSE](LICENSE) for details.
+
