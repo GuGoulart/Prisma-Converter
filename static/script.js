@@ -116,7 +116,43 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 
-    // ── Seleção de destino → atualiza preview ─────────────────
+    // ── Banner de Aviso de Tamanho de Output (Dinâmico) ──────
+    const opcoesGrid = document.getElementById("opcoesGrid");
+    const avisoBanner = document.getElementById("avisoOutputBanner");
+    const avisoTitulo = document.getElementById("avisoOutputTitulo");
+    const avisoLista = document.getElementById("avisoOutputLista");
+
+    let _avisosData = {};
+    if (opcoesGrid?.dataset?.avisos) {
+        try {
+            _avisosData = JSON.parse(opcoesGrid.dataset.avisos || "{}");
+        } catch (e) {
+            _avisosData = {};
+        }
+    }
+
+    function atualizarAvisoOutput(destino) {
+        if (!avisoBanner || !_avisosData) return;
+        const info = _avisosData[destino];
+        if (info && (info.sugestoes || Array.isArray(info))) {
+            const sugestoes = info.sugestoes || info;
+            const estMb = info.estimado_mb ? ` (~${info.estimado_mb} MB)` : '';
+            if (avisoTitulo) {
+                avisoTitulo.textContent = `Atenção: a conversão para ${destino.toUpperCase()} pode gerar um arquivo muito grande${estMb}.`;
+            }
+            if (avisoLista) {
+                avisoLista.innerHTML = sugestoes.map(s => `<li>${s}</li>`).join('');
+            }
+            avisoBanner.style.display = "flex";
+        } else {
+            avisoBanner.style.display = "none";
+        }
+    }
+
+    const destinoInicial = document.querySelector('input[name="destino"]:checked')?.value;
+    if (destinoInicial) {
+        atualizarAvisoOutput(destinoInicial);
+    }
 
     document.querySelectorAll('input[name="destino"]').forEach(radio => {
         radio.addEventListener("change", (e) => {
@@ -129,6 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 orientacaoWrap.classList.toggle("visivel", planilha && destino === "pdf");
             }
 
+            atualizarAvisoOutput(destino);
             if (pastaUUID) atualizarPreview(destino);
         });
     });

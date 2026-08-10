@@ -56,14 +56,12 @@ DOWNLOAD_FOLDER = "downloads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
-_IS_DESKTOP = (os.environ.get("PRISMA_DESKTOP") == "1")
-if _IS_DESKTOP:
-    MAX_MB = 0
-else:
-    try:
-        MAX_MB = int(os.environ.get("MAX_MB", "10").strip())
-    except (ValueError, TypeError):
-        MAX_MB = 10
+_IS_RENDER = os.environ.get("RENDER") in ("true", "1") or bool(os.environ.get("RENDER_SERVICE_ID"))
+_IS_DESKTOP = (os.environ.get("PRISMA_DESKTOP") == "1") or (not _IS_RENDER)
+_IS_WEB = not _IS_DESKTOP
+
+MAX_MB = int(os.environ.get("MAX_MB", "10").strip()) if _IS_WEB else 0
+MAX_OUTPUT_MB = int(os.environ.get("MAX_OUTPUT_MB", "50").strip()) if _IS_WEB else 0
 
 
 # ── Inicializar módulos ────────────────────────────────────────────────────────
@@ -115,6 +113,7 @@ def inject_globals():
         csrf_token=gerar_csrf(),
         todas_conversoes=CONVERSOES,
         max_mb=MAX_MB,
+        max_output_mb=MAX_OUTPUT_MB,
     )
 
 

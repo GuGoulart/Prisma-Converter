@@ -95,25 +95,59 @@ def _copiar_para_downloads_desktop(origem, nome_download):
         log.warning(f"[desktop] Não foi possível copiar para a pasta Downloads: {e}")
 
 
+_FATORES_EXPANSAO = {
+    ("pdf",  "docx"): 10.0,
+    ("pdf",  "doc"):  10.0,
+    ("pdf",  "xlsx"): 6.0,
+    ("pdf",  "csv"):  4.0,
+    ("pdf",  "pptx"): 8.0,
+    ("pdf",  "png"):  8.0,
+    ("pdf",  "jpg"):  6.0,
+    ("pdf",  "jpeg"): 6.0,
+    ("pdf",  "webp"): 6.0,
+    ("pdf",  "heic"): 6.0,
+    ("docx", "pdf"):  1.5,
+    ("doc",  "pdf"):  1.5,
+    ("xlsx", "pdf"):  2.0,
+    ("xls",  "pdf"):  2.0,
+    ("pptx", "pdf"):  1.5,
+    ("ppt",  "pdf"):  1.5,
+    ("png",  "pdf"):  0.9,
+    ("jpg",  "pdf"):  1.0,
+    ("jpeg", "pdf"):  1.0,
+    ("webp", "pdf"):  1.0,
+    ("heic", "pdf"):  1.2,
+}
+
+def estimar_tamanho_output(tamanho_bytes: int, origem: str, destino: str) -> int:
+    fator = _FATORES_EXPANSAO.get((origem.lower(), destino.lower()), 1.5)
+    return int(tamanho_bytes * fator)
+
 def estimar_avisos_output(ext_origem, tamanho_bytes, conversoes, max_output_mb=50):
-    if not _IS_WEB:
+    if not _IS_WEB or not tamanho_bytes:
         return {}
+
+    limite_bytes = max_output_mb * 1024 * 1024
     avisos = {}
-    tamanho_mb = (tamanho_bytes / (1024 * 1024)) if tamanho_bytes else 0
-    formatos_imagem = {"png", "jpg", "jpeg", "webp", "heic"}
 
     for dest in conversoes:
-        if ext_origem in ("pdf", "pptx", "ppt", "docx") and dest in formatos_imagem:
-            avisos[dest] = [
-                f"Converter {ext_origem.upper()} para {dest.upper()} gera 1 imagem por página num arquivo ZIP.",
-                f"Se o documento for longo, o download final pode exceder {max_output_mb} MB."
-            ]
-        elif tamanho_mb > 5.0 and dest in ("pdf", "docx", "xlsx", "png", "jpg"):
-            avisos[dest] = [
-                f"O arquivo original possui {tamanho_mb:.1f} MB.",
-                f"O download final pode ficar grande (próximo de {max_output_mb} MB)."
-            ]
+        est_bytes = estimar_tamanho_output(tamanho_bytes, ext_origem, dest)
+        if est_bytes > limite_bytes:
+            est_mb = est_bytes / (1024 * 1024)
+            sugestoes = []
+            if ext_origem == "pdf":
+                sugestoes.append("Comprima o PDF primeiro usando a ferramenta 'Comprimir PDF'")
+                sugestoes.append("Divida o PDF em partes menores e converta separadamente")
+                if dest in ("docx", "doc", "xlsx"):
+                    sugestoes.append("Para extrair apenas o texto, tente converter para CSV primeiro")
+            sugestoes.append(f"Use um arquivo menor (estimativa atual: ~{est_mb:.1f} MB no download)")
+            avisos[dest] = {
+                "estimado_mb": round(est_mb, 1),
+                "sugestoes": sugestoes
+            }
+
     return avisos
+
 
 
 @converter_bp.route("/preview/<pasta_uuid>/<preview_file>")
@@ -241,6 +275,9 @@ def upload():
 
         conteudo = arq.read()
         tamanho = len(conteudo)
+
+        if MAX_MB > 0 and tamanho > MAX_MB * 1024 * 1024:
+            return render_template("index.html", erro=f"Arquivo muito grande para '{ext.upper()}'. Limite: {MAX_MB} MB.")
 
         uid = criar_pasta()
         pp = pasta_path(uid)
@@ -374,6 +411,25 @@ def converter():
             return render_template("index.html", erro="Tempo excedido. Tente com um arquivo menor.")
         if err[0]:
             raise err[0]
+
+        # Guard de tamanho de output (Render: 512 MB RAM)
+        if _IS_WEB and MAX_OUTPUT_MB > 0 and saida and os.path.exists(saida):
+            sz_saida = os.path.getsize(saida)
+            if sz_saida > MAX_OUTPUT_MB * 1024 * 1024:
+                try:
+                    os.remove(saida)
+                    shutil.rmtree(pp, ignore_errors=True)
+                except Exception:
+                    pass
+                log.warning(f"[converter] Output muito grande ({sz_saida // (1024*1024)} MB) para {origem}→{destino} — rejeitado.")
+                with _lock_conv:
+                    _conversoes_ativas -= 1
+                return render_template("index.html",
+                    erro=f"O arquivo convertido ficou muito grande ({sz_saida // (1024*1024)} MB) e "
+                         f"ultrapassou o limite do servidor ({MAX_OUTPUT_MB} MB). "
+                         f"Sugestões: Comprima o arquivo primeiro | Divida em partes menores "
+                         f"| Use um arquivo menor (até 5 MB para esta conversão)."
+                )
 
         @after_this_request
         def deletar(resp):
