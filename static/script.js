@@ -751,3 +751,18 @@ function formatarTamanho(b) {
     if (b < 1_048_576) return (b / 1024).toFixed(1) + " KB";
     return (b / 1_048_576).toFixed(1) + " MB";
 }
+
+// ── Heartbeat Localhost (Encerra o servidor Python automaticamente ao fechar o navegador) ──
+(function iniciarHeartbeatLocal() {
+    function ping() {
+        try {
+            fetch('/api/heartbeat', { method: 'POST', cache: 'no-store' }).catch(() => {});
+        } catch (e) {}
+    }
+    ping();
+    setInterval(ping, 2000);
+    window.addEventListener('pageshow', ping);
+    window.addEventListener('focus', ping);
+})();
+
+

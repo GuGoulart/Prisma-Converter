@@ -1,0 +1,27 @@
+name: Keep Render Service Awake
+
+on:
+  schedule:
+    # Executa a cada 14 minutos para evitar que o Render Free Tier entre em Sleep (ocorre após 15 min de inatividade)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Permite execução manual a qualquer momento via aba Actions
+
+jobs:
+  ping:
+    name: Ping Health Endpoint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send HTTP Request to Render
+        run: |
+          TARGET_URL="${{ secrets.RENDER_APP_URL }}"
+          if [ -z "$TARGET_URL" ]; then
+            TARGET_URL="https://prisma-app.duckdns.org/health"
+          fi
+          echo "Pinging endpoint: $TARGET_URL"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL")
+          echo "HTTP Response Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "✅ Serviço ativo e respondendo perfeitamente!"
+          else
+            echo "⚠️ Alerta: Endpoint respondeu com código $HTTP_STATUS"
+          fi

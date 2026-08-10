@@ -89,6 +89,18 @@ def validar_csrf(tok=None):
     return secrets.compare_digest(str(tok), str(sess_tok))
 
 
+def csrf_required(f):
+    from functools import wraps
+    from flask import jsonify
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not validar_csrf():
+            return jsonify({"sucesso": False, "erro": "Token CSRF inválido ou expirado."}), 400
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+
 _EXT_PERIGOSAS = {
     "exe", "bat", "cmd", "com", "php", "sh", "ps1", "vbs", "js",
     "jar", "py", "rb", "pl", "asp", "jsp", "cgi", "msi", "dll"

@@ -95,12 +95,18 @@ pip install -r requirements.txt
 ```
 
 ### 4. Iniciar a Aplicação
+
+**No Windows (1-Clique):**
+Dê **2 cliques no arquivo `Prisma.bat`** (ou execute `.\Prisma.bat`). O aplicativo criará o atalho na sua Área de Trabalho e abrirá o navegador automaticamente!
+
+**Via Terminal / Linux / macOS:**
 ```bash
 python app.py
 ```
 Acesse no navegador em: `http://127.0.0.1:5000`
 
 ---
+
 
 ## 📂 Estrutura de Pastas
 
