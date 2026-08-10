@@ -2,8 +2,9 @@ name: Keep Render Service Awake
 
 on:
   schedule:
-    # Executa a cada 14 minutos para evitar que o Render Free Tier entre em Sleep (ocorre após 15 min de inatividade)
-    - cron: '*/14 * * * *'
+    # Executa a cada 10 minutos para evitar que o Render Free Tier entre em Sleep (ocorre após 15 min de inatividade)
+    - cron: '*/10 * * * *'
+
   workflow_dispatch: # Permite execução manual a qualquer momento via aba Actions
 
 jobs:
