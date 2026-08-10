@@ -12,8 +12,11 @@ services:
 
     # ── Variáveis de Ambiente ─────────────────────────────────────────────────
     envVars:
+      - key: RENDER
+        value: "true"
       - key: PYTHONUNBUFFERED
         value: "1"
+
       - key: OMP_NUM_THREADS
         value: "1"
       - key: OPENBLAS_NUM_THREADS
