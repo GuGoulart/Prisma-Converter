@@ -149,6 +149,26 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function atualizarBadgesOpcaoCards() {
+        if (!opcoesGrid) return;
+        opcoesGrid.querySelectorAll('.opcao-card').forEach(card => {
+            const input = card.querySelector('input[name="destino"]');
+            const badge = card.querySelector('.opcao-aviso-badge');
+            if (!input || !badge) return;
+            const fmt = input.value;
+            const temAviso = _avisosData && _avisosData[fmt];
+            if (temAviso) {
+                badge.style.display = "inline-block";
+                card.classList.add("opcao-card-aviso");
+            } else {
+                badge.style.display = "none";
+                card.classList.remove("opcao-card-aviso");
+            }
+        });
+    }
+
+    atualizarBadgesOpcaoCards();
+
     const destinoInicial = document.querySelector('input[name="destino"]:checked')?.value;
     if (destinoInicial) {
         atualizarAvisoOutput(destinoInicial);

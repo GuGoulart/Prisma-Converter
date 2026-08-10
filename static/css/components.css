@@ -308,16 +308,21 @@
 
 /* ── Aviso de Output Grande ── */
 .opcao-card-aviso {
-    border-color: rgba(255, 170, 0, 0.4);
+    border-color: rgba(255, 170, 0, 0.45);
 }
 .opcao-aviso-badge {
     position: absolute;
-    top: 4px;
+    top: 3px;
     right: 5px;
     color: #ffaa00;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1;
+    user-select: none;
+}
+.opcao-card:has(input:checked) .opcao-aviso-badge {
+    right: 17px;
 }
 .aviso-output-banner {
     display: flex;
