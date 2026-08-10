@@ -108,7 +108,9 @@ def inject_globals():
         motor=obter_motor(),
         csrf_token=gerar_csrf(),
         todas_conversoes=CONVERSOES,
+        max_mb=MAX_MB,
     )
+
 
 
 # ── Error Handlers ────────────────────────────────────────────────────────────
