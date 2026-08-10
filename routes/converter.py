@@ -27,7 +27,8 @@ log = logging.getLogger(__name__)
 converter_bp = Blueprint("converter", __name__)
 
 MAX_MB = int(os.environ.get("MAX_MB", "10")) if os.environ.get("RENDER") else 0
-MAX_OUTPUT_MB = int(os.environ.get("MAX_OUTPUT_MB", "50")) if os.environ.get("RENDER") else 0
+MAX_OUTPUT_MB = int(os.environ.get("MAX_OUTPUT_MB", "50"))
+
 TIMEOUT_CONV = 120
 TIMEOUT_PREVIEW = 40
 MAX_PARALELAS = 5
@@ -90,7 +91,27 @@ def _copiar_para_downloads_desktop(origem, nome_download):
         log.warning(f"[desktop] Não foi possível copiar para a pasta Downloads: {e}")
 
 
+def estimar_avisos_output(ext_origem, tamanho_bytes, conversoes, max_output_mb=50):
+    avisos = {}
+    tamanho_mb = (tamanho_bytes / (1024 * 1024)) if tamanho_bytes else 0
+    formatos_imagem = {"png", "jpg", "jpeg", "webp", "heic"}
+
+    for dest in conversoes:
+        if ext_origem in ("pdf", "pptx", "ppt", "docx") and dest in formatos_imagem:
+            avisos[dest] = [
+                f"Converter {ext_origem.upper()} para {dest.upper()} gera 1 imagem por página num arquivo ZIP.",
+                f"Se o documento for longo, o download final pode exceder {max_output_mb} MB."
+            ]
+        elif tamanho_mb > 5.0 and dest in ("pdf", "docx", "xlsx", "png", "jpg"):
+            avisos[dest] = [
+                f"O arquivo original possui {tamanho_mb:.1f} MB.",
+                f"O download final pode ficar grande (próximo de {max_output_mb} MB)."
+            ]
+    return avisos
+
+
 @converter_bp.route("/preview/<pasta_uuid>/<preview_file>")
+
 def preview_arquivo(pasta_uuid, preview_file):
     if not re.match(r'^[a-f0-9]{32}$', pasta_uuid):
         abort(400)
@@ -269,6 +290,7 @@ def upload():
                 preview_tipo = "pdf"
 
         return render_template("index.html",
+
             arquivo=nome_i,
             nome_original=nome_original,
             origem=ext,
@@ -276,9 +298,10 @@ def upload():
             preview_url=preview_url,
             preview_tipo=preview_tipo,
             tabela_html=tabela_html,
-            avisos_output={},
+            avisos_output=estimar_avisos_output(ext, tamanho, conversoes, max_output_mb=MAX_OUTPUT_MB),
             max_output_mb=MAX_OUTPUT_MB,
         )
+
 
     except Exception as e:
         log.error(f"Upload error — {ip} — {traceback.format_exc()}")
