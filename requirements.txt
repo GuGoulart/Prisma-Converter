@@ -1,6 +1,5 @@
-# ── Core Flask & Servidor ───────────────────────────────────────────────────
+# ── Core Flask & Servidor Local ──────────────────────────────────────────────
 Flask>=3.0.0
-gunicorn>=21.0.0
 Jinja2>=3.0.0
 Werkzeug>=3.0.0
 itsdangerous>=2.0.0

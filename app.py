@@ -55,24 +55,13 @@ if getattr(sys, 'frozen', False):
 else:
     app = Flask(__name__)
 
-try:
-    from werkzeug.middleware.proxy_fix import ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
-except Exception:
-    pass
-
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-# ── Chave secreta ─────────────────────────────────────────────────────────────
+# ── Chave secreta local ───────────────────────────────────────────────────────
 _sec_key = (os.environ.get("SECRET_KEY") or "").strip()
 if not _sec_key:
-    _IS_RENDER = os.environ.get("RENDER") in ("true", "1") or bool(os.environ.get("RENDER_SERVICE_ID"))
-    if _IS_RENDER:
-        log.warning("[seguranca] SECRET_KEY nao configurada. Gerando chave temporaria.")
-        _sec_key = secrets.token_hex(32)
-    else:
-        _sec_key = "prisma_converter_default_secret_key_dev_2026"
+    _sec_key = "prisma_converter_local_app_secret_key"
 app.secret_key = _sec_key
 
 # ── Diretórios de trabalho ────────────────────────────────────────────────────
@@ -81,9 +70,8 @@ DOWNLOAD_FOLDER = "downloads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
-_IS_RENDER = os.environ.get("RENDER") in ("true", "1") or bool(os.environ.get("RENDER_SERVICE_ID"))
-_IS_DESKTOP = not _IS_RENDER
-MAX_MB = int(os.environ.get("MAX_MB", "50").strip()) if not _IS_DESKTOP else 0
+# ── Modo App Local (Sem limites de upload / estritamente local) ───────────────
+MAX_MB = 0  # 0 = Sem limite em modo desktop local
 
 
 # ── Verificar FFmpeg ──────────────────────────────────────────────────────────
@@ -159,19 +147,60 @@ def api_heartbeat():
     return jsonify({"status": "ok"})
 
 
-# ── Ponto de entrada ──────────────────────────────────────────────────────────
+def _porta_em_uso(porta, host="127.0.0.1"):
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex((host, porta)) == 0
+
+
+def _abrir_janela_app(url):
+    """Abre o Prisma em modo aplicativo de desktop (sem barra de URL do navegador)."""
+    import subprocess
+    import shutil
+    import webbrowser
+
+    time.sleep(1.0)
+
+    # Navegadores compatíveis com --app (modo janela nativa desktop)
+    candidatos = [
+        os.path.expandvars(r"%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"),
+        os.path.expandvars(r"%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"),
+        shutil.which("msedge"),
+        os.path.expandvars(r"%ProgramFiles%\Google\Chrome\Application\chrome.exe"),
+        os.path.expandvars(r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"),
+        os.path.expandvars(r"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
+        shutil.which("chrome"),
+    ]
+
+    for executavel in candidatos:
+        if executavel and os.path.isfile(executavel):
+            try:
+                subprocess.Popen([executavel, f"--app={url}"])
+                return
+            except Exception as e:
+                log.debug(f"Falha ao abrir via {executavel}: {e}")
+
+    # Fallback para navegador padrao caso Edge/Chrome nao estejam disponiveis
+    webbrowser.open(url)
+
+
+# ── Ponto de entrada (Modo App Local) ─────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug_mode = os.environ.get("FLASK_DEBUG") == "1"
+    url = f"http://127.0.0.1:{port}"
 
-    if _IS_DESKTOP and os.environ.get("NO_BROWSER") != "1":
-        def _abrir_navegador():
-            import webbrowser
-            time.sleep(1.2)
-            webbrowser.open(f"http://127.0.0.1:{port}")
+    # Se a porta ja estiver aberta por outra instancia do Prisma, apenas foca a janela
+    if _porta_em_uso(port):
+        log.info(f"Prisma ja em execucao na porta {port}. Abrindo janela...")
+        _abrir_janela_app(url)
+        sys.exit(0)
 
+    if os.environ.get("NO_BROWSER") != "1":
         is_reloader = os.environ.get("WERKZEUG_RUN_MAIN") == "true"
         if (not debug_mode) or is_reloader:
-            threading.Thread(target=_abrir_navegador, daemon=True).start()
+            threading.Thread(target=_abrir_janela_app, args=(url,), daemon=True).start()
 
-    app.run(debug=debug_mode, host="0.0.0.0", port=port)
+    app.run(debug=debug_mode, host="127.0.0.1", port=port)
+

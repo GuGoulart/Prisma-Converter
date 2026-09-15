@@ -55,26 +55,3 @@ def serve_manifest():
 @views_bp.route("/sw.js")
 def serve_sw():
     return send_file("static/sw.js", mimetype="application/javascript")
-
-
-@views_bp.route("/download-apk")
-def download_apk():
-    possiveis_apk = [
-        os.path.join("dist", "Prisma.apk"),
-        os.path.join("static", "Prisma.apk"),
-        "Prisma.apk"
-    ]
-    for apk_path in possiveis_apk:
-        if os.path.exists(apk_path):
-            return send_file(
-                apk_path,
-                as_attachment=True,
-                download_name="Prisma.apk",
-                mimetype="application/vnd.android.package-archive"
-            )
-
-    github_apk_url = os.environ.get(
-        "GITHUB_APK_URL",
-        "https://github.com/GuGoulart/Prisma-Converter/releases/latest/download/Prisma.apk"
-    )
-    return redirect(github_apk_url)
