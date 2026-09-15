@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisma Audio — Ferramentas de Vídeo</title>
+    <meta name="description" content="Utilitários de alto desempenho para converter MP4 em MP3, gerar GIFs animados e baixar vídeos por link (YouTube, Twitter, Instagram).">
+    <meta property="og:title" content="Prisma Audio — Ferramentas de Vídeo">
+    <meta property="og:type" content="website">
+
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='audio/favicon.svg') }}?v={{ range(100000,999999)|random }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='audio/favicon.svg') }}?v={{ range(100000,999999)|random }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/vars.css') }}?v={{ range(1000,99999)|random }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/layout.css') }}?v={{ range(1000,99999)|random }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/components.css') }}?v={{ range(1000,99999)|random }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/animations.css') }}?v={{ range(1000,99999)|random }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='audio/style.css') }}?v={{ range(1000,99999)|random }}">
+    <script src="{{ url_for('static', filename='audio/i18n.js') }}?v={{ range(1, 99999)|random }}"></script>
+    <script src="{{ url_for('static', filename='audio/theme_customizer.js') }}?v={{ range(1, 99999)|random }}"></script>
+</head>
+
+<body>
+
+    <div class="bg-grid"></div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast" role="alert" aria-live="polite">
+        <span class="toast-icone">✓</span>
+        <span class="toast-msg" id="toastMsg">Pronto!</span>
+    </div>
+
+    <!-- Drawer overlay mobile -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+
+    <!-- Barra Superior: Ondas do Mar Animadas -->
+    <div class="audio-wave-topbar">
+        <div class="ocean-wave-wrapper" title="Prisma Engine">
+            <svg class="ocean-wave-svg" viewBox="0 0 1440 36" preserveAspectRatio="none">
+                <path class="ocean-wave-path wave-1" d="M0,18 C240,32 480,4 720,20 C960,34 1200,6 1440,18 L1440,36 L0,36 Z"></path>
+                <path class="ocean-wave-path wave-2" d="M0,10 C300,2 600,28 900,12 C1200,2 1380,22 1440,10 L1440,36 L0,36 Z"></path>
+                <path class="ocean-wave-path wave-3" d="M0,22 C180,8 360,30 540,16 C720,4 900,26 1080,14 C1260,2 1380,24 1440,22 L1440,36 L0,36 Z"></path>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Nav mobile -->
+    <div class="mobile-nav">
+        <span class="mobile-logo">PRISMA VIDEO</span>
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Abrir menu">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+
+    <div class="layout">
+
+        <!-- ── SIDEBAR ─────────────────────────────────────── -->
+        <aside class="sidebar" id="sidebar">
+
+            <div class="sidebar-logo">
+                <a href="/" class="logo-link" style="text-decoration:none;">
+                    <span class="logo-mark">PRISMA</span>
+                </a>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info" style="gap: 4px;">
+                <p class="sidebar-label" data-i18n="sidebar.menu">NAVEGAÇÃO</p>
+                <a href="/" class="nav-link" data-i18n="nav.home">Início</a>
+                <a href="/conversor" class="nav-link" data-i18n="nav.converter">Conversor de arquivos</a>
+                <a href="/ferramentas-avancadas" class="nav-link" data-i18n="nav.advanced">Ferramentas Avançadas</a>
+                <a href="/audio" class="nav-link" data-i18n="nav.audio_tools">Ferramentas de Áudio</a>
+                <a href="/video" class="nav-link nav-active" data-i18n="nav.video_tools">Ferramentas de Vídeo</a>
+                <a href="/historico" class="nav-link" data-i18n="nav.history">Histórico de Arquivos</a>
+            </div>
+
+            <div class="sidebar-linha"></div>
+
+            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
+                <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.theme">Tema</p>
+                <button id="themeToggle" class="btn-tema-icon" aria-label="Personalizar Aparência" title="Personalizar Aparência" data-i18n-title="customizer.title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m18 11-1.5-1.5a2.12 2.12 0 0 0-3 0L3.5 19.5a2.12 2.12 0 0 0 3 3L16.5 13.5a2.12 2.12 0 0 0 0-3Z"/>
+                        <path d="m15 5 4 4"/>
+                        <path d="m18.5 2.5 3 3"/>
+                        <path d="M13 15h.01"/>
+                    </svg>
+                </button>
+            </div>
+
+        </aside>
+
+        <!-- ── MAIN ───────────────────────────────────────── -->
+        <main class="main">
+
+            <header class="header-main">
+                <h1 class="titulo-principal" data-i18n="video.header.title">Ferramentas <em>de Vídeo</em></h1>
+                <p class="titulo-sub" data-i18n="video.header.sub">
+                    Extraia áudio em MP3, crie GIFs animados de alta qualidade e baixe vídeos por link de plataformas sociais.
+                </p>
+            </header>
+
+            <!-- ── Grid de 2 Colunas de Ferramentas ── -->
+            <div class="tools-grid-2col" id="toolsGrid">
+
+                <!-- ════════════════════════════════════════
+                     1. MP4 PARA MP3
+                ════════════════════════════════════════ -->
+                <div class="tool-card-grid" id="ferramenta-v2a">
+                    <div class="tool-card-header-grid">
+                        <div class="tool-card-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M10 8l6 4-6 4V8z"></path>
+                            </svg>
+                            <span data-i18n="video.tab.mp4_mp3">MP4 para MP3</span>
+                        </div>
+                    </div>
+                    <p class="tool-desc" data-i18n="video.mp3.desc">Extraia a faixa de áudio de arquivos de vídeo MP4, MKV ou WebM em áudio MP3 cristalino.</p>
+
+                    <div class="compact-upload-row" id="upload-v2a" onclick="document.getElementById('input-v2a').click()">
+                        <input type="file" id="input-v2a" accept=".mp4,.mkv,.avi,.mov,.webm,.wmv,.m4v,.3gp" onchange="onVideoSelected(this, 'status-v2a')">
+                        <button type="button" class="btn-selecionar-arquivo">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span data-i18n="video.mp3.btn_select">Selecionar Arquivo de Vídeo</span>
+                        </button>
+                        <span class="upload-file-status" id="status-v2a" data-i18n="file.none_video">Nenhum vídeo selecionado</span>
+                    </div>
+
+                    <div class="controles-row">
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.mp3.bitrate">QUALIDADE / BITRATE</label>
+                            <div class="opcoes-chips" id="chips-bitrate-v2a">
+                                <div class="opcao-chip" onclick="selecionarChip('bitrate-v2a', '128k', this)">128k</div>
+                                <div class="opcao-chip selecionado" onclick="selecionarChip('bitrate-v2a', '192k', this)">192k (Padrão)</div>
+                                <div class="opcao-chip" onclick="selecionarChip('bitrate-v2a', '256k', this)">256k</div>
+                                <div class="opcao-chip" onclick="selecionarChip('bitrate-v2a', '320k', this)">320k (Máximo)</div>
+                            </div>
+                            <input type="hidden" id="bitrate-v2a" value="192k">
+                        </div>
+                    </div>
+
+                    <div class="progress-wrap" id="progress-v2a">
+                        <div class="progress-track"><div class="progress-bar-fill" id="fill-v2a"></div></div>
+                        <div class="progress-info-row">
+                            <span class="progress-label" id="label-v2a">Extraindo áudio do vídeo...</span>
+                        </div>
+                    </div>
+
+                    <div class="resultado-box" id="resultado-v2a"></div>
+
+                    <button class="botao-acao" id="btn-v2a" onclick="executarMp4ParaMp3()" style="margin-top: auto;">
+                        <span data-i18n="video.mp3.btn_exec">Extrair Áudio MP3</span>
+                        <span class="botao-arr">→</span>
+                    </button>
+                </div>
+
+                <!-- ════════════════════════════════════════
+                     2. MP4 PARA GIF
+                ════════════════════════════════════════ -->
+                <div class="tool-card-grid" id="ferramenta-v2g">
+                    <div class="tool-card-header-grid">
+                        <div class="tool-card-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                            </svg>
+                            <span data-i18n="video.tab.mp4_gif">MP4 para GIF</span>
+                        </div>
+                    </div>
+                    <p class="tool-desc" data-i18n="video.gif.desc">Transforme vídeos ou trechos específicos em animações GIF otimizadas de alta qualidade.</p>
+
+                    <div class="compact-upload-row" id="upload-v2g" onclick="document.getElementById('input-v2g').click()">
+                        <input type="file" id="input-v2g" accept=".mp4,.mkv,.mov,.webm" onchange="onVideoGifSelected(this)">
+                        <button type="button" class="btn-selecionar-arquivo">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span data-i18n="video.gif.btn_select">Selecionar Arquivo MP4</span>
+                        </button>
+                        <span class="upload-file-status" id="status-v2g" data-i18n="file.none_video">Nenhum vídeo selecionado</span>
+                    </div>
+
+                    <div id="wrapper-preview-gif" style="display:none; margin-top: 4px; margin-bottom: 12px;">
+                        <video id="video-preview-gif" controls style="max-width: 100%; max-height: 200px; border-radius: 4px; border: 1px solid var(--border2); background: #000;"></video>
+                    </div>
+
+                    <div class="controles-row">
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.gif.start_label">TEMPO INICIAL (S)</label>
+                            <input type="number" class="controle-input" id="gif-start" min="0" step="0.5" value="0">
+                        </div>
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.gif.duration_label">DURAÇÃO (S)</label>
+                            <input type="number" class="controle-input" id="gif-duration" min="0.5" max="30" step="0.5" value="5" placeholder="Vídeo completo">
+                        </div>
+                    </div>
+
+                    <div class="controles-row" style="margin-top: 8px;">
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.gif.fps_label">TAXA DE QUADROS (FPS)</label>
+                            <div class="opcoes-chips" id="chips-fps-gif">
+                                <div class="opcao-chip" onclick="selecionarChip('gif-fps', '5', this)">5 FPS</div>
+                                <div class="opcao-chip selecionado" onclick="selecionarChip('gif-fps', '10', this)">10 FPS</div>
+                                <div class="opcao-chip" onclick="selecionarChip('gif-fps', '15', this)">15 FPS</div>
+                                <div class="opcao-chip" onclick="selecionarChip('gif-fps', '20', this)">20 FPS</div>
+                            </div>
+                            <input type="hidden" id="gif-fps" value="10">
+                        </div>
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.gif.width_label">LARGURA (PX)</label>
+                            <div class="opcoes-chips" id="chips-width-gif">
+                                <div class="opcao-chip" onclick="selecionarChip('gif-width', '320', this)">320px</div>
+                                <div class="opcao-chip selecionado" onclick="selecionarChip('gif-width', '480', this)">480px</div>
+                                <div class="opcao-chip" onclick="selecionarChip('gif-width', '640', this)">640px</div>
+                                <div class="opcao-chip" onclick="selecionarChip('gif-width', '800', this)">800px</div>
+                            </div>
+                            <input type="hidden" id="gif-width" value="480">
+                        </div>
+                    </div>
+
+                    <div class="progress-wrap" id="progress-v2g">
+                        <div class="progress-track"><div class="progress-bar-fill" id="fill-v2g"></div></div>
+                        <div class="progress-info-row">
+                            <span class="progress-label" id="label-v2g">Gerando paleta e codificando GIF...</span>
+                        </div>
+                    </div>
+
+                    <div class="resultado-box" id="resultado-v2g"></div>
+
+                    <button class="botao-acao" id="btn-v2g" onclick="executarMp4ParaGif()" style="margin-top: auto;">
+                        <span data-i18n="video.gif.btn_exec">Gerar GIF Animado</span>
+                        <span class="botao-arr">→</span>
+                    </button>
+                </div>
+
+                <!-- ════════════════════════════════════════
+                     3. CONVERSOR DE FORMATO DE VÍDEO
+                ════════════════════════════════════════ -->
+                <div class="tool-card-grid" id="ferramenta-vconv">
+                    <div class="tool-card-header-grid">
+                        <div class="tool-card-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 3 21 3 21 8"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>
+                                <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"></path>
+                            </svg>
+                            <span data-i18n="video.tab.converter">Conversor de Formato</span>
+                        </div>
+                    </div>
+                    <p class="tool-desc" data-i18n="video.conv.desc">Converte vídeos entre MP4, WEBM, MOV, AVI e MKV com alta qualidade.</p>
+
+                    <div class="compact-upload-row" id="upload-vconv" onclick="document.getElementById('input-vconv').click()">
+                        <input type="file" id="input-vconv" accept=".mp4,.mkv,.avi,.mov,.webm,.wmv,.flv,.3gp" onchange="onVideoSelected(this, 'status-vconv')">
+                        <button type="button" class="btn-selecionar-arquivo">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span data-i18n="video.mp3.btn_select">Selecionar Arquivo de Vídeo</span>
+                        </button>
+                        <span class="upload-file-status" id="status-vconv" data-i18n="file.none_video">Nenhum vídeo selecionado</span>
+                    </div>
+
+                    <div class="controles-row">
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.conv.fmt_label">FORMATO DE SAÍDA</label>
+                            <div class="opcoes-chips" id="chips-formato-vconv">
+                                <div class="opcao-chip selecionado" onclick="selecionarChip('formato-vconv', 'mp4', this)">MP4</div>
+                                <div class="opcao-chip" onclick="selecionarChip('formato-vconv', 'webm', this)">WEBM</div>
+                                <div class="opcao-chip" onclick="selecionarChip('formato-vconv', 'mov', this)">MOV</div>
+                                <div class="opcao-chip" onclick="selecionarChip('formato-vconv', 'avi', this)">AVI</div>
+                                <div class="opcao-chip" onclick="selecionarChip('formato-vconv', 'mkv', this)">MKV</div>
+                            </div>
+                            <input type="hidden" id="formato-vconv" value="mp4">
+                        </div>
+                    </div>
+
+                    <div class="progress-wrap" id="progress-vconv">
+                        <div class="progress-track"><div class="progress-bar-fill" id="fill-vconv"></div></div>
+                        <div class="progress-info-row">
+                            <span class="progress-label" id="label-vconv">Convertendo formato do vídeo...</span>
+                        </div>
+                    </div>
+
+                    <div class="resultado-box" id="resultado-vconv"></div>
+
+                    <button class="botao-acao" id="btn-vconv" onclick="executarConverterFormato()" style="margin-top: auto;">
+                        <span data-i18n="video.conv.btn_exec">Converter Formato</span>
+                        <span class="botao-arr">→</span>
+                    </button>
+                </div>
+
+                <!-- ════════════════════════════════════════
+                     4. COMPRESSOR DE VÍDEO
+                ════════════════════════════════════════ -->
+                <div class="tool-card-grid" id="ferramenta-vcomp">
+                    <div class="tool-card-header-grid">
+                        <div class="tool-card-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                                <path d="M12 12v9"></path><path d="m8 17 4 4 4-4"></path>
+                            </svg>
+                            <span data-i18n="video.tab.compressor">Compressor de Vídeo</span>
+                        </div>
+                    </div>
+                    <p class="tool-desc" data-i18n="video.comp.desc">Reduza o tamanho do arquivo mantendo a qualidade de imagem ideal.</p>
+
+                    <div class="compact-upload-row" id="upload-vcomp" onclick="document.getElementById('input-vcomp').click()">
+                        <input type="file" id="input-vcomp" accept=".mp4,.mkv,.avi,.mov,.webm" onchange="onVideoSelected(this, 'status-vcomp')">
+                        <button type="button" class="btn-selecionar-arquivo">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span data-i18n="video.mp3.btn_select">Selecionar Arquivo de Vídeo</span>
+                        </button>
+                        <span class="upload-file-status" id="status-vcomp" data-i18n="file.none_video">Nenhum vídeo selecionado</span>
+                    </div>
+
+                    <div class="controles-row">
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.comp.level_label">NÍVEL DE COMPRESSÃO</label>
+                            <div class="opcoes-chips" id="chips-nivel-vcomp">
+                                <div class="opcao-chip selecionado" onclick="selecionarChip('nivel-vcomp', 'whatsapp', this)" data-i18n="video.comp.l_wa">WhatsApp / Discord (~70%)</div>
+                                <div class="opcao-chip" onclick="selecionarChip('nivel-vcomp', 'medio', this)" data-i18n="video.comp.l_med">Média (~50%)</div>
+                                <div class="opcao-chip" onclick="selecionarChip('nivel-vcomp', 'leve', this)" data-i18n="video.comp.l_light">Leve (~30%)</div>
+                            </div>
+                            <input type="hidden" id="nivel-vcomp" value="whatsapp">
+                        </div>
+                    </div>
+
+                    <div class="progress-wrap" id="progress-vcomp">
+                        <div class="progress-track"><div class="progress-bar-fill" id="fill-vcomp"></div></div>
+                        <div class="progress-info-row">
+                            <span class="progress-label" id="label-vcomp">Otimizando e comprimindo vídeo...</span>
+                        </div>
+                    </div>
+
+                    <div class="resultado-box" id="resultado-vcomp"></div>
+
+                    <button class="botao-acao" id="btn-vcomp" onclick="executarCompressorVideo()" style="margin-top: auto;">
+                        <span data-i18n="video.comp.btn_exec">Comprimir Vídeo</span>
+                        <span class="botao-arr">→</span>
+                    </button>
+                </div>
+
+                <!-- ════════════════════════════════════════
+                     5. SILENCIAR / REMOVER ÁUDIO
+                ════════════════════════════════════════ -->
+                <div class="tool-card-grid" id="ferramenta-vmute">
+                    <div class="tool-card-header-grid">
+                        <div class="tool-card-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                            </svg>
+                            <span data-i18n="video.tab.mute">Silenciar / Remover Áudio</span>
+                        </div>
+                    </div>
+                    <p class="tool-desc" data-i18n="video.mute.desc">Remove a faixa de áudio do vídeo sem re-codificar (velocidade máxima).</p>
+
+                    <div class="compact-upload-row" id="upload-vmute" onclick="document.getElementById('input-vmute').click()">
+                        <input type="file" id="input-vmute" accept=".mp4,.mkv,.avi,.mov,.webm" onchange="onVideoSelected(this, 'status-vmute')">
+                        <button type="button" class="btn-selecionar-arquivo">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span data-i18n="video.mp3.btn_select">Selecionar Arquivo de Vídeo</span>
+                        </button>
+                        <span class="upload-file-status" id="status-vmute" data-i18n="file.none_video">Nenhum vídeo selecionado</span>
+                    </div>
+
+                    <div class="progress-wrap" id="progress-vmute">
+                        <div class="progress-track"><div class="progress-bar-fill" id="fill-vmute"></div></div>
+                        <div class="progress-info-row">
+                            <span class="progress-label" id="label-vmute">Removendo faixa de áudio...</span>
+                        </div>
+                    </div>
+
+                    <div class="resultado-box" id="resultado-vmute"></div>
+
+                    <button class="botao-acao" id="btn-vmute" onclick="executarRemoverAudio()" style="margin-top: auto;">
+                        <span data-i18n="video.mute.btn_exec">Silenciar Vídeo</span>
+                        <span class="botao-arr">→</span>
+                    </button>
+                </div>
+
+                <!-- ════════════════════════════════════════
+                     6. CAPTURAR FOTO DO VÍDEO
+                ════════════════════════════════════════ -->
+                <div class="tool-card-grid" id="ferramenta-vsnap">
+                    <div class="tool-card-header-grid">
+                        <div class="tool-card-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                            <span data-i18n="video.tab.snap">Capturar Foto do Vídeo</span>
+                        </div>
+                    </div>
+                    <p class="tool-desc" data-i18n="video.snap.desc">Extraia um frame / foto HD do vídeo em qualquer segundo desejado.</p>
+
+                    <div class="compact-upload-row" id="upload-vsnap" onclick="document.getElementById('input-vsnap').click()">
+                        <input type="file" id="input-vsnap" accept=".mp4,.mkv,.avi,.mov,.webm" onchange="onVideoSelected(this, 'status-vsnap')">
+                        <button type="button" class="btn-selecionar-arquivo">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span data-i18n="video.mp3.btn_select">Selecionar Arquivo de Vídeo</span>
+                        </button>
+                        <span class="upload-file-status" id="status-vsnap" data-i18n="file.none_video">Nenhum vídeo selecionado</span>
+                    </div>
+
+                    <div class="controles-row">
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.snap.time_label">SEGUNDO DO VÍDEO (S)</label>
+                            <input type="number" class="controle-input" id="tempo-vsnap" min="0" step="0.5" value="1.0">
+                        </div>
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.snap.fmt_label">FORMATO DA IMAGEM</label>
+                            <div class="opcoes-chips" id="chips-formato-vsnap">
+                                <div class="opcao-chip selecionado" onclick="selecionarChip('formato-vsnap', 'png', this)">PNG (HD)</div>
+                                <div class="opcao-chip" onclick="selecionarChip('formato-vsnap', 'jpg', this)">JPG</div>
+                            </div>
+                            <input type="hidden" id="formato-vsnap" value="png">
+                        </div>
+                    </div>
+
+                    <div class="progress-wrap" id="progress-vsnap">
+                        <div class="progress-track"><div class="progress-bar-fill" id="fill-vsnap"></div></div>
+                        <div class="progress-info-row">
+                            <span class="progress-label" id="label-vsnap">Extraindo imagem em HD...</span>
+                        </div>
+                    </div>
+
+                    <div class="resultado-box" id="resultado-vsnap"></div>
+
+                    <button class="botao-acao" id="btn-vsnap" onclick="executarCapturarFoto()" style="margin-top: auto;">
+                        <span data-i18n="video.snap.btn_exec">Capturar Imagem</span>
+                        <span class="botao-arr">→</span>
+                    </button>
+                </div>
+
+                <!-- ════════════════════════════════════════
+                     3. BAIXAR VÍDEOS POR LINK (Full Width 2Col Span)
+                ════════════════════════════════════════ -->
+                <div class="tool-card-grid full-width-card" id="ferramenta-downloader" style="grid-column: 1 / -1;">
+                    <div class="tool-card-header-grid">
+                        <div class="tool-card-title-left">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span data-i18n="video.tab.downloader">Baixar Vídeos por Link</span>
+                        </div>
+                    </div>
+
+                    <p class="tool-desc" data-i18n="video.dl.desc">Baixe vídeos e áudios com alta velocidade via URL pública do YouTube, Twitter/X, Instagram e TikTok.</p>
+
+                    <div style="display: flex; gap: 8px; margin-top: 2px; margin-bottom: 6px; flex-wrap: wrap;">
+                        <span class="badg-plat">YouTube</span>
+                        <span class="badg-plat">Twitter / X</span>
+                        <span class="badg-plat">Instagram</span>
+                        <span class="badg-plat">TikTok</span>
+                    </div>
+
+                    <div class="controle-grupo">
+                        <label class="controle-label" data-i18n="video.dl.url_label">URL DO VÍDEO</label>
+                        <input type="text" class="controle-input" id="input-url-dl" placeholder="Cole o link do vídeo aqui (ex: https://youtube.com/watch?... ou https://x.com/...)" data-i18n-ph="video.dl.url_ph" style="font-size: 13px; padding: 11px 14px;">
+                    </div>
+
+                    <div class="controles-row" style="margin-top: 8px;">
+                        <div class="controle-grupo">
+                            <label class="controle-label" data-i18n="video.dl.format">FORMATO DESEJADO</label>
+                            <div class="opcoes-chips" id="chips-formato-dl">
+                                <div class="opcao-chip selecionado" data-val="mp4" onclick="selecionarFormatoDl('mp4', this)">MP4 (Vídeo + Áudio)</div>
+                                <div class="opcao-chip" data-val="mp3" onclick="selecionarFormatoDl('mp3', this)">MP3 (Apenas Áudio)</div>
+                            </div>
+                            <input type="hidden" id="formato-dl" value="mp4">
+                        </div>
+                        <div class="controle-grupo" id="grupo-qualidade-dl">
+                            <label class="controle-label" id="label-qualidade-dl" data-i18n="video.dl.quality">QUALIDADE DE VÍDEO</label>
+                            
+                            <!-- Opções para MP4 (Vídeo) -->
+                            <div class="opcoes-chips" id="chips-qualidade-video-dl">
+                                <div class="opcao-chip selecionado" data-val="best" onclick="selecionarQualidadeDl('best', this)" data-i18n="video.dl.q_best">Melhor Qualidade</div>
+                                <div class="opcao-chip" data-val="1080p" onclick="selecionarQualidadeDl('1080p', this)" data-i18n="video.dl.q_1080p">1080p Full HD</div>
+                                <div class="opcao-chip" data-val="720p" onclick="selecionarQualidadeDl('720p', this)" data-i18n="video.dl.q_720p">720p HD</div>
+                                <div class="opcao-chip" data-val="480p" onclick="selecionarQualidadeDl('480p', this)" data-i18n="video.dl.q_480p">480p SD</div>
+                            </div>
+
+                            <!-- Opções para MP3 (Áudio) -->
+                            <div class="opcoes-chips" id="chips-qualidade-audio-dl" style="display: none;">
+                                <div class="opcao-chip selecionado" data-val="320k" onclick="selecionarQualidadeDl('320k', this)">320 kbps (Máxima)</div>
+                                <div class="opcao-chip" data-val="256k" onclick="selecionarQualidadeDl('256k', this)">256 kbps</div>
+                                <div class="opcao-chip" data-val="192k" onclick="selecionarQualidadeDl('192k', this)">192 kbps (Padrão)</div>
+                                <div class="opcao-chip" data-val="128k" onclick="selecionarQualidadeDl('128k', this)">128 kbps</div>
+                            </div>
+
+                            <input type="hidden" id="qualidade-dl" value="best">
+                        </div>
+                    </div>
+
+                    <div class="progress-wrap" id="progress-dl">
+                        <div class="progress-track"><div class="progress-bar-fill" id="fill-dl"></div></div>
+                        <div class="progress-info-row">
+                            <span class="progress-label" id="label-dl">Processando URL e iniciando download...</span>
+                            <span class="progress-pct" id="pct-dl">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="resultado-box" id="resultado-dl"></div>
+
+                    <button class="botao-acao" id="btn-dl" onclick="executarBaixarLink()" style="margin-top: 12px;">
+                        <span data-i18n="video.dl.btn_exec">Baixar Mídia por Link</span>
+                        <span class="botao-arr">→</span>
+                    </button>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <style>
+        .badg-plat {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+    </style>
+
+    <script src="{{ url_for('static', filename='audio/script.js') }}?v={{ range(10000,99999)|random }}"></script>
+    <script src="{{ url_for('static', filename='audio/video_script.js') }}?v={{ range(10000,99999)|random }}"></script>
+</body>
+
+</html>

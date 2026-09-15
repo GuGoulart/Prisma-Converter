@@ -19,6 +19,20 @@ UPLOAD_FOLDER = "uploads"
 DOWNLOAD_FOLDER = "downloads"
 
 
+def gerar_nome_unico(extensao: str) -> str:
+    """Gera nome de arquivo único com UUID."""
+    return f"{uuid.uuid4().hex}.{extensao}"
+
+
+def caminho_upload(nome: str) -> str:
+    """Retorna caminho completo dentro de uploads/."""
+    return os.path.join(UPLOAD_FOLDER, nome)
+
+
+def caminho_download(nome: str) -> str:
+    """Retorna caminho completo dentro de downloads/."""
+    return os.path.join(DOWNLOAD_FOLDER, nome)
+
 def criar_pasta():
     """Cria uma subpasta temporária com UUID v4 em uploads/."""
     uid = uuid.uuid4().hex

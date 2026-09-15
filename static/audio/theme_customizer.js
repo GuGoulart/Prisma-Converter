@@ -1,6 +1,6 @@
 /**
  * theme_customizer.js — Gerenciador de Tema e Personalização de Cores de Destaque
- * Prisma Converter — Design Studio Geométrico & Quadrado
+ * Prisma Audio — Design Studio Geométrico & Quadrado
  */
 
 (function () {
@@ -45,38 +45,6 @@
         return mode === "light" ? "purple" : "red";
     }
 
-    function getSavedRetentionPolicy() {
-        const bodyPolicy = document.body?.dataset?.retentionPolicy;
-        if (bodyPolicy && ["instant", "5min", "15min"].includes(bodyPolicy)) {
-            return bodyPolicy;
-        }
-        const match = document.cookie.match(/(?:^|; )prisma_retention_policy=([^;]*)/);
-        if (match && ["instant", "5min", "15min"].includes(match[1])) {
-            return match[1];
-        }
-        const saved = localStorage.getItem("retention_policy");
-        if (saved && ["instant", "5min", "15min"].includes(saved)) {
-            return saved;
-        }
-        return "15min";
-    }
-
-    function setSavedRetentionPolicy(policy) {
-        if (["instant", "5min", "15min"].includes(policy)) {
-            localStorage.setItem("retention_policy", policy);
-            document.cookie = "prisma_retention_policy=" + policy + "; path=/; max-age=31536000; SameSite=Lax";
-            if (document.body) {
-                document.body.dataset.retentionPolicy = policy;
-            }
-            updateRetentionUI(policy);
-            fetch("/api/historico/set-politica", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ politica: policy })
-            }).catch(() => {});
-        }
-    }
-
     function applyThemeAndAccent(mode, accentKey) {
         const root = document.documentElement;
         if (mode === "light") {
@@ -85,7 +53,7 @@
             root.removeAttribute("data-theme");
         }
 
-        const preset = ACCENT_PRESETS[mode][accentKey] || ACCENT_PRESETS[mode][mode === "light" ? "purple" : "emerald"];
+        const preset = ACCENT_PRESETS[mode][accentKey] || ACCENT_PRESETS[mode]["red"];
 
         root.style.setProperty("--accent", preset.color);
         root.style.setProperty("--accent-hover", preset.hover);
@@ -109,7 +77,6 @@
         const modalHTML = `
         <div id="themeCustomizerModal" class="theme-modal-overlay" aria-hidden="true">
             <div class="theme-modal-card" role="dialog" aria-labelledby="themeModalTitle">
-                <!-- Faixa accent de topo -->
                 <div class="theme-modal-top-accent"></div>
 
                 <div class="theme-modal-header">
@@ -134,7 +101,7 @@
                         <div class="theme-lang-grid">
                             <button type="button" class="btn-lang-opt theme-lang-btn" data-lang="pt">
                                 <span class="lang-flag-symbol" aria-hidden="true">
-                                    <svg width="22" height="15" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="flag-icon-svg">
+                                    <svg width="22" height="15" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="1" y="1" width="22" height="14" rx="1"/>
                                         <polygon points="12,3.5 20.5,8 12,12.5 3.5,8"/>
                                         <circle cx="12" cy="8" r="2.5"/>
@@ -144,7 +111,7 @@
                             </button>
                             <button type="button" class="btn-lang-opt theme-lang-btn" data-lang="en">
                                 <span class="lang-flag-symbol" aria-hidden="true">
-                                    <svg width="22" height="15" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="flag-icon-svg">
+                                    <svg width="22" height="15" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="1" y="1" width="22" height="14" rx="1"/>
                                         <rect x="1" y="1" width="9" height="7"/>
                                         <line x1="10" y1="3.8" x2="23" y2="3.8"/>
@@ -156,7 +123,7 @@
                             </button>
                             <button type="button" class="btn-lang-opt theme-lang-btn" data-lang="es">
                                 <span class="lang-flag-symbol" aria-hidden="true">
-                                    <svg width="22" height="15" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="flag-icon-svg">
+                                    <svg width="22" height="15" viewBox="0 0 24 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="1" y="1" width="22" height="14" rx="1"/>
                                         <line x1="1" y1="4.8" x2="23" y2="4.8"/>
                                         <line x1="1" y1="11.2" x2="23" y2="11.2"/>
@@ -207,9 +174,7 @@
                             <label class="theme-section-label" data-i18n="customizer.accent.title">Cor Principal do Site</label>
                             <span id="themeAccentSub" class="theme-section-sub" data-i18n="customizer.accent.darkSub">Cores otimizadas para o modo escuro</span>
                         </div>
-                        <div id="themeSwatchesContainer" class="theme-swatches-grid">
-                            <!-- Injetado dinamicamente via JS -->
-                        </div>
+                        <div id="themeSwatchesContainer" class="theme-swatches-grid"></div>
                     </div>
                 </div>
 
@@ -263,16 +228,6 @@
         });
     }
 
-    function updateRetentionUI(activePolicy) {
-        document.querySelectorAll(".theme-retention-btn").forEach((btn) => {
-            if (btn.getAttribute("data-policy") === activePolicy) {
-                btn.classList.add("active");
-            } else {
-                btn.classList.remove("active");
-            }
-        });
-    }
-
     function updateModalUI(mode, activeAccentKey) {
         document.querySelectorAll(".theme-mode-square-btn, .theme-mode-pill-btn, .theme-mode-card").forEach((card) => {
             const cardMode = card.getAttribute("data-mode");
@@ -301,7 +256,6 @@
             }
         }
 
-        updateRetentionUI(getSavedRetentionPolicy());
         renderSwatches(mode, activeAccentKey);
     }
 
@@ -331,7 +285,6 @@
         document.body.style.overflow = "";
     }
 
-    // Event listeners globais
     document.addEventListener("DOMContentLoaded", () => {
         injectModal();
 
@@ -362,12 +315,6 @@
                 const currentAccent = getSavedAccent(targetMode);
                 applyThemeAndAccent(targetMode, currentAccent);
             }
-
-            const retBtn = e.target.closest(".theme-retention-btn");
-            if (retBtn) {
-                const targetPolicy = retBtn.getAttribute("data-policy");
-                setSavedRetentionPolicy(targetPolicy);
-            }
         });
 
         document.addEventListener("keydown", (e) => {
@@ -382,9 +329,6 @@
         close: closeModal,
         apply: applyThemeAndAccent,
         getSavedTheme,
-        getSavedAccent,
-        getRetentionPolicy: getSavedRetentionPolicy,
-        setRetentionPolicy: setSavedRetentionPolicy
+        getSavedAccent
     };
 })();
-

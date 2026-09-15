@@ -8,6 +8,9 @@ from routes.pdf import pdf_bp
 from routes.file_tools import file_tools_bp
 from routes.tools import tools_bp
 from routes.history import history_bp
+from routes.audio import audio_bp
+from routes.video import video_bp
+from routes.views_audio import views_audio_bp
 
 
 def registrar_blueprints(app):
@@ -18,3 +21,6 @@ def registrar_blueprints(app):
     app.register_blueprint(file_tools_bp)
     app.register_blueprint(tools_bp)
     app.register_blueprint(history_bp)
+    app.register_blueprint(audio_bp)
+    app.register_blueprint(video_bp)
+    app.register_blueprint(views_audio_bp)

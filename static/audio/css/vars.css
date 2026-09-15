@@ -1,0 +1,177 @@
+/* ================================
+   Reset
+================================ */
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #161616;
+    --border: #1e1e1e;
+    --border2: #2a2a2a;
+
+    /* ── Accent: Vermelho ── */
+    --accent: #ff3b3b;
+    --accent-hover: #ff5555;
+    --accent-dim: #cc2222;
+    --accent-text: #ffffff;
+    --accent-glow: rgba(255, 59, 59, 0.22);
+    --accent-bg: rgba(255, 59, 59, 0.06);
+
+    --grid-color: rgba(255, 255, 255, 0.06);
+    --text: #f0f0f0;
+    --muted: #555555;
+    --muted2: #888888;
+    --preview-bg: #141414;
+
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'Space Mono', monospace;
+
+    /* Cores dos formatos de áudio */
+    --col-mp3:  #ff3b3b;
+    --col-wav:  #3b82f6;
+    --col-aac:  #f97316;
+    --col-ogg:  #22c55e;
+    --col-flac: #a855f7;
+    --col-m4a:  #06b6d4;
+    --col-opus: #eab308;
+    --col-wma:  #ec4899;
+
+    --mobile-nav-bg: rgba(10, 10, 10, 0.95);
+    --sidebar-mobile-bg: rgba(10, 10, 10, 0.98);
+    --drawer-overlay-bg: rgba(0, 0, 0, 0.6);
+    --topbar-bg: #07080c;
+}
+
+html[data-theme="light"] {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --border: #e2e8f0;
+    --border2: #cbd5e1;
+
+    --grid-color: rgba(0, 0, 0, 0.05);
+    --text: #0f172a;
+    --muted: #64748b;
+    --muted2: #475569;
+    --preview-bg: #f1f5f9;
+
+    --topbar-bg: #ffffff;
+    --mobile-nav-bg: rgba(248, 250, 252, 0.95);
+    --sidebar-mobile-bg: rgba(248, 250, 252, 0.98);
+    --drawer-overlay-bg: rgba(0, 0, 0, 0.4);
+}
+
+html,
+body {
+    height: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text);
+    overflow-x: hidden;
+}
+
+/* ── Badge de formatos de áudio ── */
+.badge-mp3 {
+    background: color-mix(in srgb, var(--col-mp3) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-mp3) 40%, transparent) !important;
+    color: var(--col-mp3) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-mp3) 40%, transparent) !important;
+}
+.badge-wav {
+    background: color-mix(in srgb, var(--col-wav) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-wav) 40%, transparent) !important;
+    color: var(--col-wav) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-wav) 40%, transparent) !important;
+}
+.badge-aac {
+    background: color-mix(in srgb, var(--col-aac) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-aac) 40%, transparent) !important;
+    color: var(--col-aac) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-aac) 40%, transparent) !important;
+}
+.badge-ogg {
+    background: color-mix(in srgb, var(--col-ogg) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-ogg) 40%, transparent) !important;
+    color: var(--col-ogg) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-ogg) 40%, transparent) !important;
+}
+.badge-flac {
+    background: color-mix(in srgb, var(--col-flac) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-flac) 40%, transparent) !important;
+    color: var(--col-flac) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-flac) 40%, transparent) !important;
+}
+.badge-m4a {
+    background: color-mix(in srgb, var(--col-m4a) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-m4a) 40%, transparent) !important;
+    color: var(--col-m4a) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-m4a) 40%, transparent) !important;
+}
+.badge-opus {
+    background: color-mix(in srgb, var(--col-opus) 15%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--col-opus) 40%, transparent) !important;
+    color: var(--col-opus) !important;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--col-opus) 40%, transparent) !important;
+}
+
+/* ── Background Grid ── */
+.bg-grid {
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .3;
+    pointer-events: none;
+    z-index: -1;
+    -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 85%);
+    mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 85%);
+}
+
+/* ── Toast ── */
+.toast {
+    position: fixed;
+    bottom: 60px;
+    right: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    padding: 12px 20px;
+    border-radius: 2px;
+    z-index: 300;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity .3s, transform .3s;
+    pointer-events: none;
+    max-width: 320px;
+}
+
+.toast.visivel {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.erro {
+    background: #1a1a1a;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+}

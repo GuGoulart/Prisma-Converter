@@ -63,3 +63,15 @@ pyzipper>=0.3.6
 celery[redis]
 flask-limiter[redis]
 redis
+
+# ── Audio & Video (Prisma Audio) ──────────────────────────────────────────────
+pydub>=0.25.1
+ffmpeg-python>=0.2.0
+static-ffmpeg>=2.5.0
+
+# ── Transcrição de Áudio (Speech-to-Text) ────────────────────────────────────
+SpeechRecognition>=3.10.0
+faster-whisper>=1.0.0
+
+# ── Download de Vídeos por URL ────────────────────────────────────────────────
+yt-dlp>=2024.1.0

@@ -9,6 +9,19 @@ from threading import Lock
 _contagem_ip = defaultdict(list)
 _lock_rate   = Lock()
 
+_IS_RENDER = os.environ.get("RENDER") in ("true", "1") or bool(os.environ.get("RENDER_SERVICE_ID"))
+_IS_WEB = _IS_RENDER
+
+# Extensoes permitidas para audio e video
+EXTENSOES_AUDIO_PERMITIDAS = {
+    "mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "aiff",
+    "aif", "ape", "opus", "webm", "mp4", "m4b", "3gp"
+}
+
+EXTENSOES_VIDEO_PERMITIDAS = {
+    "mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v", "3gp"
+}
+
 # ─── Limites de segurança ────────────────────────────────────────────────────
 
 # Tamanho máximo descomprimido de um ZIP (100 MB).
@@ -45,16 +58,53 @@ def verificar_rate_limit(ip):
         return True
 
 
-def rate_limit_required(f):
+def rate_limit_required(max_por_minuto=60):
+    """Decorator de rate limit. Aceita @rate_limit_required ou @rate_limit_required(N)."""
     from functools import wraps
-    from flask import request
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        ip = extrair_ip_cliente(request)
-        if not verificar_rate_limit(ip):
-            return "Muitas requisições. Aguarde um momento.", 429
-        return f(*args, **kwargs)
-    return decorated_function
+    from flask import request, jsonify
+
+    def _make_decorator(max_req):
+        def decorator(f):
+            @wraps(f)
+            def decorated_function(*args, **kwargs):
+                ip = extrair_ip_cliente(request)
+                agora = time.time()
+                with _lock_rate:
+                    _contagem_ip[ip] = [t for t in _contagem_ip[ip] if agora - t < 60]
+                    if len(_contagem_ip[ip]) >= max_req:
+                        return jsonify({"erro": "Muitas requisicoes. Tente novamente em instantes."}), 429
+                    _contagem_ip[ip].append(agora)
+                return f(*args, **kwargs)
+            return decorated_function
+        return decorator
+
+    # Suporte a @rate_limit_required (sem parens) e @rate_limit_required(N) (com parens)
+    import inspect
+    if callable(max_por_minuto):
+        # Usado como @rate_limit_required sem parenteses — max_por_minuto é a própria func
+        func = max_por_minuto
+        return _make_decorator(60)(func)
+    else:
+        # Usado como @rate_limit_required(20)
+        return _make_decorator(max_por_minuto)
+
+
+def validar_extensao_audio(nome_arquivo: str) -> bool:
+    """Valida se o arquivo tem extensao de audio permitida."""
+    ext = nome_arquivo.rsplit(".", 1)[-1].lower() if "." in nome_arquivo else ""
+    return ext in EXTENSOES_AUDIO_PERMITIDAS
+
+
+def validar_extensao_video(nome_arquivo: str) -> bool:
+    """Valida se o arquivo tem extensao de video permitida."""
+    ext = nome_arquivo.rsplit(".", 1)[-1].lower() if "." in nome_arquivo else ""
+    return ext in EXTENSOES_VIDEO_PERMITIDAS
+
+
+def obter_extensao(nome_arquivo: str) -> str:
+    """Retorna a extensao do arquivo em lowercase."""
+    return nome_arquivo.rsplit(".", 1)[-1].lower() if "." in nome_arquivo else ""
+
 
 
 def gerar_csrf():
