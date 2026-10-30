@@ -1,0 +1,38 @@
+# Dependências diretas. requirements.txt é gerado a partir deste arquivo, com tudo fixado.
+Flask
+waitress
+python-dotenv
+
+# Documentos e planilhas
+pandas
+openpyxl
+chardet
+# A versão 2 removeu o módulo fitz, usado pelo pdf2docx.
+pymupdf<2
+pdf2docx
+pdfplumber
+python-docx
+python-pptx
+
+# Imagens e OCR
+pillow
+pillow-heif
+opencv-python-headless
+extcolors
+pytesseract
+
+# QR Code, ZIP e criptografia
+qrcode[pil]
+pyzbar
+pyzipper
+cryptography
+
+# Áudio e vídeo
+static-ffmpeg
+faster-whisper
+# Versões mais novas removeram um parâmetro usado pelo faster-whisper.
+av<17
+yt-dlp
+
+# Automação do Microsoft Office
+pywin32; sys_platform == "win32"

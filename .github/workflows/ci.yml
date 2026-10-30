@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar FFmpeg
+        run: choco install ffmpeg -y --no-progress
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install -r requirements-dev.txt
+          npm ci
+
+      - name: Verificar tipos
+        run: npm run typecheck
+
+      - name: Conferir se static/dist está atualizado
+        shell: bash
+        run: |
+          npm run build
+          git diff --exit-code static/dist
+
+      - name: Testes do backend
+        run: python -m pytest tests -q
+
+      - name: Vulnerabilidades nas dependências
+        run: python -m pip_audit -r requirements.txt --no-deps --disable-pip
+
+      - name: Testes no navegador
+        run: |
+          npx playwright install --with-deps chromium
+          npm run e2e

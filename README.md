@@ -2,156 +2,110 @@
 
 # 💎 PRISMA CONVERTER
 
-### **Aplicativo Desktop Local • Suíte Completa de Conversão, Áudio, Vídeo, PDF e Ferramentas de Arquivos**
+### **Aplicativo desktop local para converter, editar e proteger arquivos**
 
-[![Português](https://img.shields.io/badge/Idioma-Portugu%C3%Aas-blue?style=for-the-badge)](README.md)
+[![Português](https://img.shields.io/badge/Idioma-Portugu%C3%AAs-blue?style=for-the-badge)](README.md)
 [![English](https://img.shields.io/badge/Language-English-red?style=for-the-badge)](README.en.md)
 [![Español](https://img.shields.io/badge/Idioma-Espa%C3%B1ol-yellow?style=for-the-badge)](README.es.md)
 
-<br/>
-
-[![Python Version](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![Framework](https://img.shields.io/badge/Framework-Flask-000000.svg?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Plataforma](https://img.shields.io/badge/Plataforma-Windows%20Desktop-0078D6.svg?style=flat-square&logo=windows&logoColor=white)](#-início-rápido-no-windows)
-[![100% Local & Privado](https://img.shields.io/badge/Privacidade-100%25%20Local-success.svg?style=flat-square&logo=shield&logoColor=white)](#-privacidade--segurança)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![TypeScript](https://img.shields.io/badge/Frontend-TypeScript-3178C6.svg?style=flat-square&logo=typescript&logoColor=white)](frontend/)
 [![Licença: GPL v3](https://img.shields.io/badge/Licen%C3%A7a-GNU%20GPL%20v3-blue.svg?style=flat-square&logo=gnu)](LICENSE)
-
-[✨ Funcionalidades](#-funcionalidades) • [⚡ Início Rápido](#-início-rápido-no-windows) • [🏗️ Arquitetura](#%EF%B8%8F-arquitetura-do-projeto) • [🔒 Privacidade & Segurança](#-privacidade--segurança)
 
 </div>
 
 ---
 
-## 📖 Sobre o Projeto
+## Sobre
 
-O **Prisma Converter** é um aplicativo desktop local e suíte universal para **conversão de arquivos**, **manipulação avançada de PDFs**, **edição e processamento de áudio e vídeo**, **download de mídia por link** e **criptografia de dados**.
+O Prisma roda no seu computador e abre em uma janela própria. Seus arquivos são processados localmente e não são enviados a servidores. As únicas conexões externas são as que você pede: baixar um vídeo por link e baixar o modelo de transcrição, uma única vez.
 
-Ao contrário de serviços online comuns, o Prisma opera de forma **100% local no seu computador**:
-* 🛡️ **Privacidade Absoluta:** Seus arquivos nunca saem da sua máquina e não são enviados para servidores externos.
-* ⚡ **Sem Limite de Upload:** Processamento local sem limites de tamanho de arquivo (`MAX_MB = 0`).
-* 🪟 **Janela Nativa de Aplicativo:** Executa em modo janela independente (*App Mode*), sem abas ou barra de URL do navegador.
+## Funcionalidades
 
----
-
-## ✨ Funcionalidades
-
-### 🔄 Conversor Universal de Documentos
-* **Documentos & Planilhas:** `PDF ↔ DOCX, XLSX, CSV, PPTX, PNG, JPG`
-* **Apresentações:** `PPT, PPTX → PDF, DOCX, PNG, JPG`
-* **Estruturas de Dados:** `JSON ↔ CSV, XLSX, PDF`
-* **Imagens:** `HEIC, WEBP, PNG, JPG → PDF, PNG, JPG`
-
-### 🎵 Ferramentas de Áudio
-* **Conversão de Áudio:** `MP3, WAV, FLAC, AAC, OGG, M4A` com ajuste de bitrate e canais.
-* **Corte & Aparo:** Definição de início e fim com precisão para extrair trechos.
-* **Ajustes:** Normalização de volume e controle de qualidade.
-* **Auto-configuração de FFmpeg:** Pronto para uso sem complicações de PATH (`static-ffmpeg`).
-
-### 🎬 Ferramentas de Vídeo & Download
-* **Conversão de Vídeo:** `MP4, MKV, AVI, MOV, WEBM` com controle de resolução e codecs.
-* **Compressão de Vídeo:** Redução do tamanho mantendo alta fidelidade visual.
-* **Corte & Extração:** Corte de trechos e extração da trilha sonora para MP3/WAV.
-* **Download por Link:** Download de vídeos e áudios a partir de URLs da internet via `yt-dlp`.
-
-### 🛠️ Ferramentas Avançadas de PDF & Utilitários
-| Categoria | Funcionalidades |
+| Área | Ferramentas |
 |---|---|
-| 📄 **PDFs** | Mesclar múltiplos PDFs, Dividir por páginas, Proteger/Desproteger com senha, Comprimir e Aplicar Marca d'Água |
-| 🖼️ **Imagens** | Extração de mídia em lote de PDFs, Gerador/Leitor de QR Code e Extrator de Paleta de Cores |
-| 🔒 **Segurança** | Criptografia AES-256-CBC, Hashes de verificação (MD5, SHA1, SHA256) e criação de ZIP protegido por senha |
-| 📁 **Utilitários** | Renomeação inteligente em lote e Mesclagem de planilhas Excel/CSV |
+| **Conversor** | PDF, DOCX, XLSX, CSV, JSON, PPT, PPTX, PNG, JPG, WEBP e HEIC, com prévia |
+| **PDF** | Mesclar, dividir, proteger, desproteger, comprimir, marca d'água, extrair imagens, remover e girar páginas |
+| **Áudio** | Converter, cortar, juntar, ajustar volume, normalizar, alterar velocidade, inverter e transcrever |
+| **Vídeo** | Converter, comprimir, extrair MP3, gerar GIF, remover áudio, capturar quadro e baixar por link |
+| **Arquivos** | ZIP e TAR.GZ, ZIP com senha, criptografia AES-256, hash, renomear em lote, mesclar planilhas |
+| **Imagens** | Gerar e ler QR Code, extrair paleta de cores |
 
-### 🎨 Design Moderno & Personalização
-* **Temas Customizáveis:** Modo Escuro e Modo Claro com **10 cores simétricas** em pares.
-* **Sidebar Unificada:** Acesso direto a todas as 6 seções (Início, Conversor, Ferramentas Avançadas, Áudio, Vídeo e Histórico).
-* **Internacionalização (i18n):** Suporte nativo completo a Português, Inglês e Espanhol.
+Toda tarefa mostra o progresso, pode ser cancelada e entra em uma fila, sem travar o resto do aplicativo. Os resultados ficam no histórico e são apagados pela política escolhida: 5 minutos, 15 minutos ou logo após o download.
 
----
+### O que precisa de programas externos
 
-## ⚡ Início Rápido no Windows
+O aplicativo detecta o que está instalado e mostra só as conversões possíveis.
 
-### 1-Clique com Atalho na Área de Trabalho (Recomendado)
+| Recurso | Requisito |
+|---|---|
+| Áudio e vídeo | [FFmpeg](https://ffmpeg.org/download.html). Sem ele no PATH, o Prisma tenta baixar uma cópia automaticamente |
+| DOCX, PPT e PPTX como origem; planilhas para PDF ou imagem | Microsoft Office **ou** [LibreOffice](https://www.libreoffice.org/download/) |
+| Texto de imagens e PDFs digitalizados (OCR) | [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) |
 
-1. Clone o repositório ou baixe os arquivos:
-   ```bash
-   git clone https://github.com/GuGoulart/Prisma-Converter.git
-   cd Prisma-Converter
-   ```
+## Início rápido no Windows
 
-2. Instale as dependências uma única vez:
-   ```bash
-   pip install -r requirements.txt
-   ```
+Requisito: [Python 3.11 ou superior](https://www.python.org/downloads/).
 
-3. Dê **dois cliques em `Prisma.bat`**:
-   * O sistema criará automaticamente o atalho **"Prisma Converter"** na sua Área de Trabalho com o ícone personalizado.
-   * O aplicativo iniciará em segundo plano e abrirá em uma janela nativa dedicada.
-   * Se o app já estiver aberto e você clicar novamente no atalho, ele focará na janela existente sem conflito de portas.
-
-### Central de Controle (`Prisma.bat`)
-
-O arquivo `Prisma.bat` oferece um menu prático:
-* `[1] Iniciar Prisma Converter`: Inicialização silenciosa da janela do aplicativo.
-* `[2] Encerrar Servidor Local`: Libera a porta e encerra os processos em segundo plano.
-* `[3] Criar/Atualizar Atalho`: Recria o atalho na sua Área de Trabalho.
-
-### Execução Direta via Terminal
 ```bash
-python app.py
+git clone https://github.com/GuGoulart/Prisma-Converter.git
 ```
-O aplicativo abrirá diretamente em modo janela (`http://127.0.0.1:5000`).
 
----
+Depois, dê dois cliques em `Prisma.bat` e escolha **[1] Iniciar**. Na primeira vez, ele instala as dependências em um ambiente próprio (`venv`) e cria um atalho na Área de Trabalho.
 
-## 🏗️ Arquitetura do Projeto
+O servidor encerra sozinho alguns minutos depois que a última janela é fechada, desde que nenhuma tarefa esteja em andamento.
+
+## Desenvolvimento
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements-dev.txt
+npm install
+
+npm run watch         # recompila o frontend ao salvar
+python app.py
+
+python -m pytest tests   # testes do backend
+npm run typecheck        # verificação de tipos
+npm run e2e              # testes em navegador real
+```
+
+O frontend fica em `frontend/` e é compilado para `static/dist/`, que é versionado: **rodar o aplicativo não exige Node.js**. Rode `npm run build` antes de commitar alterações no frontend.
+
+Para atualizar dependências, edite `requirements.in` e gere de novo o `requirements.txt` em um ambiente limpo.
+
+## Arquitetura
 
 ```text
-Prisma-Converter/
-├── app.py                      # Ponto de entrada do aplicativo local desktop
-├── Prisma.bat                  # Central de controle e inicializador 1-clique
-├── requirements.txt            # Dependências Python locais
-├── core/                       # Motores de processamento e segurança
-│   ├── converter.py            # Conversor universal de documentos e imagens
-│   ├── pdf_tools.py            # Manipulação de PDFs via PyMuPDF
-│   ├── audio_processor.py      # Processamento, conversão e corte de áudio
-│   ├── video_processor.py      # Processamento e compressão de vídeo via FFmpeg
-│   ├── video_downloader.py     # Motor de download por link via yt-dlp
-│   ├── security.py             # Validação CSRF, sanitização e criptografia
-│   ├── cleanup.py              # Expurgo automático de arquivos temporários
-│   └── utils.py                # Utilitários de sistema e arquivos
-├── routes/                     # Blueprints organizados por funcionalidade
-│   ├── views.py                # Páginas principais (Home, Conversor, Avançadas)
-│   ├── views_audio.py          # Páginas de Áudio e Vídeo
-│   ├── converter.py            # Endpoints da API de conversão
-│   ├── pdf.py                  # Endpoints da API de PDFs
-│   ├── audio.py                # Endpoints da API de Áudio
-│   ├── video.py                # Endpoints da API de Vídeo e Download
-│   ├── file_tools.py           # Compressão, Criptografia e Planilhas
-│   ├── tools.py                # QR Code e Paleta de Cores
-│   └── history.py              # Histórico local da sessão
-├── static/                     # CSS, JavaScript e assets visuais
-│   ├── css/                    # Estilos modulares (vars, layout, components)
-│   ├── audio/                  # Assets e scripts dedicados de áudio e vídeo
-│   ├── theme_customizer.js     # Customizador de temas e cores (10 pares)
-│   ├── i18n.js                 # Dicionário de traduções (PT / EN / ES)
-│   └── logo.ico                # Ícone do aplicativo desktop
-├── templates/                  # Telas HTML responsivas e modais
-└── scripts/                    # Scripts de automação desktop
-    ├── Iniciar_Prisma.vbs      # Inicializador silencioso (sem tela preta do cmd)
-    └── criar_atalho.ps1        # Gerador do atalho na Área de Trabalho
+├── app.py                 # Inicialização, servidor e encerramento automático
+├── core/
+│   ├── jobs.py            # Fila de tarefas, progresso, cancelamento e autodestruição
+│   ├── worker.py          # Executa tarefas pesadas em processo separado
+│   ├── processo.py        # Subprocessos que podem ser cancelados e têm limite de tempo
+│   ├── security.py        # Origem, CSRF, CSP e validação de entrada
+│   ├── converter.py       # Conversor e detecção de Office, LibreOffice e OCR
+│   └── ...                # PDF, áudio, vídeo, arquivos, QR Code e imagens
+├── routes/
+│   ├── pipeline.py        # Caminho único de toda ferramenta
+│   └── ...                # Uma declaração por ferramenta
+├── frontend/
+│   ├── src/               # TypeScript: lib/ (base) e pages/ (uma por tela)
+│   ├── css/               # Estilos compilados para static/dist
+│   └── e2e/               # Testes de navegador (Playwright)
+├── templates/             # Layout base, sidebar e páginas
+├── static/                # Fontes, ícones e dist/ (compilado)
+└── tests/                 # Testes do backend
 ```
 
----
+## Privacidade e segurança
 
-## 🔒 Privacidade & Segurança
+- **Processamento local:** o servidor escuta apenas em `127.0.0.1` e não usa recursos externos nas páginas.
+- **Proteção contra outros sites:** valida `Host` e `Origin`, exige token CSRF e aplica uma política de segurança de conteúdo (CSP) sem scripts inline.
+- **Isolamento:** downloads são feitos só por ID de tarefa. Nomes e parâmetros enviados nunca viram caminhos no disco.
+- **Macros desabilitadas** ao abrir documentos pelo Office.
+- **Exclusão:** os arquivos são apagados pelo sistema de arquivos. Isso não é uma destruição forense, que não pode ser garantida em SSDs.
 
-* 💻 **Processamento 100% Local:** Nada é enviado para a nuvem; os dados nunca trafegam pela internet pública.
-* 🗑️ **Limpeza Automática:** Ciclo de vida de arquivos temporários com exclusão segura e expurgo automático na inicialização.
-* 🛡️ **Proteção Robusta:** Sanitização rigorosa de nomes de arquivos contra *Path Traversal*, proteção contra *Zip Bombs* e validação de cabeçalhos MIME.
+## Licença
 
----
-
-## 📜 Licença
-
-Distribuído sob a licença **GNU General Public License v3.0 (GPLv3)**.  
-Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Distribuído sob a licença **GNU General Public License v3.0**. Veja [LICENSE](LICENSE).

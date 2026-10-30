@@ -1,89 +1,101 @@
 @echo off
+chcp 65001 >nul
 title Prisma Converter - Central de Controle
 color 0B
 cd /d "%~dp0"
 
-:: Garantir que o atalho exista na Área de Trabalho do usuário ao rodar
-if not exist "%USERPROFILE%\Desktop\Prisma Converter.lnk" (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\criar_atalho.ps1" >nul 2>&1
-)
-
-if "%1"=="--start" goto START_SILENT
-if "%1"=="--stop" goto STOP_SERVER
-if "%1"=="--shortcut" goto CREATE_SHORTCUT
+if "%1"=="--start" goto START
+if "%1"=="--stop" goto STOP
+if "%1"=="--shortcut" goto SHORTCUT
+if "%1"=="--install" goto INSTALL
 
 :MENU
 cls
 echo.
 echo  =============================================================================
 echo.
-echo     ██████╗ ██████╗ ██╗███████╗███╗   ███╗███╗   ██╗ ██████╗ 
-echo     ██╔══██╗██╔══██╗██║██╔════╝████╗ ████║████╗  ██║██╔═══██╗
-echo     ██████╔╝██████╔╝██║███████╗██╔████╔██║██╔██╗ ██║██║   ██║
-echo     ██╔═══╝ ██╔══██╗██║╚════██║██║╚██╔╝██║██║╚██╗██║██║   ██║
-echo     ██║     ██║  ██║██║███████║██║ ╚═╝ ██║██║ ╚████║╚██████╔╝
-echo     ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═══╝ ╚═════╝ 
+echo     ██████╗ ██████╗ ██╗███████╗███╗   ███╗ █████╗
+echo     ██╔══██╗██╔══██╗██║██╔════╝████╗ ████║██╔══██╗
+echo     ██████╔╝██████╔╝██║███████╗██╔████╔██║███████║
+echo     ██╔═══╝ ██╔══██╗██║╚════██║██║╚██╔╝██║██╔══██║
+echo     ██║     ██║  ██║██║███████║██║ ╚═╝ ██║██║  ██║
+echo     ╚═╝     ╚═╝  ╚═╝╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝
 echo.
-echo           ✦ CONVERSOR UNIVERSAL ^& FERRAMENTAS DE ARQUIVOS ✦
+echo           CONVERSOR UNIVERSAL ^& FERRAMENTAS DE ARQUIVOS
 echo.
 echo  =============================================================================
 echo.
-echo    [1]  Iniciar Prisma Converter (Modo Silencioso 1-Clique)
-echo    [2]  Encerrar Servidor Local (Liberar Porta 5000)
-echo    [3]  Criar/Atualizar Atalho na Area de Trabalho
+echo    [1]  Iniciar o Prisma Converter
+echo    [2]  Encerrar o Prisma Converter
+echo    [3]  Criar atalho na Area de Trabalho
+echo    [4]  Instalar ou atualizar dependencias
 echo    [0]  Sair
 echo.
 echo  =============================================================================
 echo.
-set /p opcao=" Escolha uma opcao [0-3]: "
+set /p opcao=" Escolha uma opcao [0-4]: "
 
-if "%opcao%"=="1" goto START_SILENT
-if "%opcao%"=="2" goto STOP_SERVER
-if "%opcao%"=="3" goto CREATE_SHORTCUT
+if "%opcao%"=="1" goto START
+if "%opcao%"=="2" goto STOP
+if "%opcao%"=="3" goto SHORTCUT
+if "%opcao%"=="4" goto INSTALL
 if "%opcao%"=="0" exit /b
 goto MENU
 
-:START_SILENT
-cls
-echo Iniciando o Prisma Converter...
-if exist "scripts\Iniciar_Prisma.vbs" (
-    wscript.exe "%~dp0scripts\Iniciar_Prisma.vbs"
-) else (
-    if exist "venv\Scripts\python.exe" (
-        start "" /b "%~dp0venv\Scripts\python.exe" app.py
-    ) else (
-        start "" /b python app.py
-    )
+:START
+if not exist "venv\Scripts\python.exe" call :SETUP || goto FIM
+if not exist "%USERPROFILE%\Desktop\Prisma Converter.lnk" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\criar_atalho.ps1" >nul 2>&1
 )
-echo Pronto! Servidor iniciado em segundo plano.
-timeout /t 2 >nul
+wscript.exe "%~dp0scripts\Iniciar_Prisma.vbs"
 exit /b
 
-:STOP_SERVER
-cls
-echo Encerrando o servidor local do Prisma Converter...
-taskkill /FI "WINDOWTITLE eq Prisma Converter*" /F >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do (
-    taskkill /PID %%a /F >nul 2>&1
+:STOP
+rem O PID identifica o processo do Prisma: nada de encerrar outro programa que use a porta.
+if exist "instance\prisma.pid" (
+    set /p PID=<"instance\prisma.pid"
+    setlocal enabledelayedexpansion
+    taskkill /PID !PID! /T /F >nul 2>&1
+    endlocal
+    del "instance\prisma.pid" >nul 2>&1
+    echo Prisma encerrado.
+) else (
+    echo O Prisma nao esta em execucao.
 )
-echo.
-echo  =============================================================================
-echo   Servidor encerrado com sucesso!
-echo  =============================================================================
-echo.
 timeout /t 2 >nul
 if "%1"=="--stop" exit /b
 goto MENU
 
-:CREATE_SHORTCUT
-cls
-echo Criando atalho do Prisma Converter na Area de Trabalho...
+:SHORTCUT
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\criar_atalho.ps1"
-echo.
-echo  =============================================================================
-echo   Atalho criado na Area de Trabalho com sucesso!
-echo  =============================================================================
-echo.
+echo Atalho criado na Area de Trabalho.
 timeout /t 2 >nul
 if "%1"=="--shortcut" exit /b
 goto MENU
+
+:INSTALL
+call :SETUP
+pause
+if "%1"=="--install" exit /b
+goto MENU
+
+:SETUP
+echo Preparando o ambiente (pode levar alguns minutos na primeira vez)...
+if not exist "venv\Scripts\python.exe" (
+    python -m venv venv
+    if errorlevel 1 (
+        echo Nao foi possivel criar o ambiente. Instale o Python 3.11 ou superior: https://www.python.org/downloads/
+        exit /b 1
+    )
+)
+"venv\Scripts\python.exe" -m pip install --upgrade pip -q
+"venv\Scripts\python.exe" -m pip install -r requirements.txt
+if errorlevel 1 (
+    echo Falha ao instalar as dependencias.
+    exit /b 1
+)
+exit /b 0
+
+:FIM
+pause
+exit /b 1

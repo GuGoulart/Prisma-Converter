@@ -1,0 +1,2 @@
+*.bat text eol=crlf
+static/dist/** linguist-generated=true

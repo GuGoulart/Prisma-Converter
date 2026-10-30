@@ -3,9 +3,16 @@ venv/
 env/
 .venv/
 
-# Pastas temporárias do app
+# Dados do app
 uploads/
 downloads/
+instance/
+
+# Frontend
+node_modules/
+frontend/e2e/.fixtures/
+test-results/
+playwright-report/
 
 # Logs
 prisma.log
