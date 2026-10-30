@@ -6,6 +6,8 @@ Extração de paleta de cores.
 import os
 import logging
 
+from core.errors import ErroUsuario
+
 log = logging.getLogger(__name__)
 
 
@@ -21,9 +23,6 @@ def extrair_paleta(caminho_imagem: str, n_cores: int = 8, tolerancia: int = 32) 
     Returns:
         Lista de dicts: [{"hex": "#...", "rgb": "rgb(...)", "r": r, "g": g, "b": b, "percentual": p}, ...]
     """
-    if not os.path.exists(caminho_imagem):
-        raise FileNotFoundError(f"Arquivo não encontrado: {caminho_imagem}")
-
     paleta = []
 
     # 1. Tentar extcolors
@@ -101,7 +100,7 @@ def extrair_paleta(caminho_imagem: str, n_cores: int = 8, tolerancia: int = 32) 
             log.warning(f"PIL palette extraction error: {e_pil}")
 
     if not paleta:
-        raise ValueError("Não foi possível extrair as cores da imagem.")
+        raise ErroUsuario("Não foi possível extrair as cores da imagem.")
 
     log.info(f"Paleta extraída: {len(paleta)} cores de {os.path.basename(caminho_imagem)}")
     return paleta

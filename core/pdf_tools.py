@@ -1,326 +1,187 @@
-import fitz
+"""pdf_tools.py — Mesclar, dividir, proteger, comprimir, marcar e editar PDFs."""
+import io
+import logging
 import os
+import shutil
 import zipfile
 
-def mesclar_pdfs(arquivos_entrada: list, caminho_saida: str):
-    """
-    Mescla uma lista de arquivos PDF em um único arquivo.
-    """
-    if not arquivos_entrada:
-        raise ValueError("Nenhum arquivo fornecido para mesclagem.")
-        
-    resultado = fitz.open()
-    for caminho in arquivos_entrada:
-        with fitz.open(caminho) as doc:
+import pymupdf
+from PIL import Image
+
+from core.errors import ErroUsuario
+from core.progresso import reportar
+
+log = logging.getLogger(__name__)
+
+
+def _abrir(caminho: str, senha: str | None = None) -> pymupdf.Document:
+    try:
+        doc = pymupdf.open(caminho)
+    except Exception:
+        raise ErroUsuario("Não foi possível abrir o PDF. O arquivo pode estar corrompido.") from None
+    if doc.needs_pass:
+        if senha is None:
+            doc.close()
+            raise ErroUsuario("Este PDF está protegido por senha. Use 'Desproteger PDF' primeiro.")
+        if not doc.authenticate(senha):
+            doc.close()
+            raise ErroUsuario("Senha incorreta.")
+    return doc
+
+
+def _intervalos(texto: str, total: int) -> list[tuple[int, int]]:
+    """Interpreta "1-3, 5" em intervalos de índices. Rejeita o que não entende."""
+    intervalos = []
+    for parte in filter(None, (p.strip() for p in texto.split(","))):
+        try:
+            inicio, _, fim = parte.partition("-")
+            a, b = int(inicio), int(fim or inicio)
+        except ValueError:
+            raise ErroUsuario(f"Intervalo inválido: '{parte}'. Use o formato 1-3, 5, 7-10.") from None
+        if a < 1 or b < a:
+            raise ErroUsuario(f"Intervalo inválido: '{parte}'.")
+        if a > total:
+            raise ErroUsuario(f"A página {a} não existe: o documento tem {total} página(s).")
+        intervalos.append((a - 1, min(b, total) - 1))
+    return intervalos
+
+
+def mesclar_pdfs(entradas: list, saida: str) -> None:
+    if not entradas:
+        raise ErroUsuario("Nenhum arquivo fornecido para mesclagem.")
+    resultado = pymupdf.open()
+    for i, caminho in enumerate(entradas):
+        with _abrir(caminho) as doc:
             resultado.insert_pdf(doc)
-    
-    resultado.save(caminho_saida)
+        reportar((i + 1) / len(entradas) * 95)
+    resultado.save(saida, garbage=3, deflate=True)
     resultado.close()
 
 
-def dividir_pdf(arquivo_entrada: str, caminho_saida_zip: str, modo: str = "individual", parametro: str = ""):
-    """
-    Divide um PDF e salva em um arquivo ZIP.
-    Modos:
-    - "individual": 1 arquivo por página.
-    - "fixo": Divide a cada N páginas (parametro = N).
-    - "custom": Intervalos específicos (parametro = "1-2, 4-5").
-    """
-    with fitz.open(arquivo_entrada) as doc:
-        total_paginas = doc.page_count
-        
-        pasta_temp = caminho_saida_zip + "_temp"
-        os.makedirs(pasta_temp, exist_ok=True)
-        
-        caminhos_gerados = []
-        
-        # 1. Definir os intervalos
-        intervalos = []
+def dividir_pdf(entrada: str, saida_zip: str, modo: str = "individual", parametro: str = "") -> None:
+    with _abrir(entrada) as doc:
+        total = doc.page_count
         if modo == "fixo":
             try:
                 passo = int(parametro)
-                if passo < 1: passo = 1
-            except Exception:
-                passo = 1
-            for i in range(0, total_paginas, passo):
-                fim = min(i + passo - 1, total_paginas - 1)
-                intervalos.append((i, fim))
-                
+            except ValueError:
+                raise ErroUsuario("Informe quantas páginas cada parte deve ter.") from None
+            if passo < 1:
+                raise ErroUsuario("Cada parte precisa ter pelo menos 1 página.")
+            intervalos = [(i, min(i + passo, total) - 1) for i in range(0, total, passo)]
         elif modo == "custom":
-            partes = [p.strip() for p in parametro.split(",")]
-            for parte in partes:
-                if "-" in parte:
-                    try:
-                        inicio, fim = parte.split("-")
-                        inicio = max(0, int(inicio) - 1)
-                        fim = min(total_paginas - 1, int(fim) - 1)
-                        if inicio <= fim:
-                            intervalos.append((inicio, fim))
-                    except Exception: pass
-                else:
-                    try:
-                        pg = int(parte) - 1
-                        if 0 <= pg < total_paginas:
-                            intervalos.append((pg, pg))
-                    except Exception: pass
+            intervalos = _intervalos(parametro, total)
             if not intervalos:
-                # CONV-004: avisa o usuário em vez de fallback silencioso
-                raise ValueError(
-                    "Nenhum intervalo válido encontrado. Use o formato '1-3, 5, 7-10'."
-                )
-                
-        else: # individual
-            intervalos = [(i, i) for i in range(total_paginas)]
-            
-        # 2. Gerar PDFs baseados nos intervalos
-        for idx, (inicio, fim) in enumerate(intervalos):
-            novo_doc = fitz.open()
-            novo_doc.insert_pdf(doc, from_page=inicio, to_page=fim)
-            caminho_pag = os.path.join(pasta_temp, f"parte_{idx+1}.pdf")
-            novo_doc.save(caminho_pag)
-            novo_doc.close()
-            caminhos_gerados.append(caminho_pag)
-            
-        with zipfile.ZipFile(caminho_saida_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for caminho in caminhos_gerados:
-                nome_arquivo = os.path.basename(caminho)
-                zipf.write(caminho, arcname=nome_arquivo)
-                
-        for caminho in caminhos_gerados:
-            try: os.remove(caminho)
-            except Exception: pass
-        try: os.rmdir(pasta_temp)
-        except Exception: pass
+                raise ErroUsuario("Informe os intervalos no formato 1-3, 5, 7-10.")
+        else:
+            intervalos = [(i, i) for i in range(total)]
+
+        with zipfile.ZipFile(saida_zip, "w", zipfile.ZIP_DEFLATED) as zf:
+            for idx, (inicio, fim) in enumerate(intervalos, start=1):
+                parte = pymupdf.open()
+                parte.insert_pdf(doc, from_page=inicio, to_page=fim)
+                zf.writestr(f"parte_{idx}.pdf", parte.tobytes(garbage=3, deflate=True))
+                parte.close()
+                reportar(idx / len(intervalos) * 95)
 
 
-def proteger_pdf(arquivo_entrada: str, senha: str, caminho_saida: str):
-    """
-    Adiciona uma senha (user_pw) para abrir o PDF.
-    """
-    with fitz.open(arquivo_entrada) as doc:
-        perm = int(fitz.PDF_PERM_PRINT | fitz.PDF_PERM_COPY)
-        doc.save(
-            caminho_saida, 
-            encryption=fitz.PDF_ENCRYPT_AES_256, 
-            owner_pw=senha, 
-            user_pw=senha,
-            permissions=perm
-        )
+def proteger_pdf(entrada: str, senha: str, saida: str) -> None:
+    with _abrir(entrada) as doc:
+        doc.save(saida, encryption=pymupdf.PDF_ENCRYPT_AES_256, owner_pw=senha, user_pw=senha,
+                 permissions=int(pymupdf.PDF_PERM_PRINT | pymupdf.PDF_PERM_COPY))
 
 
-def desproteger_pdf(arquivo_entrada: str, senha: str, caminho_saida: str):
-    """
-    Remove a senha de um PDF criptografado.
-    """
-    doc = fitz.open(arquivo_entrada)
-    if not doc.is_encrypted:
-        doc.save(caminho_saida)
-        doc.close()
-        return
-
-    sucesso = doc.authenticate(senha)
-    if not sucesso:
-        doc.close()
-        raise ValueError("Senha incorreta.")
-        
-    doc.save(caminho_saida)
-    doc.close()
+def desproteger_pdf(entrada: str, senha: str, saida: str) -> None:
+    with _abrir(entrada, senha) as doc:
+        doc.save(saida, encryption=pymupdf.PDF_ENCRYPT_NONE)
 
 
-def comprimir_pdf(arquivo_entrada: str, caminho_saida: str, nivel: str = "media"):
-    """
-    Comprime o PDF reduzindo objetos redundantes e recomprimindo imagens.
-    Níveis suportados: 'baixa', 'media', 'alta'.
-    """
-    import io
-    try:
-        from PIL import Image
-    except ImportError:
-        Image = None
+def comprimir_pdf(entrada: str, saida: str, nivel: str = "media") -> None:
+    """Recomprime imagens e remove objetos redundantes. Nunca devolve algo maior que o original."""
+    qualidade, lado_maximo = {"alta": (40, 1200), "media": (75, 2000)}.get(nivel, (None, None))
+    with _abrir(entrada) as doc:
+        if qualidade:
+            _recomprimir_imagens(doc, qualidade, lado_maximo)
+        doc.save(saida, garbage=4, deflate=True, clean=True)
+    if os.path.getsize(saida) >= os.path.getsize(entrada):
+        shutil.copy2(entrada, saida)
 
-    doc = fitz.open(arquivo_entrada)
 
-    if nivel in ("media", "alta") and Image is not None:
-        quality = 40 if nivel == "alta" else 75
-        max_dim = 1200 if nivel == "alta" else 2000
+def _recomprimir_imagens(doc: pymupdf.Document, qualidade: int, lado_maximo: int) -> None:
+    vistos: set[int] = set()
+    total = len(doc) or 1
+    for i, pagina in enumerate(doc):
+        for info in pagina.get_images(full=True):
+            xref, smask = info[0], info[1]
+            # Imagens com transparência dependem do formato original.
+            if xref in vistos or smask:
+                continue
+            vistos.add(xref)
+            try:
+                img = Image.open(io.BytesIO(doc.extract_image(xref)["image"]))
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
+                img.thumbnail((lado_maximo, lado_maximo), Image.Resampling.LANCZOS)
+                buffer = io.BytesIO()
+                img.save(buffer, format="JPEG", quality=qualidade, optimize=True)
+                if len(buffer.getvalue()) < len(doc.xref_stream_raw(xref) or b""):
+                    pagina.replace_image(xref, stream=buffer.getvalue())
+            except Exception as e:
+                log.warning("Imagem %s mantida sem recompressão: %s", xref, e)
+        reportar((i + 1) / total * 90)
 
-        xrefs_processados = set()
-        
-        for i in range(len(doc)):
-            for img in doc.get_page_images(i):
-                xref = img[0]
-                if xref in xrefs_processados:
+
+def adicionar_marca_dagua(entrada: str, texto: str, saida: str) -> None:
+    with _abrir(entrada) as doc:
+        for pagina in doc:
+            r = pagina.rect
+            tamanho = min(72, min(r.width, r.height) / (max(len(texto), 1) * 0.5))
+            pagina.insert_text(pymupdf.Point(r.width / 4, r.height / 2), texto, fontsize=tamanho,
+                               color=(0.5, 0.5, 0.5), fill_opacity=0.3)
+        doc.save(saida)
+
+
+def extrair_imagens_pdf(entrada: str, saida_zip: str) -> None:
+    vistos: set[int] = set()
+    with _abrir(entrada) as doc, zipfile.ZipFile(saida_zip, "w", zipfile.ZIP_DEFLATED) as zf:
+        for num, pagina in enumerate(doc):
+            for info in pagina.get_images(full=True):
+                xref = info[0]
+                if xref in vistos:
                     continue
-                xrefs_processados.add(xref)
-                
-                try:
-                    pix = fitz.Pixmap(doc, xref)
-                    if pix.n >= 4:
-                        pix = fitz.Pixmap(fitz.csRGB, pix)
-                    
-                    img_bytes = pix.tobytes("png")
-                    pil_img = Image.open(io.BytesIO(img_bytes))
-                    
-                    if pil_img.mode in ("RGBA", "P", "CMYK"):
-                        pil_img = pil_img.convert("RGB")
-                    
-                    w, h = pil_img.size
-                    if w > max_dim or h > max_dim:
-                        ratio = min(max_dim/w, max_dim/h)
-                        novo_w, novo_h = int(w * ratio), int(h * ratio)
-                        pil_img = pil_img.resize((novo_w, novo_h), Image.Resampling.LANCZOS)
-                        
-                    img_io = io.BytesIO()
-                    pil_img.save(img_io, format="JPEG", quality=quality, optimize=True)
-                    new_bytes = img_io.getvalue()
-                    
-                    doc.update_stream(xref, new_bytes)
-                    new_w, new_h = pil_img.size
-                    doc.update_object(xref, f"<< /Type /XObject /Subtype /Image /Width {new_w} /Height {new_h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode >>")
-                except Exception:
-                    pass
-
-    doc.save(caminho_saida, garbage=4, deflate=True, clean=True, linear=True)
-    doc.close()
-
-    # CONV-002: se o arquivo comprimido for maior ou igual ao original, retornar o original
-    tamanho_original = os.path.getsize(arquivo_entrada)
-    tamanho_comprimido = os.path.getsize(caminho_saida)
-    if tamanho_comprimido >= tamanho_original:
-        import shutil
-        shutil.copy2(arquivo_entrada, caminho_saida)
+                vistos.add(xref)
+                imagem = doc.extract_image(xref)
+                zf.writestr(f"imagem_{len(vistos)}.{imagem['ext']}", imagem["image"])
+            reportar((num + 1) / (len(doc) or 1) * 95)
+    if not vistos:
+        raise ErroUsuario("Este PDF não contém imagens para extrair.")
 
 
-def adicionar_marca_dagua(arquivo_entrada: str, texto: str, caminho_saida: str):
-    """
-    Adiciona uma marca d'água de texto semi-transparente no centro de todas as páginas.
-    """
-    doc = fitz.open(arquivo_entrada)
-    for pagina in doc:
-        retangulo = pagina.rect
-        p = fitz.Point(retangulo.width / 4, retangulo.height / 2)
-        
-        tamanho_fonte = min(retangulo.width, retangulo.height) / (len(texto) * 0.5)
-        if tamanho_fonte > 72: tamanho_fonte = 72
-        
-        pagina.insert_text(
-            p,
-            texto,
-            fontsize=tamanho_fonte,
-            color=(0.5, 0.5, 0.5), # cinza
-            fill_opacity=0.3       # semi-transparente
-        )
-    doc.save(caminho_saida)
-    doc.close()
+def manipular_paginas_pdf(entrada: str, saida: str, remover: str = "", rotacionar: str = "") -> None:
+    """Remove páginas ("1, 3-5") e/ou rotaciona ("2:90, 4:180")."""
+    if not remover.strip() and not rotacionar.strip():
+        raise ErroUsuario("Informe as páginas a remover ou a rotacionar.")
+    with _abrir(entrada) as doc:
+        total = doc.page_count
+        rotacoes: dict[int, int] = {}
+        for parte in filter(None, (p.strip() for p in rotacionar.split(","))):
+            try:
+                pg, graus = (int(x) for x in parte.split(":"))
+            except ValueError:
+                raise ErroUsuario(f"Rotação inválida: '{parte}'. Use o formato 2:90, 4:180.") from None
+            if not 1 <= pg <= total:
+                raise ErroUsuario(f"A página {pg} não existe: o documento tem {total} página(s).")
+            if graus % 90:
+                raise ErroUsuario("A rotação precisa ser múltiplo de 90 graus.")
+            rotacoes[pg - 1] = graus
 
+        excluir = {i for a, b in _intervalos(remover, total) for i in range(a, b + 1)}
+        manter = [i for i in range(total) if i not in excluir]
+        if not manter:
+            raise ErroUsuario("Essa operação deixaria o PDF sem páginas.")
 
-def extrair_imagens_pdf(arquivo_entrada: str, caminho_saida_zip: str):
-    """
-    Extrai todas as imagens do PDF e compacta em um ZIP.
-    """
-    doc = fitz.open(arquivo_entrada)
-    pasta_temp = caminho_saida_zip + "_temp"
-    os.makedirs(pasta_temp, exist_ok=True)
-    
-    caminhos_gerados = []
-    img_index = 1
-    
-    for page_num in range(len(doc)):
-        pagina = doc[page_num]
-        lista_imagens = pagina.get_images(full=True)
-        
-        for img in lista_imagens:
-            xref = img[0]
-            imagem_bytes = doc.extract_image(xref)
-            ext = imagem_bytes["ext"]
-            conteudo = imagem_bytes["image"]
-            
-            caminho_img = os.path.join(pasta_temp, f"imagem_{img_index}.{ext}")
-            with open(caminho_img, "wb") as img_file:
-                img_file.write(conteudo)
-                
-            caminhos_gerados.append(caminho_img)
-            img_index += 1
-            
-    doc.close()
-    
-    with zipfile.ZipFile(caminho_saida_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for caminho in caminhos_gerados:
-            nome_arquivo = os.path.basename(caminho)
-            zipf.write(caminho, arcname=nome_arquivo)
-            
-    for caminho in caminhos_gerados:
-        try: os.remove(caminho)
-        except Exception: pass
-    try: os.rmdir(pasta_temp)
-    except Exception: pass
-
-
-def manipular_paginas_pdf(arquivo_entrada: str, caminho_saida: str, remover: str = "", rotacionar: str = ""):
-    """
-    Remove e/ou rotaciona páginas específicas.
-    remover: ex. "1, 3-5"
-    rotacionar: ex. "2:90, 4:180"
-    """
-    doc = fitz.open(arquivo_entrada)
-    total_paginas = doc.page_count
-    
-    # 1. Parse rotacoes (formato: "pagina:graus, pagina:graus")
-    rotacoes_dict = {}
-    if rotacionar:
-        partes = [p.strip() for p in rotacionar.split(",")]
-        for parte in partes:
-            if ":" in parte:
-                try:
-                    pg_str, grau_str = parte.split(":")
-                    pg = int(pg_str) - 1
-                    grau = int(grau_str)
-                    grau = round(grau / 90.0) * 90 # Arredondar para múltiplo de 90
-                    if 0 <= pg < total_paginas:
-                        rotacoes_dict[pg] = grau
-                except Exception: pass
-                
-    # 2. Parse exclusões (formato: "1, 3-5")
-    paginas_manter = []
-    exclusoes = set()
-    if remover:
-        partes = [p.strip() for p in remover.split(",")]
-        for parte in partes:
-            if "-" in parte:
-                try:
-                    inicio, fim = parte.split("-")
-                    inicio = max(0, int(inicio) - 1)
-                    fim = min(total_paginas - 1, int(fim) - 1)
-                    for i in range(inicio, fim + 1):
-                        exclusoes.add(i)
-                except Exception: pass
-            else:
-                try:
-                    pg = int(parte) - 1
-                    if 0 <= pg < total_paginas:
-                        exclusoes.add(pg)
-                except Exception: pass
-
-    for i in range(total_paginas):
-        if i not in exclusoes:
-            paginas_manter.append(i)
-            
-    if not paginas_manter:
-        doc.close()
-        raise ValueError("Operação resultaria em um PDF sem páginas.")
-        
-    doc.select(paginas_manter)
-    
-    # 3. Aplicar rotacoes nas páginas que ficaram
-    # A numeração mudou, precisamos achar o index novo.
-    # Mas é mais fácil aplicar a rotação antes de deletar ou manter um mapeamento.
-    # doc.select() já reorganizou as páginas em doc[i]. 
-    # O paginas_manter[i] guarda o número original da página.
-    for i, original_idx in enumerate(paginas_manter):
-        if original_idx in rotacoes_dict:
-            pagina = doc[i]
-            nova_rotacao = (pagina.rotation + rotacoes_dict[original_idx]) % 360
-            pagina.set_rotation(nova_rotacao)
-            
-    doc.save(caminho_saida)
-    doc.close()
+        for indice, graus in rotacoes.items():
+            pagina = doc[indice]
+            pagina.set_rotation((pagina.rotation + graus) % 360)
+        doc.select(manter)
+        doc.save(saida, garbage=3, deflate=True)

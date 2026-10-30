@@ -1,50 +1,85 @@
-import os, subprocess, tempfile, zipfile, shutil, logging, io
-import re as _re
+"""converter.py — Conversão universal de documentos, planilhas e imagens."""
 import csv
+import io
+import logging
+import os
+import re as _re
+import shutil
+import subprocess
+import sys
+import tempfile
 import uuid
+import zipfile
+
+import pymupdf
+from PIL import Image
+
+from core.errors import ErroUsuario
+from core.progresso import avisar, reportar
 
 log = logging.getLogger(__name__)
 
-import fitz
-from PIL import Image
-
 try:
-    import win32com.client # type: ignore
-    import pythoncom # type: ignore
-    _TEM_WIN32 = True
-except ImportError:
-    _TEM_WIN32 = False
-
-try:
-    # pyrefly: ignore [missing-import]
     from pillow_heif import register_heif_opener
     register_heif_opener()
+    _TEM_HEIF = True
 except ImportError:
-    pass
+    _TEM_HEIF = False
+
+_SEM_JANELA = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
 
-# ─── Motor ───────────────────────────────────────────────────
+# ─── Motores externos ─────────────────────────────────────────
 
 def _encontrar_soffice():
-    if shutil.which("soffice"):     return "soffice"
-    if shutil.which("libreoffice"): return "libreoffice"
-    for c in [
-        r"C:\Program Files\LibreOffice\program\soffice.exe",
-        r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
-        r"C:\Program Files\LibreOffice 7\program\soffice.exe",
-        r"C:\Program Files\LibreOffice 24\program\soffice.exe",
-    ]:
-        if os.path.exists(c): return c
+    for nome in ("soffice", "libreoffice"):
+        if caminho := shutil.which(nome):
+            return caminho
+    for raiz in (os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)")):
+        if raiz and os.path.exists(c := os.path.join(raiz, "LibreOffice", "program", "soffice.exe")):
+            return c
     return None
 
 
+def _encontrar_tesseract():
+    if caminho := shutil.which("tesseract"):
+        return caminho
+    for raiz in (os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)")):
+        if raiz and os.path.exists(c := os.path.join(raiz, "Tesseract-OCR", "tesseract.exe")):
+            return c
+    return None
+
+
+def _office_instalado(prog_id: str) -> bool:
+    """O pywin32 pode estar instalado sem o Office: é preciso consultar o registro."""
+    try:
+        import pythoncom
+        pythoncom.CLSIDFromProgID(prog_id)
+        return True
+    except Exception:
+        return False
+
+
 SOFFICE = _encontrar_soffice()
+TESSERACT = _encontrar_tesseract()
+_OFFICE = {"word": _office_instalado("Word.Application"),
+           "excel": _office_instalado("Excel.Application"),
+           "powerpoint": _office_instalado("PowerPoint.Application")}
 
-if _TEM_WIN32:    MOTOR = "office"
-elif SOFFICE:     MOTOR = "libreoffice"
-else:             MOTOR = None
 
-log.info(f"[Prisma] Motor: {MOTOR or 'NENHUM'}")
+_NOMES_OFFICE = {"word": "Word", "excel": "Excel", "powerpoint": "PowerPoint"}
+
+
+def _motor(app: str) -> str | None:
+    """Prefere o Office, mais fiel; recorre ao LibreOffice."""
+    if _OFFICE.get(app):
+        return "office"
+    return "libreoffice" if SOFFICE else None
+
+
+def _sem_motor(app: str) -> ErroUsuario:
+    return ErroUsuario(f"Esta conversão precisa do Microsoft {_NOMES_OFFICE[app]} ou do LibreOffice. "
+                       "Instale um deles e reinicie o Prisma.")
 
 
 # ─── Conversões disponíveis ───────────────────────────────────
@@ -63,12 +98,43 @@ CONVERSOES = {
     "heic": ["pdf",  "png", "jpg", "webp", "docx", "pptx", "txt"]
 }
 
+_IMAGENS = {"png", "jpg", "jpeg", "webp", "heic"}
+
+
 def obter_conversoes(extensao):
     ext = extensao.lower()
     if ext == "jpeg": ext = "jpg"
     return CONVERSOES.get(ext, [])
-def obter_motor():               return MOTOR
 
+
+def requisito_faltando(origem: str, destino: str) -> str | None:
+    """Nome do programa que falta nesta máquina para a conversão, ou None se ela é possível."""
+    if "heic" in (origem, destino) and not _TEM_HEIF:
+        return "pillow-heif"
+    if destino == "txt" and origem in _IMAGENS and not TESSERACT:
+        return "Tesseract OCR"
+    app = None
+    if origem == "docx":
+        app = "word"
+    elif origem in ("ppt", "pptx") or (origem == "pdf" and destino == "ppt"):
+        app = "powerpoint"
+    elif origem in ("csv", "xlsx", "xls", "json") and destino in ("pdf", "png", "jpg", "webp", "heic", "pptx"):
+        app = "excel"
+    if app and not _motor(app):
+        return f"Microsoft {_NOMES_OFFICE[app]} ou LibreOffice"
+    return None
+
+
+def conversoes_disponiveis(extensao: str) -> tuple[list[str], dict[str, str]]:
+    """Separa os destinos possíveis nesta máquina dos que dependem de algo não instalado."""
+    ok, faltando = [], {}
+    for destino in obter_conversoes(extensao):
+        requisito = requisito_faltando(extensao.lower(), destino)
+        if requisito:
+            faltando[destino] = requisito
+        else:
+            ok.append(destino)
+    return ok, faltando
 
 # ─── Encoding ────────────────────────────────────────────────
 
@@ -105,23 +171,27 @@ def detectar_encoding(caminho: str) -> str:
 
 # ─── LibreOffice headless ─────────────────────────────────────
 
-def _soffice_convert(entrada, saida, fmt, timeout=120):
-    if not SOFFICE: raise RuntimeError("LibreOffice não encontrado.")
-    saida_dir  = os.path.dirname(os.path.abspath(saida))
-    nome_base  = os.path.splitext(os.path.basename(entrada))[0]
+def _soffice_convert(entrada, saida, fmt, timeout=600):
+    if not SOFFICE:
+        raise ErroUsuario("LibreOffice não encontrado.")
+    saida_dir = os.path.dirname(os.path.abspath(saida))
+    nome_base = os.path.splitext(os.path.basename(entrada))[0]
     saida_auto = os.path.join(saida_dir, f"{nome_base}.{fmt}")
-    r = subprocess.run(
-        [SOFFICE, "--headless", "--norestore",
-         "--convert-to", fmt, "--outdir", saida_dir,
-         os.path.abspath(entrada)],
-        capture_output=True, timeout=timeout
-    )
+    # Perfil próprio: duas instâncias com o mesmo perfil falham sem avisar.
+    with tempfile.TemporaryDirectory(prefix="prisma_lo_") as perfil:
+        perfil_uri = "file:///" + perfil.replace("\\", "/").lstrip("/")
+        r = subprocess.run(
+            [SOFFICE, f"-env:UserInstallation={perfil_uri}", "--headless", "--norestore",
+             "--convert-to", fmt, "--outdir", saida_dir, os.path.abspath(entrada)],
+            stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout, creationflags=_SEM_JANELA,
+        )
     if r.returncode != 0:
-        raise RuntimeError(f"LibreOffice: {r.stderr.decode('utf-8', errors='replace')}")
+        log.error("LibreOffice falhou: %s", r.stderr.decode("utf-8", errors="replace")[-1000:])
+        raise ErroUsuario("O LibreOffice não conseguiu converter este arquivo.")
     if os.path.abspath(saida_auto) != os.path.abspath(saida) and os.path.exists(saida_auto):
         os.replace(saida_auto, saida)
     if not os.path.exists(saida):
-        raise RuntimeError("LibreOffice não gerou o arquivo de saída.")
+        raise ErroUsuario("O LibreOffice não gerou o arquivo de saída.")
 
 
 # ─── Pré-formata XLSX para PDF organizado ────────────────────
@@ -151,8 +221,7 @@ def _preparar_xlsx_para_pdf(caminho: str, orientacao: str = "retrato"):
 
 
 def _carregar_csv(caminho, enc):
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
+    import pandas as pd
     try:
         with open(caminho, 'r', encoding=enc, errors='replace') as f:
             amostra = f.read(4096)
@@ -168,8 +237,7 @@ def csv_para_xlsx(entrada, saida):
     df.fillna("").to_excel(saida, index=False, engine="openpyxl")
 
 def xlsx_para_csv(entrada, saida):
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
+    import pandas as pd
     df = pd.read_excel(entrada, engine="openpyxl")
     df.fillna("").to_csv(saida, index=False, encoding="utf-8-sig")
 
@@ -177,37 +245,51 @@ def xlsx_para_csv(entrada, saida):
 # ─── XLSX → PDF ───────────────────────────────────────────────
 
 def xlsx_para_pdf(entrada, saida, orientacao="retrato"):
-    if MOTOR == "office":
+    motor = _motor("excel")
+    if motor == "office":
         _office_xlsx_para_pdf(entrada, saida, orientacao)
-    elif MOTOR == "libreoffice":
-        _preparar_xlsx_para_pdf(entrada, orientacao)
-        _soffice_convert(entrada, saida, "pdf")
+    elif motor == "libreoffice":
+        # O ajuste de página altera o arquivo: trabalha em uma cópia.
+        copia = os.path.join(os.path.dirname(os.path.abspath(saida)), f"_tmp_{uuid.uuid4().hex}.xlsx")
+        shutil.copy2(entrada, copia)
+        try:
+            _preparar_xlsx_para_pdf(copia, orientacao)
+            _soffice_convert(copia, saida, "pdf")
+        finally:
+            if os.path.exists(copia):
+                os.remove(copia)
     else:
-        raise RuntimeError("Nenhum motor disponível.")
+        raise _sem_motor("excel")
+
 
 def _office_xlsx_para_pdf(entrada, saida, orientacao="retrato"):
+    import pythoncom
+    import win32com.client
     pythoncom.CoInitialize()
     excel = wb = None
     try:
-        excel = win32com.client.Dispatch("Excel.Application"); excel.Visible = False
-        wb    = excel.Workbooks.Open(os.path.abspath(entrada))
+        excel = win32com.client.DispatchEx("Excel.Application")
+        excel.Visible = False
+        excel.DisplayAlerts = False
+        excel.AutomationSecurity = 3  # macros sempre desabilitadas
+        wb = excel.Workbooks.Open(os.path.abspath(entrada), ReadOnly=True)
         for sheet in wb.Worksheets:
             ps = sheet.PageSetup
-            ps.Orientation    = 2 if orientacao == "paisagem" else 1
-            ps.Zoom           = False
+            ps.Orientation = 2 if orientacao == "paisagem" else 1
+            ps.Zoom = False
             ps.FitToPagesWide = 1
             ps.FitToPagesTall = False
-            ps.LeftMargin     = excel.InchesToPoints(0.4)
-            ps.RightMargin    = excel.InchesToPoints(0.4)
-            ps.TopMargin      = excel.InchesToPoints(0.5)
-            ps.BottomMargin   = excel.InchesToPoints(0.5)
+            ps.LeftMargin = excel.InchesToPoints(0.4)
+            ps.RightMargin = excel.InchesToPoints(0.4)
+            ps.TopMargin = excel.InchesToPoints(0.5)
+            ps.BottomMargin = excel.InchesToPoints(0.5)
             ps.PrintTitleRows = "$1:$1"
         wb.ExportAsFixedFormat(0, os.path.abspath(saida))
     finally:
-        if wb:    
+        if wb:
             try: wb.Close(False)
             except Exception: pass
-        if excel: 
+        if excel:
             try: excel.Quit()
             except Exception: pass
         pythoncom.CoUninitialize()
@@ -231,22 +313,32 @@ def csv_para_pdf(entrada, saida, orientacao="retrato"):
 # ─── DOCX → PDF ───────────────────────────────────────────────
 
 def docx_para_pdf(entrada, saida, orientacao="retrato"):
-    if MOTOR == "office":        _office_docx_para_pdf(entrada, saida)
-    elif MOTOR == "libreoffice": _soffice_convert(entrada, saida, "pdf")
-    else: raise RuntimeError("Nenhum motor disponível.")
+    motor = _motor("word")
+    if motor == "office":
+        _office_docx_para_pdf(entrada, saida)
+    elif motor == "libreoffice":
+        _soffice_convert(entrada, saida, "pdf")
+    else:
+        raise _sem_motor("word")
+
 
 def _office_docx_para_pdf(entrada, saida):
+    import pythoncom
+    import win32com.client
     pythoncom.CoInitialize()
     word = doc = None
     try:
-        word = win32com.client.Dispatch("Word.Application"); word.Visible = False
-        doc  = word.Documents.Open(os.path.abspath(entrada))
+        word = win32com.client.DispatchEx("Word.Application")
+        word.Visible = False
+        word.DisplayAlerts = 0
+        word.AutomationSecurity = 3  # macros sempre desabilitadas
+        doc = word.Documents.Open(os.path.abspath(entrada), ReadOnly=True, AddToRecentFiles=False)
         doc.SaveAs(os.path.abspath(saida), FileFormat=17)
     finally:
-        if doc:  
+        if doc:
             try: doc.Close(False)
             except Exception: pass
-        if word: 
+        if word:
             try: word.Quit()
             except Exception: pass
         pythoncom.CoUninitialize()
@@ -255,248 +347,77 @@ def _office_docx_para_pdf(entrada, saida):
 # ─── PPT/PPTX → PDF ──────────────────────────────────────────
 
 def ppt_para_pdf(entrada, saida, orientacao="retrato"):
-    if MOTOR == "office":        _office_ppt_para_pdf(entrada, saida)
-    elif MOTOR == "libreoffice": _soffice_convert(entrada, saida, "pdf")
-    else: raise RuntimeError("Nenhum motor disponível.")
+    motor = _motor("powerpoint")
+    if motor == "office":
+        _office_powerpoint_salvar(entrada, saida, 32)
+    elif motor == "libreoffice":
+        _soffice_convert(entrada, saida, "pdf")
+    else:
+        raise _sem_motor("powerpoint")
 
-def _office_ppt_para_pdf(entrada, saida):
+
+def _office_powerpoint_salvar(entrada, saida, formato):
+    import pythoncom
+    import win32com.client
     pythoncom.CoInitialize()
     pp = apres = None
     try:
-        pp    = win32com.client.Dispatch("PowerPoint.Application"); pp.Visible = 1
-        apres = pp.Presentations.Open(os.path.abspath(entrada), WithWindow=False)
-        apres.SaveAs(os.path.abspath(saida), 32)
+        pp = win32com.client.DispatchEx("PowerPoint.Application")
+        pp.DisplayAlerts = 1  # ppAlertsNone
+        pp.AutomationSecurity = 3  # macros sempre desabilitadas
+        apres = pp.Presentations.Open(os.path.abspath(entrada), ReadOnly=True, WithWindow=False)
+        apres.SaveAs(os.path.abspath(saida), formato)
     finally:
-        if apres: 
+        if apres:
             try: apres.Close()
             except Exception: pass
-        if pp:    
+        if pp:
             try: pp.Quit()
             except Exception: pass
         pythoncom.CoUninitialize()
 
 
-# ─── PDF → DOCX ──────────────────────────────────────────────────
-
-def _pdf2docx_worker(entrada: str, saida: str, inicio: int = 0, fim: int = None):
-    """
-    Worker isolado para pdf2docx — executado em subprocess separado para
-    garantir que pode ser morto por timeout sem travar o processo principal.
-    """
-    import sys
-    try:
-        # Desabilita threads do OpenCV para reduzir RAM
-        try:
-            import cv2
-            cv2.setNumThreads(0)
-        except Exception:
-            pass
-
-        from pdf2docx import Converter as PDF2DOCXConverter
-        cv = PDF2DOCXConverter(entrada)
-        try:
-            kwargs = {"start": inicio}
-            if fim is not None:
-                kwargs["end"] = fim
-            cv.convert(saida, **kwargs)
-        finally:
-            cv.close()
-
-        if not (os.path.exists(saida) and os.path.getsize(saida) > 0):
-            sys.exit(2)  # arquivo vazio = erro
-        sys.exit(0)
-    except Exception as ex:
-        print(f"pdf2docx error: {ex}", file=sys.stderr)
-        sys.exit(1)
-
+# ─── PDF → DOCX ──────────────────────────────────────────────
 
 def pdf_para_docx(entrada, saida):
+    """Converte com layout via pdf2docx; se falhar, tenta LibreOffice e, por fim, só o texto.
+
+    O documento é convertido inteiro: dividir em partes e remontar descartava tabelas e imagens.
     """
-    Converte PDF para DOCX usando estratégia multicamadas resiliente:
-    1. pdf2docx em subprocess com timeout de 90s (isolado para poder matar)
-    2. LibreOffice Headless (fallback nativo do sistema)
-    3. PyMuPDF + python-docx (fallback de emergência — texto puro)
-
-    Para PDFs grandes (>10 páginas), a conversão com pdf2docx é feita em
-    blocos de 10 páginas para evitar estouro de memória no Render.
-    """
-    import multiprocessing
-    import tempfile
-
-    PDF2DOCX_TIMEOUT = 90  # segundos por tentativa
-    MAX_PAGINAS_BLOCO = 10  # páginas por bloco para PDFs grandes
-
-    # Detectar número de páginas do PDF
     try:
-        doc_info = fitz.open(entrada)
-        total_paginas = doc_info.page_count
-        doc_info.close()
-    except Exception:
-        total_paginas = 0
-
-    log.info("[pdf_para_docx] PDF com %d página(s): %s", total_paginas, os.path.basename(entrada))
-
-    # 1ª Tentativa: pdf2docx via subprocess com timeout
-    try:
-        if total_paginas <= MAX_PAGINAS_BLOCO:
-            # Conversão direta para PDFs pequenos
-            p = multiprocessing.Process(
-                target=_pdf2docx_worker,
-                args=(os.path.abspath(entrada), os.path.abspath(saida))
-            )
-            p.start()
-            p.join(timeout=PDF2DOCX_TIMEOUT)
-
-            if p.is_alive():
-                p.terminate()
-                p.join(timeout=5)
-                if p.is_alive():
-                    p.kill()
-                log.warning("[pdf_para_docx] pdf2docx ultrapassou timeout de %ds. Usando fallback.", PDF2DOCX_TIMEOUT)
-            elif p.exitcode == 0 and os.path.exists(saida) and os.path.getsize(saida) > 0:
-                log.info("[pdf_para_docx] Conversão concluída via pdf2docx.")
-                return
-            else:
-                log.warning("[pdf_para_docx] pdf2docx falhou (exit=%s). Iniciando fallback.", p.exitcode)
-
-        else:
-            # PDFs grandes: divide em blocos e une no final
-            log.info("[pdf_para_docx] PDF grande (%d págs). Convertendo em blocos de %d.", total_paginas, MAX_PAGINAS_BLOCO)
-            from docx import Document
-            from docx.shared import Pt
-            import copy
-
-            doc_final = Document()
-            doc_dir = os.path.dirname(os.path.abspath(saida))
-            blocos_ok = 0
-
-            for inicio in range(0, total_paginas, MAX_PAGINAS_BLOCO):
-                fim = min(inicio + MAX_PAGINAS_BLOCO, total_paginas)
-                temp_saida = os.path.join(doc_dir, f"_bloco_{inicio}_{fim}.docx")
-
-                p = multiprocessing.Process(
-                    target=_pdf2docx_worker,
-                    args=(os.path.abspath(entrada), temp_saida, inicio, fim)
-                )
-                p.start()
-                p.join(timeout=PDF2DOCX_TIMEOUT)
-
-                if p.is_alive():
-                    p.terminate()
-                    p.join(timeout=5)
-                    if p.is_alive(): p.kill()
-                    log.warning("[pdf_para_docx] Bloco %d-%d: timeout. Pulando.", inicio, fim)
-                    continue
-
-                if p.exitcode == 0 and os.path.exists(temp_saida) and os.path.getsize(temp_saida) > 0:
-                    # Mesclar bloco no documento final
-                    try:
-                        bloco = Document(temp_saida)
-                        if blocos_ok > 0:
-                            doc_final.add_page_break()
-                        for elemento in bloco.paragraphs:
-                            p_novo = doc_final.add_paragraph()
-                            for run in elemento.runs:
-                                r_novo = p_novo.add_run(run.text)
-                                r_novo.bold = run.bold
-                                r_novo.italic = run.italic
-                        blocos_ok += 1
-                    except Exception as ex_merge:
-                        log.warning("[pdf_para_docx] Erro ao mesclar bloco %d-%d: %s", inicio, fim, ex_merge)
-                    finally:
-                        try: os.remove(temp_saida)
-                        except Exception: pass
-
-            if blocos_ok > 0:
-                doc_final.save(saida)
-                if os.path.exists(saida) and os.path.getsize(saida) > 0:
-                    log.info("[pdf_para_docx] Conversão em blocos concluída (%d blocos).", blocos_ok)
-                    return
+        from pdf2docx import Converter
+        conversor = Converter(entrada)
+        try:
+            conversor.convert(saida)
+        finally:
+            conversor.close()
+        if os.path.exists(saida) and os.path.getsize(saida) > 0:
+            return
     except Exception as e:
-        log.warning("[pdf_para_docx] Falha na etapa pdf2docx: %s. Iniciando fallback.", e)
+        log.warning("pdf2docx falhou: %s", e)
 
-    # 2ª Tentativa (Fallback): LibreOffice
     if SOFFICE:
         try:
-            log.info("[pdf_para_docx] Tentando conversão via LibreOffice...")
             _soffice_convert(entrada, saida, "docx")
-            if os.path.exists(saida) and os.path.getsize(saida) > 0:
-                log.info("[pdf_para_docx] Conversão concluída via LibreOffice.")
-                return
-            log.warning("[pdf_para_docx] LibreOffice não gerou arquivo válido.")
-        except Exception as e_soffice:
-            log.warning("[pdf_para_docx] Fallback LibreOffice falhou: %s", e_soffice)
+            return
+        except (ErroUsuario, OSError, subprocess.SubprocessError) as e:
+            log.warning("LibreOffice falhou: %s", e)
 
-    # 3ª Tentativa (Emergência): PyMuPDF + python-docx (texto puro)
-    try:
-        log.info("[pdf_para_docx] Tentando fallback de emergência (extração de texto)...")
-        from docx import Document
-        from docx.shared import Pt
-
-        doc_pdf = fitz.open(entrada)
-        doc_docx = Document()
-
-        # Estilo de parágrafo simples para melhor legibilidade
-        estilo = doc_docx.styles["Normal"]
-        estilo.font.size = Pt(11)
-        estilo.font.name = "Calibri"
-
-        texto_encontrado = False
-        for i, page in enumerate(doc_pdf):
-            blocos = page.get_text("blocks")  # Retorna lista de blocos com coordenadas
-            if blocos:
-                if i > 0:
-                    doc_docx.add_page_break()
-                for bloco in blocos:
-                    texto_bloco = bloco[4].strip()  # bloco[4] = texto do bloco
-                    if texto_bloco:
-                        doc_docx.add_paragraph(texto_bloco)
-                        texto_encontrado = True
-
-        doc_pdf.close()
-
-        if texto_encontrado:
-            doc_docx.save(saida)
-            if os.path.exists(saida) and os.path.getsize(saida) > 0:
-                log.info("[pdf_para_docx] Conversão concluída via fallback PyMuPDF (texto).")
-                return
-        else:
-            log.warning("[pdf_para_docx] PDF sem texto selecionável (provavelmente scanneado).")
-            raise RuntimeError(
-                "Este PDF parece ser um documento digitalizado (imagem). "
-                "Não é possível extrair texto. Tente um PDF com texto selecionável."
-            )
-    except RuntimeError:
-        raise
-    except Exception as e_emergencia:
-        log.error("[pdf_para_docx] Fallback de emergência falhou: %s", e_emergencia)
-
-    raise RuntimeError(
-        "Não foi possível converter o arquivo PDF para Word (DOCX). "
-        "Verifique se o PDF contém texto selecionável e não está corrompido."
-    )
-
-
-
-# ─── PDF → PNG (primeira página) ─────────────────────────────
-
-def pdf_para_png(entrada, saida):
-    doc = fitz.open(entrada)
-    try:
-        pix = doc[0].get_pixmap(matrix=fitz.Matrix(2, 2))
-        pix.save(saida)
-    finally: doc.close()
-
-
-# ─── PDF → JPG ────────────────────────────────────────────────
-
-def pdf_para_jpg(entrada, saida):
-    doc = fitz.open(entrada)
-    try:
-        pix = doc[0].get_pixmap(matrix=fitz.Matrix(2, 2))
-        img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
-        img.save(saida, "JPEG", quality=92)
-    finally: doc.close()
+    from docx import Document
+    documento = Document()
+    encontrou_texto = False
+    with pymupdf.open(entrada) as pdf:
+        for i, pagina in enumerate(pdf):
+            if i:
+                documento.add_page_break()
+            for bloco in pagina.get_text("blocks"):
+                if texto := bloco[4].strip():
+                    documento.add_paragraph(texto)
+                    encontrou_texto = True
+    if not encontrou_texto:
+        raise ErroUsuario("Este PDF parece ser digitalizado (imagem) e não tem texto para extrair.")
+    documento.save(saida)
+    avisar("O layout não pôde ser preservado: o Word gerado contém apenas o texto do PDF.")
 
 
 # ─── PDF → PPTX (cada página = 1 slide) ──────────────────────
@@ -506,7 +427,7 @@ def pdf_para_pptx(entrada: str, saida: str):
     from pptx.util import Emu
     import tempfile
 
-    doc = fitz.open(entrada)
+    doc = pymupdf.open(entrada)
     prs = Presentation()
 
     primeira  = doc[0].rect
@@ -519,7 +440,7 @@ def pdf_para_pptx(entrada: str, saida: str):
 
     try:
         for i, page in enumerate(doc):
-            mat = fitz.Matrix(2.5, 2.5)
+            mat = pymupdf.Matrix(2.5, 2.5)
             pix = page.get_pixmap(matrix=mat, alpha=False)
             img = os.path.join(temp_dir, f"pg_{i:04d}.png")
             pix.save(img)
@@ -541,47 +462,24 @@ def pdf_para_pptx(entrada: str, saida: str):
 # ─── PDF → PPT (via PPTX + motor) ────────────────────────────
 
 def pdf_para_ppt(entrada: str, saida: str):
-    saida_dir = os.path.dirname(saida) or "."
-    temp_pptx = os.path.join(saida_dir, f"_tmp_{uuid.uuid4().hex}.pptx")
+    temp_pptx = os.path.join(os.path.dirname(saida) or ".", f"_tmp_{uuid.uuid4().hex}.pptx")
+    motor = _motor("powerpoint")
+    if not motor:
+        raise _sem_motor("powerpoint")
     try:
         pdf_para_pptx(entrada, temp_pptx)
-        if MOTOR == "office":
-            _office_pptx_para_ppt(temp_pptx, saida)
-        elif MOTOR == "libreoffice":
-            _soffice_convert(temp_pptx, saida, "ppt")
+        if motor == "office":
+            _office_powerpoint_salvar(temp_pptx, saida, 1)  # 1 = PPT 97-2003
         else:
-            raise RuntimeError("Nenhum motor disponível para gerar PPT.")
+            _soffice_convert(temp_pptx, saida, "ppt")
     finally:
         if os.path.exists(temp_pptx):
-            try: os.remove(temp_pptx)
-            except Exception: pass
-
-def _office_pptx_para_ppt(entrada, saida):
-    pythoncom.CoInitialize()
-    pp = apres = None
-    try:
-        pp    = win32com.client.Dispatch("PowerPoint.Application"); pp.Visible = 1
-        apres = pp.Presentations.Open(os.path.abspath(entrada), WithWindow=False)
-        apres.SaveAs(os.path.abspath(saida), 1)   # 1 = PPT 97-2003
-    finally:
-        if apres: 
-            try: apres.Close()
-            except Exception: pass
-        if pp:    
-            try: pp.Quit()
-            except Exception: pass
-        pythoncom.CoUninitialize()
+            os.remove(temp_pptx)
 
 
 # ─── PDF → tabela (3 estratégias) ────────────────────────────
 
 def pdf_extrair_dataframe(entrada: str):
-    try:
-        import pdfplumber
-        import pandas as pd
-    except ImportError:
-        raise RuntimeError("pdfplumber ou pandas não instalados.")
-
     # 1. Bordas visíveis
     dados = _tentar_extrair(entrada, "lines")
     if dados:
@@ -624,8 +522,7 @@ def _tentar_extrair(entrada: str, estrategia: str) -> list:
 
 
 def _normalizar(linhas: list):
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
+    import pandas as pd
     linhas = [r for r in linhas if any(c for c in r if c and str(c).strip())]
     if not linhas: return pd.DataFrame({"Conteúdo": []})
     max_cols = max(len(r) for r in linhas)
@@ -640,8 +537,7 @@ def _normalizar(linhas: list):
 def _extrair_por_posicao_palavras(entrada: str):
     """Detecta colunas pela posição X das palavras — funciona para relatórios sem bordas."""
     import pdfplumber  # AUD-002
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
+    import pandas as pd
     todas_linhas = []
 
     with pdfplumber.open(entrada) as pdf:
@@ -704,8 +600,7 @@ def _extrair_por_posicao_palavras(entrada: str):
 
 def _fallback_texto(entrada: str):
     import pdfplumber  # AUD-002
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
+    import pandas as pd
     linhas_raw = []
     with pdfplumber.open(entrada) as pdf:
         for page in pdf.pages:
@@ -714,7 +609,7 @@ def _fallback_texto(entrada: str):
                 for l in txt.split("\n"):
                     if l.strip(): linhas_raw.append(l.strip())
     if not linhas_raw:
-        raise ValueError("Nenhum dado extraível. O PDF pode ser uma imagem escaneada.")
+        raise ErroUsuario("Nenhum dado extraível. O PDF pode ser uma imagem escaneada.")
     max_cols = 1
     split    = []
     for l in linhas_raw:
@@ -740,9 +635,8 @@ def pdf_para_csv(entrada: str, saida: str):
 # ─── Imagem → PDF ────────────────────────────────────────────
 
 def imagem_para_pdf(entrada, saida):
-    img = Image.open(entrada)
-    if img.mode in ("RGBA", "LA", "P"): img = img.convert("RGB")
-    img.save(saida, "PDF", resolution=150)
+    with Image.open(entrada) as img:
+        (img if img.mode == "RGB" else img.convert("RGB")).save(saida, "PDF", resolution=150)
 
 
 # ─── PNG ↔ JPG ────────────────────────────────────────────────
@@ -759,24 +653,44 @@ def jpg_para_png(entrada, saida):
 # ─── DOCX/XLSX → Imagem (via PDF) ────────────────────────────
 
 def _pdf_para_imagem_completo(pdf_path: str, saida: str, fmt: str = "png"):
-    """Renderiza todas as páginas e empacota em um arquivo .zip para evitar Out-of-Memory (OOM)."""
-    # AUD-008: io e zipfile já importados no topo do módulo
-    doc = fitz.open(pdf_path)
+    """Renderiza todas as páginas e empacota em ZIP."""
+    with pymupdf.open(pdf_path) as doc, zipfile.ZipFile(saida, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for i, page in enumerate(doc):
+            pix = page.get_pixmap(matrix=pymupdf.Matrix(2, 2))
+            nome = f"pagina_{i+1:03d}.{fmt}"
+            if fmt in ("jpg", "webp", "heic"):
+                img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
+                buffer = io.BytesIO()
+                img.save(buffer, {"jpg": "JPEG", "heic": "HEIF"}.get(fmt, fmt.upper()), quality=92)
+                zipf.writestr(nome, buffer.getvalue())
+            else:
+                zipf.writestr(nome, pix.tobytes("png"))
+            reportar((i + 1) / (len(doc) or 1) * 95)
+
+
+def gerar_preview_imagem(entrada: str, saida: str, origem: str, destino: str):
+    """Prévia da primeira página (o resultado real é um ZIP, que o navegador não exibe)."""
+    formato = "JPEG" if destino == "jpg" else "PNG"
+    if origem in _IMAGENS:
+        with Image.open(entrada) as img:
+            img.convert("RGB").save(saida, formato)
+        return
+    pdf = entrada
+    temp = None
+    if origem != "pdf":
+        temp = pdf = os.path.join(os.path.dirname(saida), f"_tmp_{uuid.uuid4().hex}.pdf")
+        funcao = _MAPA_PARA_PDF.get(origem)
+        if not funcao:
+            raise ErroUsuario("Prévia não disponível para este formato.")
+        funcao(entrada, pdf)
     try:
-        with zipfile.ZipFile(saida, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for i, page in enumerate(doc):
-                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-                img_name = f"pagina_{i+1:03d}.{fmt}"
-                
-                if fmt in ("jpg", "webp", "heic"):
-                    img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
-                    img_io = io.BytesIO()
-                    img.save(img_io, "JPEG" if fmt == "jpg" else fmt.upper(), quality=92)
-                    zipf.writestr(img_name, img_io.getvalue())
-                else:
-                    zipf.writestr(img_name, pix.tobytes("png"))
+        with pymupdf.open(pdf) as doc:
+            imagem = Image.open(io.BytesIO(doc[0].get_pixmap(matrix=pymupdf.Matrix(1.5, 1.5)).tobytes("png")))
+            imagem.convert("RGB").save(saida, formato)
     finally:
-        doc.close()
+        if temp and os.path.exists(temp):
+            os.remove(temp)
+
 
 def _via_pdf_para_img(entrada: str, saida: str, origem_ext: str, fmt: str):
     saida_dir = os.path.dirname(saida) or "."
@@ -788,7 +702,7 @@ def _via_pdf_para_img(entrada: str, saida: str, origem_ext: str, fmt: str):
         elif origem_ext in ("json",):       json_para_pdf(entrada, temp_pdf)
         elif origem_ext in ("ppt",):        ppt_para_pdf(entrada, temp_pdf)
         elif origem_ext in ("pptx",):       ppt_para_pdf(entrada, temp_pdf)
-        else: raise ValueError(f"Origem '{origem_ext}' não suportada para imagem.")
+        else: raise ErroUsuario(f"Origem '{origem_ext}' não suportada para imagem.")
         _pdf_para_imagem_completo(temp_pdf, saida, fmt=fmt)
     finally:
         if os.path.exists(temp_pdf):
@@ -841,13 +755,13 @@ def _via_pdf(entrada, saida, origem_ext, destino_ext):
         # Passo 1: origem → PDF
         funcao_para_pdf = _MAPA_PARA_PDF.get(origem_ext)
         if not funcao_para_pdf:
-            raise ValueError(f"Não é possível converter '{origem_ext}' para PDF.")
+            raise ErroUsuario(f"Não é possível converter '{origem_ext}' para PDF.")
         funcao_para_pdf(entrada, temp_pdf)
 
         # Passo 2: PDF → destino
         funcao_de_pdf = _MAPA_DE_PDF.get(destino_ext)
         if not funcao_de_pdf:
-            raise ValueError(f"Não é possível converter PDF para '{destino_ext}'.")
+            raise ErroUsuario(f"Não é possível converter PDF para '{destino_ext}'.")
         funcao_de_pdf(temp_pdf, saida)
     finally:
         if os.path.exists(temp_pdf):
@@ -857,27 +771,22 @@ def _via_pdf(entrada, saida, origem_ext, destino_ext):
 
 # ─── JSON ↔ CSV/XLSX ──────────────────────────────────────────────
 def json_para_csv(entrada, saida):
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
+    import pandas as pd
     df = pd.read_json(entrada)
     df.fillna("").to_csv(saida, index=False, encoding="utf-8-sig")
 
 def csv_para_json(entrada, saida):
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
     enc = detectar_encoding(entrada)
     df = _carregar_csv(entrada, enc)
     df.fillna("").to_json(saida, orient="records", force_ascii=False, indent=2)
 
 def json_para_xlsx(entrada, saida):
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
+    import pandas as pd
     df = pd.read_json(entrada)
     df.fillna("").to_excel(saida, index=False, engine="openpyxl")
 
 def xlsx_para_json(entrada, saida):
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
+    import pandas as pd
     df = pd.read_excel(entrada, engine="openpyxl")
     df.fillna("").to_json(saida, orient="records", force_ascii=False, indent=2)
 
@@ -897,11 +806,10 @@ def json_para_pdf(entrada, saida, orientacao="retrato"):
 
 # ─── Mesclar Planilhas ──────────────────────────────────────────
 def mesclar_planilhas(arquivos: list, saida: str, formato: str = "xlsx"):
-    try: import pandas as pd
-    except ImportError: raise RuntimeError("pandas não instalado")
+    import pandas as pd
     dfs = []
     for arquivo in arquivos:
-        ext = arquivo.split(".")[-1].lower()
+        ext = arquivo.rsplit(".", 1)[-1].lower()
         if ext == "csv":
             dfs.append(_carregar_csv(arquivo, detectar_encoding(arquivo)))
         elif ext in ("xlsx", "xls"):
@@ -910,7 +818,7 @@ def mesclar_planilhas(arquivos: list, saida: str, formato: str = "xlsx"):
             dfs.append(pd.read_json(arquivo))
     
     if not dfs:
-        raise ValueError("Nenhum dado válido para mesclar.")
+        raise ErroUsuario("Nenhum dado válido para mesclar.")
         
     df_final = pd.concat(dfs, ignore_index=True)
     
@@ -922,31 +830,35 @@ def mesclar_planilhas(arquivos: list, saida: str, formato: str = "xlsx"):
         df_final.to_excel(saida, index=False, engine="openpyxl")
 
 # ─── OCR ───────────────────────────────────────────────
+def _ocr(imagem: Image.Image) -> str:
+    import pytesseract
+    if not TESSERACT:
+        raise ErroUsuario("O reconhecimento de texto em imagens precisa do Tesseract OCR instalado.")
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT
+    disponiveis = set(pytesseract.get_languages())
+    idiomas = "+".join(i for i in ("por", "eng") if i in disponiveis) or "eng"
+    return pytesseract.image_to_string(imagem, lang=idiomas)
+
+
 def imagem_para_txt_ocr(entrada: str, saida: str):
-    # pyrefly: ignore [missing-import]
-    try: import pytesseract
-    except ImportError: raise RuntimeError("pytesseract não instalado.")
-    img = Image.open(entrada).convert("RGB")
-    texto = pytesseract.image_to_string(img, lang="por+eng")
-    with open(saida, "w", encoding="utf-8") as f:
-        f.write(texto)
+    with Image.open(entrada) as img, open(saida, "w", encoding="utf-8") as f:
+        f.write(_ocr(img.convert("RGB")))
+
 
 def pdf_para_txt_ocr(entrada: str, saida: str):
-    # pyrefly: ignore [missing-import]
-    try: import pytesseract
-    except ImportError: raise RuntimeError("pytesseract não instalado.")
-    doc = fitz.open(entrada)
-    texto_total = []
-    try:
-        for page in doc:
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-            img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
-            texto = pytesseract.image_to_string(img, lang="por+eng")
-            texto_total.append(texto)
-    finally:
-        doc.close()
+    """Usa o texto do próprio PDF; só recorre ao OCR nas páginas digitalizadas."""
+    paginas = []
+    with pymupdf.open(entrada) as doc:
+        for i, page in enumerate(doc):
+            texto = page.get_text().strip()
+            if not texto:
+                pix = page.get_pixmap(matrix=pymupdf.Matrix(2, 2))
+                texto = _ocr(Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB"))
+            paginas.append(texto)
+            reportar((i + 1) / (len(doc) or 1) * 95)
     with open(saida, "w", encoding="utf-8") as f:
-        f.write("\n\n---\n\n".join(texto_total))
+        f.write("\n\n---\n\n".join(paginas))
+
 
 # ─── WEBP / HEIC ────────────────────────────────────────────────
 def imagem_para_webp(entrada, saida):
@@ -955,7 +867,7 @@ def imagem_para_webp(entrada, saida):
 
 def imagem_para_heic(entrada, saida):
     img = Image.open(entrada).convert("RGB")
-    img.save(saida, "HEIC", quality=92)
+    img.save(saida, "HEIF", quality=92)
 
 def heic_para_png(entrada, saida):
     img = Image.open(entrada).convert("RGBA")
@@ -996,12 +908,7 @@ _MAPA_DE_PDF = {
 }
 
 def csv_para_docx(entrada, saida):
-    try:
-        import pandas as pd
-        from docx import Document
-    except ImportError:
-        _via_pdf(entrada, saida, "csv", "docx")
-        return
+    from docx import Document
     enc = detectar_encoding(entrada)
     df = _carregar_csv(entrada, enc).fillna("")
     doc = Document()
@@ -1015,12 +922,8 @@ def csv_para_docx(entrada, saida):
     doc.save(saida)
 
 def xlsx_para_docx(entrada, saida):
-    try:
-        import pandas as pd
-        from docx import Document
-    except ImportError:
-        _via_pdf(entrada, saida, "xlsx", "docx")
-        return
+    import pandas as pd
+    from docx import Document
     df = pd.read_excel(entrada, engine="openpyxl").fillna("")
     doc = Document()
     t = doc.add_table(rows=len(df) + 1, cols=len(df.columns))
@@ -1055,7 +958,6 @@ def webp_para_docx(e, s): _via_pdf(e, s, "webp", "docx")
 def webp_para_pptx(e, s): _via_pdf(e, s, "webp", "pptx")
 def heic_para_docx(e, s): _via_pdf(e, s, "heic", "docx")
 def heic_para_pptx(e, s): _via_pdf(e, s, "heic", "pptx")
-def jpg_para_png_img(e, s): jpg_para_png(e, s)
 
 
 # ─── Despacho central ─────────────────────────────────────────
@@ -1178,10 +1080,10 @@ def converter_arquivo(entrada, saida, origem, destino, orientacao="retrato"):
     origem  = origem.lower()
     destino = destino.lower()
     if not os.path.exists(entrada):
-        raise FileNotFoundError(f"Arquivo não encontrado: {entrada}")
+        raise ErroUsuario("O arquivo não está mais disponível. Envie novamente.")
     funcao = _MAPA.get((origem, destino))
     if not funcao:
-        raise ValueError(f"Conversão '{origem.upper()}→{destino.upper()}' não suportada.")
+        raise ErroUsuario(f"Conversão '{origem.upper()}→{destino.upper()}' não suportada.")
     if (origem, destino) in _ACEITA_ORIENTACAO:
         # pyrefly: ignore [unexpected-keyword]
         funcao(entrada, saida, orientacao=orientacao)

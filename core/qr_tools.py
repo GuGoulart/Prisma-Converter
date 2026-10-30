@@ -6,6 +6,8 @@ Gera com qrcode[pil] e lê com OpenCV (cv2) ou pyzbar.
 import os
 import logging
 
+from core.errors import ErroUsuario
+
 log = logging.getLogger(__name__)
 
 
@@ -21,13 +23,10 @@ def gerar_qrcode(
     """
     Gera uma imagem de QR Code a partir de um texto ou URL.
     """
-    try:
-        import qrcode
-    except ImportError:
-        raise RuntimeError("Biblioteca 'qrcode' não instalada.")
+    import qrcode
 
     if not texto or not texto.strip():
-        raise ValueError("O texto para o QR Code não pode ser vazio.")
+        raise ErroUsuario("O texto para o QR Code não pode ser vazio.")
 
     qr = qrcode.QRCode(
         version=None,  # Auto-detect
@@ -69,9 +68,6 @@ def ler_qrcode(caminho_imagem: str) -> list:
     Returns:
         Lista de dicts com {"tipo": str, "dados": str} para cada código encontrado.
     """
-    if not os.path.exists(caminho_imagem):
-        raise FileNotFoundError(f"Arquivo não encontrado: {caminho_imagem}")
-
     codigos = []
 
     # 1. Método Primário: OpenCV (Nativo em Python/C++, sem dependência de DLLs do zbar no Windows)
@@ -119,7 +115,7 @@ def ler_qrcode(caminho_imagem: str) -> list:
             log.warning(f"pyzbar QR decode error: {e_zbar}")
 
     if not codigos:
-        raise ValueError(
+        raise ErroUsuario(
             "Nenhum QR Code legível foi encontrado na imagem. "
             "Certifique-se de enviar uma imagem nítida contendo um QR Code."
         )

@@ -1,103 +1,48 @@
-import os
-import uuid
-import shutil
-import logging
-from flask import Blueprint, request, render_template, send_file, jsonify
-from werkzeug.utils import secure_filename
+"""routes/tools.py — QR Code e paleta de cores."""
+import re
 
-from core.security import rate_limit_required, validar_csrf
-from core.qr_tools import gerar_qrcode, ler_qrcode
-from core.image_tools import extrair_paleta
-from core.utils import (
-    criar_pasta, pasta_path, limpar_pasta_upload,
-    erro_seguro, registrar_saida_historico, DOWNLOAD_FOLDER
-)
+from flask import Blueprint
 
-log = logging.getLogger(__name__)
+from core.errors import ErroUsuario
+from core.security import EXT_IMAGEM
+from core.tarefas import executar_tarefa
+from routes.pipeline import Contexto, Ferramenta, numero, registrar
+
 tools_bp = Blueprint("tools", __name__)
+_COR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 
-@tools_bp.route("/api/qr/gerar", methods=["POST"])
-@rate_limit_required
-def api_gerar_qr():
-    if not validar_csrf(request.form.get('csrf_token', '')):
-        return render_template("pdf_tools.html", erro="Token inválido. Recarregue a página."), 403
-
-    texto = request.form.get("texto", "").strip()
+def _validar_qr(form) -> dict:
+    texto = (form.get("texto") or "").strip()
     if not texto:
-        return render_template("pdf_tools.html", erro="Digite um texto ou URL para gerar o QR Code."), 400
-
-    cor_frente = request.form.get("cor_frente", "#000000")
-    cor_fundo = request.form.get("cor_fundo", "#FFFFFF")
-
-    uid = criar_pasta()
-    pp = pasta_path(uid)
-    saida = os.path.join(DOWNLOAD_FOLDER, f"{uuid.uuid4().hex}_Prisma_QRCode.png")
-    try:
-        gerar_qrcode(texto, saida, cor_frente=cor_frente, cor_fundo=cor_fundo)
-        registrar_saida_historico(saida, "Prisma_QRCode.png", "TXT", "PNG", pasta_uid=uid)
-        limpar_pasta_upload(pp)
-        resp = send_file(saida, as_attachment=True, download_name="Prisma_QRCode.png")
-        resp.headers["Cache-Control"] = "no-store"
-        return resp
-    except Exception as e:
-        log.warning(f"api_gerar_qr error: {e}")
-        return render_template("pdf_tools.html", erro=erro_seguro(e)), 400
+        raise ErroUsuario("Digite um texto ou URL para gerar o QR Code.")
+    if len(texto) > 2500:
+        raise ErroUsuario("O texto é longo demais para um QR Code.")
+    frente, fundo = form.get("cor_frente") or "#000000", form.get("cor_fundo") or "#FFFFFF"
+    if not _COR.match(frente) or not _COR.match(fundo):
+        raise ErroUsuario("Cor inválida.")
+    return {"texto": texto, "cor_frente": frente, "cor_fundo": fundo}
 
 
-@tools_bp.route("/api/qr/ler", methods=["POST"])
-@rate_limit_required
-def api_ler_qr():
-    if not validar_csrf(request.form.get('csrf_token', '')):
-        return jsonify({"erro": "Token inválido. Recarregue a página."}), 403
-
-    f = request.files.get("arquivo")
-    if not f or not f.filename:
-        return jsonify({"erro": "Selecione uma imagem contendo um QR Code."}), 400
-
-    uid = criar_pasta()
-    pp = pasta_path(uid)
-    nome_seguro = secure_filename(f.filename) or "qrcode_img.png"
-    entrada = os.path.join(pp, nome_seguro)
-    f.save(entrada)
-
-    try:
-        resultados = ler_qrcode(entrada)
-        return jsonify({"codigos": resultados})
-    except Exception as e:
-        log.warning(f"api_ler_qr error: {e}")
-        return jsonify({"erro": erro_seguro(e)}), 400
-    finally:
-        shutil.rmtree(pp, ignore_errors=True)
+def _gerar_qr(c: Contexto):
+    executar_tarefa("qr.gerar", c.params["texto"], c.saida, cor_frente=c.params["cor_frente"],
+                    cor_fundo=c.params["cor_fundo"], controle=c.controle)
 
 
-@tools_bp.route("/api/img/paleta", methods=["POST"])
-@rate_limit_required
-def api_paleta_cores():
-    if not validar_csrf(request.form.get('csrf_token', '')):
-        return jsonify({"erro": "Token inválido. Recarregue a página."}), 403
+def _ler_qr(c: Contexto) -> dict:
+    return {"dados": {"codigos": executar_tarefa("qr.ler", c.entrada, controle=c.controle)}}
 
-    f = request.files.get("arquivo")
-    if not f or not f.filename:
-        return jsonify({"erro": "Selecione uma imagem para extrair a paleta de cores."}), 400
 
-    n_cores = request.form.get("n_cores", "8")
-    try:
-        n_cores = min(max(int(n_cores), 3), 16)
-    except ValueError:
-        n_cores = 8
+def _paleta(c: Contexto) -> dict:
+    return {"dados": {"paleta": executar_tarefa("imagem.paleta", c.entrada, n_cores=c.params["n_cores"], controle=c.controle)}}
 
-    uid = criar_pasta()
-    pp = pasta_path(uid)
-    nome_seguro = secure_filename(f.filename) or "imagem.png"
-    entrada = os.path.join(pp, nome_seguro)
-    f.save(entrada)
 
-    try:
-        paleta = extrair_paleta(entrada, n_cores=n_cores)
-        return jsonify({"paleta": paleta})
-    except Exception as e:
-        log.warning(f"api_paleta_cores error: {e}")
-        return jsonify({"erro": erro_seguro(e)}), 400
-    finally:
-        shutil.rmtree(pp, ignore_errors=True)
+registrar(tools_bp, "/api/qr/gerar", Ferramenta(
+    campo=None, min_arquivos=0, validar=_validar_qr, trabalho=_gerar_qr,
+    nome_saida=lambda _n, _p: "Prisma_QRCode.png", origem="TEXTO", destino="PNG",
+))
+registrar(tools_bp, "/api/qr/ler", Ferramenta(extensoes=EXT_IMAGEM, trabalho=_ler_qr, gera_arquivo=False))
+registrar(tools_bp, "/api/img/paleta", Ferramenta(
+    extensoes=EXT_IMAGEM, validar=lambda f: {"n_cores": int(numero(f, "n_cores", 8, 3, 16))},
+    trabalho=_paleta, gera_arquivo=False,
+))

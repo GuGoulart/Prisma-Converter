@@ -1,20 +1,21 @@
-import os
-import time
-from flask import Blueprint, render_template, redirect, url_for, send_file, jsonify
+"""routes/views.py — Páginas do aplicativo."""
+from flask import Blueprint, jsonify, redirect, render_template, url_for
+
+from core import settings
+from core.jobs import jobs
+from core.security import gerar_csrf
 
 views_bp = Blueprint("views", __name__)
 
 
 @views_bp.route("/health")
-@views_bp.route("/ping")
-def health_check():
-    """Endpoint leve para o Render verificar se o serviço está respondendo."""
-    return jsonify({"status": "ok", "service": "prisma-converter", "timestamp": time.time()}), 200
+def health():
+    return jsonify({"status": "ok", "service": "prisma-converter"})
 
 
-@views_bp.route('/favicon.ico')
+@views_bp.route("/favicon.ico")
 def favicon():
-    return "", 204
+    return redirect(url_for("static", filename="favicon.svg"))
 
 
 @views_bp.route("/")
@@ -28,30 +29,32 @@ def conversor_page():
 
 
 @views_bp.route("/ferramentas-pdf")
+@views_bp.route("/modificar-arquivos")
 def redirect_ferramentas():
-    return redirect(url_for("views.ferramentas_pdf_page"))
+    return redirect(url_for("views.ferramentas_page"))
 
 
 @views_bp.route("/ferramentas-avancadas")
-def ferramentas_pdf_page():
+def ferramentas_page():
     return render_template("pdf_tools.html")
+
+
+@views_bp.route("/audio")
+@views_bp.route("/ferramentas-audio")
+def audio_page():
+    return render_template("audio.html")
+
+
+@views_bp.route("/video")
+@views_bp.route("/ferramentas-video")
+def video_page():
+    return render_template("video.html")
 
 
 @views_bp.route("/historico")
 def historico_page():
-    return render_template("historico.html")
+    return render_template("historico.html", historico=jobs.historico(), retencao_padrao=settings.politica_retencao())
 
 
-@views_bp.route("/modificar-arquivos")
-def modificar_arquivos_page():
-    return redirect(url_for("views.ferramentas_pdf_page") + "#modificar")
-
-
-@views_bp.route("/manifest.json")
-def serve_manifest():
-    return send_file("static/manifest.json", mimetype="application/manifest+json")
-
-
-@views_bp.route("/sw.js")
-def serve_sw():
-    return send_file("static/sw.js", mimetype="application/javascript")
+def injetar_globais() -> dict:
+    return {"csrf_token": gerar_csrf(), "retencao_padrao": settings.politica_retencao()}

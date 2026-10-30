@@ -1,288 +1,115 @@
-"""
-file_tools.py — Ferramentas de manipulação de arquivos.
-Compressão, ZIP com senha, criptografia AES, hash, scrubber de metadados,
-renomear em lote.
-"""
+"""file_tools.py — Compressão, ZIP com senha, criptografia AES, hash e renomeação em lote.
 
-import os
-import io
-import zipfile
-import tarfile
+Os arquivos chegam como pares [caminho, nome] para que o nome original seja
+preservado dentro dos pacotes, sem depender do nome usado no disco.
+"""
 import hashlib
 import logging
+import os
+import tarfile
+import zipfile
+
+from core.errors import ErroUsuario
+from core.utils import formatar_tamanho, nomes_unicos
 
 log = logging.getLogger(__name__)
 
+_BLOCO = 1024 * 1024
+_ITERACOES_PBKDF2 = 480000
 
-# ─── Comprimir Arquivos ───────────────────────────────────────
 
-def comprimir_arquivos(caminhos: list, saida: str, formato: str = "zip"):
-    """
-    Comprime múltiplos arquivos em um ZIP ou TAR.GZ.
-
-    Args:
-        caminhos: Lista de caminhos de arquivos.
-        saida: Caminho do arquivo comprimido de saída.
-        formato: "zip" ou "tar.gz".
-    """
-    if not caminhos:
-        raise ValueError("Nenhum arquivo fornecido para compressão.")
-
+def comprimir_arquivos(arquivos: list, saida: str, formato: str = "zip") -> None:
+    if not arquivos:
+        raise ErroUsuario("Nenhum arquivo fornecido para compressão.")
+    pares = list(zip([a[0] for a in arquivos], nomes_unicos([a[1] for a in arquivos])))
     if formato == "tar.gz":
         with tarfile.open(saida, "w:gz") as tar:
-            for caminho in caminhos:
-                if os.path.exists(caminho):
-                    tar.add(caminho, arcname=os.path.basename(caminho))
+            for caminho, nome in pares:
+                tar.add(caminho, arcname=nome)
     else:
         with zipfile.ZipFile(saida, "w", zipfile.ZIP_DEFLATED) as zf:
-            for caminho in caminhos:
-                if os.path.exists(caminho):
-                    zf.write(caminho, arcname=os.path.basename(caminho))
-
-    if not os.path.exists(saida) or os.path.getsize(saida) == 0:
-        raise RuntimeError("Erro ao gerar o arquivo comprimido.")
-
-    log.info(f"Compressão OK: {len(caminhos)} arquivo(s) -> {formato}")
+            for caminho, nome in pares:
+                zf.write(caminho, arcname=nome)
 
 
-# ─── ZIP com Senha (AES-256) ─────────────────────────────────
+def zip_com_senha(arquivos: list, saida: str, senha: str) -> None:
+    import pyzipper
 
-def zip_com_senha(caminhos: list, saida: str, senha: str):
-    """
-    Cria um ZIP protegido com criptografia AES-256.
-
-    Args:
-        caminhos: Lista de caminhos de arquivos.
-        saida: Caminho do arquivo ZIP de saída.
-        senha: Senha para proteger o ZIP.
-    """
-    try:
-        import pyzipper
-    except ImportError:
-        raise RuntimeError("pyzipper não instalado.")
-
-    if not caminhos:
-        raise ValueError("Nenhum arquivo fornecido.")
-    if not senha or not senha.strip():
-        raise ValueError("A senha não pode ser vazia.")
-
-    with pyzipper.AESZipFile(
-        saida, "w",
-        compression=pyzipper.ZIP_LZMA,
-        encryption=pyzipper.WZ_AES,
-    ) as zf:
+    if not arquivos:
+        raise ErroUsuario("Nenhum arquivo fornecido.")
+    if not senha.strip():
+        raise ErroUsuario("A senha não pode ser vazia.")
+    with pyzipper.AESZipFile(saida, "w", compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as zf:
         zf.setpassword(senha.encode("utf-8"))
-        for caminho in caminhos:
-            if os.path.exists(caminho):
-                zf.write(caminho, arcname=os.path.basename(caminho))
-
-    if not os.path.exists(saida) or os.path.getsize(saida) == 0:
-        raise RuntimeError("Erro ao gerar o ZIP protegido.")
-
-    log.info(f"ZIP com senha OK: {len(caminhos)} arquivo(s)")
+        for (caminho, _), nome in zip(arquivos, nomes_unicos([a[1] for a in arquivos])):
+            zf.write(caminho, arcname=nome)
 
 
-# ─── Criptografia AES-256-CBC ────────────────────────────────
-
-def criptografar_arquivo(entrada: str, saida: str, senha: str):
-    """
-    Criptografa um arquivo com AES-256-CBC.
-    O formato do arquivo .enc:
-        [16 bytes salt][16 bytes IV][dados criptografados]
-
-    Args:
-        entrada: Caminho do arquivo original.
-        saida: Caminho do arquivo .enc de saída.
-        senha: Senha para criptografia.
-    """
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    from cryptography.hazmat.primitives import padding
-    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+def _derivar_chave(senha: str, salt: bytes) -> bytes:
     from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-    if not os.path.exists(entrada):
-        raise FileNotFoundError(f"Arquivo não encontrado: {entrada}")
-    if not senha or not senha.strip():
-        raise ValueError("A senha não pode ser vazia.")
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=_ITERACOES_PBKDF2)
+    return kdf.derive(senha.encode("utf-8"))
 
-    # Gerar salt e derivar chave
-    salt = os.urandom(16)
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=480000,
-    )
-    chave = kdf.derive(senha.encode("utf-8"))
 
-    # IV aleatório
-    iv = os.urandom(16)
+def criptografar_arquivo(entrada: str, saida: str, senha: str) -> None:
+    """AES-256-CBC em streaming. Formato: [16 bytes salt][16 bytes IV][dados]."""
+    from cryptography.hazmat.primitives import padding
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-    # Ler e paddar dados
-    with open(entrada, "rb") as f:
-        dados = f.read()
-
+    if not senha.strip():
+        raise ErroUsuario("A senha não pode ser vazia.")
+    salt, iv = os.urandom(16), os.urandom(16)
+    encryptor = Cipher(algorithms.AES(_derivar_chave(senha, salt)), modes.CBC(iv)).encryptor()
     padder = padding.PKCS7(128).padder()
-    dados_padded = padder.update(dados) + padder.finalize()
-
-    # Criptografar
-    cipher = Cipher(algorithms.AES(chave), modes.CBC(iv))
-    encryptor = cipher.encryptor()
-    dados_cripto = encryptor.update(dados_padded) + encryptor.finalize()
-
-    # Salvar: salt + IV + dados criptografados
-    with open(saida, "wb") as f:
-        f.write(salt)
-        f.write(iv)
-        f.write(dados_cripto)
-
-    log.info(f"Criptografia OK: {os.path.basename(entrada)}")
+    with open(entrada, "rb") as src, open(saida, "wb") as dst:
+        dst.write(salt + iv)
+        while bloco := src.read(_BLOCO):
+            dst.write(encryptor.update(padder.update(bloco)))
+        dst.write(encryptor.update(padder.finalize()) + encryptor.finalize())
 
 
-def descriptografar_arquivo(entrada: str, saida: str, senha: str):
-    """
-    Descriptografa um arquivo .enc criado por criptografar_arquivo().
-
-    Args:
-        entrada: Caminho do arquivo .enc.
-        saida: Caminho do arquivo descriptografado.
-        senha: Senha usada na criptografia.
-    """
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+def descriptografar_arquivo(entrada: str, saida: str, senha: str) -> None:
     from cryptography.hazmat.primitives import padding
-    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-    if not os.path.exists(entrada):
-        raise FileNotFoundError(f"Arquivo não encontrado: {entrada}")
-    if not senha or not senha.strip():
-        raise ValueError("A senha não pode ser vazia.")
-
-    with open(entrada, "rb") as f:
-        conteudo = f.read()
-
-    if len(conteudo) < 48:  # 16 salt + 16 IV + pelo menos 16 dados
-        raise ValueError("Arquivo criptografado inválido ou corrompido.")
-
-    salt = conteudo[:16]
-    iv = conteudo[16:32]
-    dados_cripto = conteudo[32:]
-
-    # Derivar chave com o mesmo salt
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=480000,
-    )
-    chave = kdf.derive(senha.encode("utf-8"))
-
-    # Descriptografar
-    cipher = Cipher(algorithms.AES(chave), modes.CBC(iv))
-    decryptor = cipher.decryptor()
-
-    try:
-        dados_padded = decryptor.update(dados_cripto) + decryptor.finalize()
+    if os.path.getsize(entrada) < 48:
+        raise ErroUsuario("Arquivo criptografado inválido ou corrompido.")
+    with open(entrada, "rb") as src, open(saida, "wb") as dst:
+        salt, iv = src.read(16), src.read(16)
+        decryptor = Cipher(algorithms.AES(_derivar_chave(senha, salt)), modes.CBC(iv)).decryptor()
         unpadder = padding.PKCS7(128).unpadder()
-        dados = unpadder.update(dados_padded) + unpadder.finalize()
-    except Exception:
-        raise ValueError("Senha incorreta ou arquivo corrompido.")
+        try:
+            while bloco := src.read(_BLOCO):
+                dst.write(unpadder.update(decryptor.update(bloco)))
+            dst.write(unpadder.update(decryptor.finalize()) + unpadder.finalize())
+        except ValueError:
+            raise ErroUsuario("Senha incorreta ou arquivo corrompido.") from None
 
-    with open(saida, "wb") as f:
-        f.write(dados)
-
-    log.info(f"Descriptografia OK: {os.path.basename(entrada)}")
-
-
-
-
-
-# ─── Calculadora de Hash ─────────────────────────────────────
 
 def calcular_hashes(caminho: str) -> dict:
-    """
-    Calcula hashes MD5, SHA-1 e SHA-256 de um arquivo.
-
-    Args:
-        caminho: Caminho do arquivo.
-
-    Returns:
-        Dict com {md5, sha1, sha256, tamanho_bytes, tamanho_formatado}.
-    """
-    if not os.path.exists(caminho):
-        raise FileNotFoundError(f"Arquivo não encontrado: {caminho}")
-
-    md5 = hashlib.md5()
-    sha1 = hashlib.sha1()
-    sha256 = hashlib.sha256()
-
+    md5, sha1, sha256 = hashlib.md5(), hashlib.sha1(), hashlib.sha256()
     tamanho = 0
     with open(caminho, "rb") as f:
-        while True:
-            bloco = f.read(8192)
-            if not bloco:
-                break
+        while bloco := f.read(_BLOCO):
             md5.update(bloco)
             sha1.update(bloco)
             sha256.update(bloco)
             tamanho += len(bloco)
-
-    return {
-        "md5": md5.hexdigest(),
-        "sha1": sha1.hexdigest(),
-        "sha256": sha256.hexdigest(),
-        "tamanho_bytes": tamanho,
-        "tamanho_formatado": _formatar_tamanho(tamanho),
-    }
+    return {"md5": md5.hexdigest(), "sha1": sha1.hexdigest(), "sha256": sha256.hexdigest(),
+            "tamanho_bytes": tamanho, "tamanho_formatado": formatar_tamanho(tamanho)}
 
 
-def _formatar_tamanho(bytes_val: int) -> str:
-    """Formata bytes em formato legível."""
-    for unidade in ["B", "KB", "MB", "GB"]:
-        if bytes_val < 1024:
-            return f"{bytes_val:.1f} {unidade}"
-        bytes_val /= 1024
-    return f"{bytes_val:.1f} TB"
-
-
-# ─── Renomear em Lote ────────────────────────────────────────
-
-def renomear_em_lote(caminhos: list, padrao: str, saida_zip: str):
-    """
-    Renomeia múltiplos arquivos com um padrão e empacota em ZIP.
-    O padrão pode conter {n} para numeração sequencial.
-
-    Args:
-        caminhos: Lista de caminhos dos arquivos.
-        padrao: Padrão de nome (ex: "foto_{n}", "documento_{n}").
-        saida_zip: Caminho do ZIP de saída.
-
-    Exemplo:
-        padrao="relatorio_{n}" → "relatorio_001.pdf", "relatorio_002.pdf", ...
-    """
-    if not caminhos:
-        raise ValueError("Nenhum arquivo fornecido.")
-    if not padrao or not padrao.strip():
-        raise ValueError("O padrão de nome não pode ser vazio.")
-
+def renomear_em_lote(arquivos: list, padrao: str, saida_zip: str) -> None:
+    """Empacota os arquivos em ZIP com nomes do padrão; {n} vira a numeração sequencial."""
+    if not arquivos:
+        raise ErroUsuario("Nenhum arquivo fornecido.")
     padrao = padrao.strip()
-
+    if not padrao:
+        raise ErroUsuario("O padrão de nome não pode ser vazio.")
     with zipfile.ZipFile(saida_zip, "w", zipfile.ZIP_DEFLATED) as zf:
-        for i, caminho in enumerate(caminhos, start=1):
-            if not os.path.exists(caminho):
-                continue
-
-            ext = os.path.splitext(caminho)[1]  # Mantém a extensão original
+        for i, (caminho, nome) in enumerate(arquivos, start=1):
             num = str(i).zfill(3)
-
-            if "{n}" in padrao:
-                novo_nome = padrao.replace("{n}", num) + ext
-            else:
-                novo_nome = f"{padrao}_{num}{ext}"
-
-            zf.write(caminho, arcname=novo_nome)
-
-    if not os.path.exists(saida_zip) or os.path.getsize(saida_zip) == 0:
-        raise RuntimeError("Erro ao gerar o ZIP com arquivos renomeados.")
-
-    log.info(f"Renomear em lote OK: {len(caminhos)} arquivo(s)")
+            base = padrao.replace("{n}", num) if "{n}" in padrao else f"{padrao}_{num}"
+            zf.write(caminho, arcname=base + os.path.splitext(nome)[1])

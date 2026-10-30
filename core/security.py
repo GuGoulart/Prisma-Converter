@@ -1,367 +1,171 @@
+"""security.py — Proteções do servidor local: origem, CSRF, cabeçalhos e validação de entrada."""
+import hmac
+import ipaddress
 import os
+import re
 import secrets
+import socket
 import zipfile
-from flask import session
-import time
-from collections import defaultdict
-from threading import Lock
+from urllib.parse import urlparse
 
-_contagem_ip = defaultdict(list)
-_lock_rate   = Lock()
+from flask import abort, jsonify, redirect, request, session
 
-_IS_RENDER = os.environ.get("RENDER") in ("true", "1") or bool(os.environ.get("RENDER_SERVICE_ID"))
-_IS_WEB = _IS_RENDER
+from core.config import HOSTS_PERMITIDOS
+from core.errors import ErroUsuario
 
-# Extensoes permitidas para audio e video
-EXTENSOES_AUDIO_PERMITIDAS = {
-    "mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "aiff",
-    "aif", "ape", "opus", "webm", "mp4", "m4b", "3gp"
-}
+EXT_AUDIO = {"mp3", "wav", "ogg", "flac", "aac", "m4a", "wma", "aiff", "aif", "ape", "opus", "webm", "mp4", "m4b", "3gp"}
+EXT_VIDEO = {"mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v", "3gp"}
+EXT_IMAGEM = {"png", "jpg", "jpeg", "webp", "heic", "bmp", "gif", "tiff"}
+EXT_PLANILHA = {"csv", "xlsx", "json"}
 
-EXTENSOES_VIDEO_PERMITIDAS = {
-    "mp4", "mkv", "avi", "mov", "webm", "flv", "wmv", "m4v", "3gp"
-}
+ZIP_MAX_DESCOMPRIMIDO = 4 * 1024 * 1024 * 1024
+ZIP_MAX_RAZAO = 1000
+FORMATOS_ZIP = {"docx", "xlsx", "pptx"}
 
-# ─── Limites de segurança ────────────────────────────────────────────────────
+_CSP = "; ".join([
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "media-src 'self' blob:",
+    "font-src 'self'",
+    "object-src 'self'",
+    "frame-src 'self'",
+    "connect-src 'self'",
+    "base-uri 'none'",
+    "form-action 'self'",
+    "frame-ancestors 'self'",
+])
 
-# Tamanho máximo descomprimido de um ZIP (100 MB).
-# Protege contra Zip Bomb: um arquivo .zip de 1 KB pode se expandir para GBs.
-# ARQUITETURA: Se no futuro o serviço usar Redis, migrar esta lógica para um
-# middleware distribuído (ex: Flask-Limiter com Redis storage).
-ZIP_BOMB_MAX_BYTES = 100 * 1024 * 1024   # 100 MB descomprimidos
-ZIP_BOMB_MAX_RATIO = 100                 # Razão máxima comprimido/descomprimido
-
-
-def extrair_ip_cliente(req=None):
-    """Extrai o IP real do cliente, respeitando proxies reversos (X-Forwarded-For)."""
-    if req is None:
-        try:
-            from flask import request
-            req = request
-        except RuntimeError:
-            return "127.0.0.1"
-    if not req:
-        return "127.0.0.1"
-    xf = req.headers.get("X-Forwarded-For")
-    if xf:
-        return xf.split(",")[0].strip()
-    return getattr(req, 'remote_addr', None) or "127.0.0.1"
+_ROTAS_SEM_CSRF = {"/api/heartbeat"}
 
 
-def verificar_rate_limit(ip):
-    agora = time.time()
-    with _lock_rate:
-        _contagem_ip[ip] = [t for t in _contagem_ip[ip] if agora - t < 60]
-        if len(_contagem_ip[ip]) >= 60:
-            return False
-        _contagem_ip[ip].append(agora)
-        return True
+# ── Origem das requisições ────────────────────────────────────
+def _host_valido(host: str) -> bool:
+    return (host or "").rsplit(":", 1)[0].lower() in HOSTS_PERMITIDOS
 
 
-def rate_limit_required(max_por_minuto=60):
-    """Decorator de rate limit. Aceita @rate_limit_required ou @rate_limit_required(N)."""
-    from functools import wraps
-    from flask import request, jsonify
+def proteger_requisicao():
+    """before_request: bloqueia DNS rebinding, chamadas de outros sites e CSRF."""
+    if not _host_valido(request.host):
+        abort(403)
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return None
 
-    def _make_decorator(max_req):
-        def decorator(f):
-            @wraps(f)
-            def decorated_function(*args, **kwargs):
-                ip = extrair_ip_cliente(request)
-                agora = time.time()
-                with _lock_rate:
-                    _contagem_ip[ip] = [t for t in _contagem_ip[ip] if agora - t < 60]
-                    if len(_contagem_ip[ip]) >= max_req:
-                        return jsonify({"erro": "Muitas requisicoes. Tente novamente em instantes."}), 429
-                    _contagem_ip[ip].append(agora)
-                return f(*args, **kwargs)
-            return decorated_function
-        return decorator
-
-    # Suporte a @rate_limit_required (sem parens) e @rate_limit_required(N) (com parens)
-    import inspect
-    if callable(max_por_minuto):
-        # Usado como @rate_limit_required sem parenteses — max_por_minuto é a própria func
-        func = max_por_minuto
-        return _make_decorator(60)(func)
-    else:
-        # Usado como @rate_limit_required(20)
-        return _make_decorator(max_por_minuto)
+    origem = request.headers.get("Origin")
+    if origem and urlparse(origem).netloc != request.host:
+        return jsonify({"erro": "Origem não permitida."}), 403
+    if request.headers.get("Sec-Fetch-Site") in ("cross-site", "same-site"):
+        return jsonify({"erro": "Origem não permitida."}), 403
+    if request.path not in _ROTAS_SEM_CSRF and not validar_csrf():
+        if not request.path.startswith("/api/"):
+            return redirect("/conversor")
+        return jsonify({"erro": "Sua sessão expirou. Recarregue a página."}), 403
+    return None
 
 
-def validar_extensao_audio(nome_arquivo: str) -> bool:
-    """Valida se o arquivo tem extensao de audio permitida."""
-    ext = nome_arquivo.rsplit(".", 1)[-1].lower() if "." in nome_arquivo else ""
-    return ext in EXTENSOES_AUDIO_PERMITIDAS
-
-
-def validar_extensao_video(nome_arquivo: str) -> bool:
-    """Valida se o arquivo tem extensao de video permitida."""
-    ext = nome_arquivo.rsplit(".", 1)[-1].lower() if "." in nome_arquivo else ""
-    return ext in EXTENSOES_VIDEO_PERMITIDAS
-
-
-def obter_extensao(nome_arquivo: str) -> str:
-    """Retorna a extensao do arquivo em lowercase."""
-    return nome_arquivo.rsplit(".", 1)[-1].lower() if "." in nome_arquivo else ""
-
-
-
-def gerar_csrf():
+def gerar_csrf() -> str:
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(32)
-        session.permanent = True
     return session["csrf_token"]
 
 
-def validar_csrf(tok=None):
-    from flask import request
-    if not tok and request:
-        tok = (
-            request.form.get("csrf_token") or
-            request.headers.get("X-CSRFToken") or
-            request.headers.get("X-CSRF-Token")
-        )
-        if not tok and request.is_json:
-            try:
-                tok = request.json.get("csrf_token")
-            except Exception:
-                pass
-
-    sess_tok = session.get("csrf_token")
-    if not sess_tok:
-        session["csrf_token"] = secrets.token_hex(32)
-        return True
-
-    if not tok:
+def validar_csrf() -> bool:
+    esperado = session.get("csrf_token")
+    if not esperado:
         return False
-
-    return secrets.compare_digest(str(tok), str(sess_tok))
-
-
-def csrf_required(f):
-    from functools import wraps
-    from flask import jsonify
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not validar_csrf():
-            return jsonify({"sucesso": False, "erro": "Token CSRF inválido ou expirado."}), 400
-        return f(*args, **kwargs)
-    return decorated_function
+    enviado = request.headers.get("X-CSRFToken") or request.form.get("csrf_token") or ""
+    return hmac.compare_digest(str(enviado), str(esperado))
 
 
+def aplicar_cabecalhos(resposta):
+    resposta.headers["X-Content-Type-Options"] = "nosniff"
+    resposta.headers["X-Frame-Options"] = "SAMEORIGIN"
+    # "no-referrer" faria o navegador enviar Origin: null nos formulários, recusados acima.
+    resposta.headers["Referrer-Policy"] = "same-origin"
+    resposta.headers["Content-Security-Policy"] = _CSP
+    resposta.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+    return resposta
 
-_EXT_PERIGOSAS = {
-    "exe", "bat", "cmd", "com", "php", "sh", "ps1", "vbs", "js",
-    "jar", "py", "rb", "pl", "asp", "jsp", "cgi", "msi", "dll"
-}
 
-_MAGIC = {
-    "pdf":  [b"%PDF"],
+# ── Nomes e arquivos ──────────────────────────────────────────
+_RESERVADOS = {"con", "prn", "aux", "nul", *{f"com{i}" for i in range(1, 10)}, *{f"lpt{i}" for i in range(1, 10)}}
+
+
+def nome_seguro(nome: str, padrao: str = "arquivo") -> str:
+    """Remove caminhos e caracteres inválidos, preservando acentos e outros alfabetos."""
+    nome = (nome or "").replace("\\", "/").rsplit("/", 1)[-1]
+    nome = re.sub(r'[<>:"|?*\x00-\x1f]', "_", nome).strip(" .")
+    base, ext = os.path.splitext(nome)
+    base = base[:140]
+    if not base.strip("_ .") or base.split(".", 1)[0].lower() in _RESERVADOS:
+        base = padrao
+    return base + ext[:12]
+
+
+def obter_extensao(nome: str) -> str:
+    return nome.rsplit(".", 1)[-1].lower() if "." in nome else ""
+
+
+_ASSINATURAS = {
+    "pdf": [b"%PDF"],
     "docx": [b"PK\x03\x04"], "xlsx": [b"PK\x03\x04"], "pptx": [b"PK\x03\x04"],
-    "ppt":  [b"\xd0\xcf\x11\xe0"], "doc": [b"\xd0\xcf\x11\xe0"], "xls": [b"\xd0\xcf\x11\xe0"],
-    "png":  [b"\x89PNG"],
-    "gif":  [b"GIF87a", b"GIF89a"],
-    "jpg":  [b"\xff\xd8\xff"], "jpeg": [b"\xff\xd8\xff"],
-    "mp4":  "special",
-    "mp3":  [b"\xff\xfb", b"\xff\xf3", b"\xff\xf2", b"ID3"],
-    "enc":  None,  # arquivo criptografado, sem magic definido
-    # Formatos com validação especial (ver validar_magic abaixo)
-    "webp": "special",
-    "heic": "special",
-    "json": "special",
-    "csv":  None,   # texto puro — sem magic bytes confiáveis
-    "txt":  None,   # texto puro
+    "doc": [b"\xd0\xcf\x11\xe0"], "xls": [b"\xd0\xcf\x11\xe0"], "ppt": [b"\xd0\xcf\x11\xe0"],
+    "png": [b"\x89PNG"], "gif": [b"GIF87a", b"GIF89a"], "jpg": [b"\xff\xd8\xff"], "jpeg": [b"\xff\xd8\xff"],
 }
 
 
-_EXPLICIT_EXECUTABLE_MAGIC = [
-    b"MZ",                     # Windows PE Executable (.exe, .dll, .sys, .scr, .cpl)
-    b"\x7fELF",                # Linux Executable (ELF)
-    b"\xca\xfe\xba\xbe",        # Java Class File / Mach-O Fat Binary
-    b"\xfe\xed\xfa\xce",        # Mach-O 32-bit (macOS)
-    b"\xfe\xed\xfa\xcf",        # Mach-O 64-bit (macOS)
-    b"\xce\xfa\xed\xfe",        # Mach-O 32-bit reverse (macOS)
-    b"\xcf\xfa\xed\xfe",        # Mach-O 64-bit reverse (macOS)
-    b"\x4d\x53\x43\x46",        # Microsoft CAB File (.cab)
-]
-
-_SCRIPT_TEXT_PATTERNS = [
-    b"<?php",
-    b"<script",
-    b"#!/bin/sh",
-    b"#!/bin/bash",
-    b"#!/usr/bin/env",
-    b"eval(base64_decode",
-    b"wscript.shell",
-    b"activexobject",
-]
-
-
-def verificar_assinatura_maliciosa(caminho: str) -> bool:
-    """
-    Varre os bytes iniciais do arquivo em busca de assinaturas maliciosas conhecidas.
-
-    Returns:
-        True se o arquivo for SUSPEITO/MALICIOSO (deve ser bloqueado);
-        False se a varredura não encontrou nenhuma assinatura de risco.
-    """
-    try:
-        with open(caminho, "rb") as f:
-            header = f.read(512)
-
-        if not header:
-            return False
-
-        # 1. Verifica magic bytes de executáveis binários
-        for magic in _EXPLICIT_EXECUTABLE_MAGIC:
-            if header.startswith(magic):
-                return True
-
-        # 2. Para scripts maliciosos embutidos
-        header_lower = header.lower()
-        for pat in _SCRIPT_TEXT_PATTERNS:
-            if pat in header_lower:
-                return True
-
-        return False
-    except Exception:
-        return True
-
-
-def validar_nome(nome):
-    p = nome.split(".")
-    if len(p) < 2:
-        return True
-    return not any(x.lower() in _EXT_PERIGOSAS for x in p[1:])
-
-
-def validar_magic(caminho, ext):
+def validar_magic(caminho: str, ext: str) -> bool:
+    """Confere se o conteúdo corresponde à extensão, nos formatos com assinatura conhecida."""
     ext = (ext or "").lower()
-
-    # 1. Bloqueia imediatamente se for identificado como assinatura de executável ou script malicioso
-    if verificar_assinatura_maliciosa(caminho):
-        return False
-
-    m = _MAGIC.get(ext)
-
-    # Sem validação definida (CSV, TXT, formatos desconhecidos)
-    if m is None:
-        return True
-
-    # Validações especiais por formato
-    if m == "special":
-        try:
-            with open(caminho, "rb") as f:
-                header = f.read(16)
-        except OSError:
-            return False
-
-        if ext == "webp":
-            # WEBP: bytes 0-3 = "RIFF", bytes 8-11 = "WEBP"
-            return len(header) >= 12 and header[:4] == b"RIFF" and header[8:12] == b"WEBP"
-
-        if ext == "heic":
-            # HEIC/HEIF: box 'ftyp' nos bytes 4-8
-            return len(header) >= 8 and header[4:8] == b"ftyp"
-
-        if ext == "json":
-            # JSON deve começar com { ou [ (após possível BOM/espaço)
-            try:
-                with open(caminho, "r", encoding="utf-8", errors="ignore") as f:
-                    first = f.read(4096).lstrip()
-                return bool(first) and first[0] in ("{", "[")
-            except OSError:
-                return False
-
-        if ext == "mp4":
-            # MP4/M4A: box 'ftyp' nos bytes 4-8
-            return len(header) >= 8 and header[4:8] == b"ftyp"
-
-        return True  # fallback para "special" desconhecidos
-
-    # Validação padrão por magic bytes (comparação de prefixo)
     try:
         with open(caminho, "rb") as f:
-            h = f.read(8)
-        return any(h.startswith(x) for x in m)
+            cabecalho = f.read(4096)
     except OSError:
         return False
+    if not cabecalho:
+        return False
+    if ext == "webp":
+        return cabecalho[:4] == b"RIFF" and cabecalho[8:12] == b"WEBP"
+    if ext == "heic":
+        return cabecalho[4:8] == b"ftyp"
+    if ext == "json":
+        texto = cabecalho.decode("utf-8", errors="ignore").lstrip("﻿ \t\r\n")
+        return bool(texto) and texto[0] in "{["
+    assinaturas = _ASSINATURAS.get(ext)
+    return True if assinaturas is None else any(cabecalho.startswith(a) for a in assinaturas)
 
 
-def validar_mime_type(request_file, extensoes_permitidas: set) -> bool:
-    """
-    Valida o Content-Type HTTP do arquivo enviado.
-    Previne que um cliente envie um arquivo perigoso com Content-Type forjado.
-    Esta validação é complementar à validação de magic bytes — ambas devem ser usadas.
-
-    Args:
-        request_file: Objeto FileStorage do Flask (request.files[...]).
-        extensoes_permitidas: Set de extensões aceitas (ex: {'pdf', 'docx'}).
-
-    Returns:
-        True se o Content-Type é plausível para a extensão; False caso contrário.
-    """
-    MIME_ACEITOS = {
-        "application/pdf", "application/octet-stream",
-        "application/msword", "application/vnd.ms-excel",
-        "application/vnd.ms-powerpoint",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "image/png", "image/jpeg", "image/webp", "image/heic", "image/gif",
-        "video/mp4", "video/quicktime", "video/x-m4v",
-        "audio/mpeg", "audio/mp3",
-        "text/plain", "text/csv", "application/csv",
-        "application/json", "text/json",
-        "application/zip", "application/x-tar", "application/gzip",
-        "application/x-zip-compressed", "multipart/x-zip",
-        # Navegadores podem enviar tipos genéricos — sempre aceitar octet-stream
-    }
-    ct = (request_file.mimetype or "").lower().split(";")[0].strip()
-    # Se Content-Type está ausente ou é genérico, permitir (será validado por magic bytes)
-    if not ct or ct == "application/octet-stream":
-        return True
-    return ct in MIME_ACEITOS
-
-
-def verificar_zip_bomb(caminho_zip: str) -> bool:
-    """
-    Verifica se um arquivo ZIP é uma Zip Bomb (arquivo comprimido armadilhado).
-
-    Critérios de rejeição:
-    - Tamanho total descomprimido > ZIP_BOMB_MAX_BYTES (padrão: 100 MB)
-    - Razão comprimido/descomprimido > ZIP_BOMB_MAX_RATIO (padrão: 100x)
-
-    Args:
-        caminho_zip: Caminho para o arquivo ZIP a ser verificado.
-
-    Returns:
-        True se o arquivo é seguro; False se for suspeito de Zip Bomb.
-
-    Raises:
-        zipfile.BadZipFile: Se o arquivo não for um ZIP válido.
-    """
+def verificar_zip_bomb(caminho: str) -> bool:
+    """Retorna False se o ZIP (ou DOCX/XLSX/PPTX) é inválido ou se expande de forma suspeita."""
     try:
-        tamanho_zip = os.path.getsize(caminho_zip)
-        total_descomprimido = 0
-
-        with zipfile.ZipFile(caminho_zip, "r") as zf:
-            for info in zf.infolist():
-                total_descomprimido += info.file_size
-                # Rejeita imediatamente se já passou do limite
-                if total_descomprimido > ZIP_BOMB_MAX_BYTES:
-                    return False
-
-        # Verifica razão de compressão (evita 1GB comprimido para 1TB)
-        if tamanho_zip > 0 and total_descomprimido > 0:
-            ratio = total_descomprimido / tamanho_zip
-            if ratio > ZIP_BOMB_MAX_RATIO:
-                return False
-
-        return True
-    except zipfile.BadZipFile:
-        # Não é um ZIP — deixa a validação de magic bytes lidar com isso
-        return True
-    except OSError:
+        with zipfile.ZipFile(caminho) as zf:
+            total = sum(i.file_size for i in zf.infolist())
+        tamanho = os.path.getsize(caminho)
+        return total <= ZIP_MAX_DESCOMPRIMIDO and (not tamanho or total / tamanho <= ZIP_MAX_RAZAO)
+    except (zipfile.BadZipFile, OSError):
         return False
+
+
+def validar_entrada(caminho: str, ext: str) -> None:
+    if not validar_magic(caminho, ext):
+        raise ErroUsuario(f"O conteúdo do arquivo não corresponde ao formato .{ext}.")
+    if ext in FORMATOS_ZIP and not verificar_zip_bomb(caminho):
+        raise ErroUsuario("Arquivo recusado: conteúdo compactado inválido ou grande demais.")
+
+
+# ── URLs externas ─────────────────────────────────────────────
+def validar_url_externa(url: str) -> str:
+    """Aceita só http(s) para endereços públicos, impedindo acesso à rede interna."""
+    url = (url or "").strip()
+    partes = urlparse(url)
+    if partes.scheme not in ("http", "https") or not partes.hostname:
+        raise ErroUsuario("Informe uma URL válida (ex.: https://youtube.com/watch?v=...).")
+    try:
+        enderecos = {info[4][0] for info in socket.getaddrinfo(partes.hostname, partes.port or 443)}
+    except (socket.gaierror, UnicodeError):
+        raise ErroUsuario("Não foi possível encontrar esse endereço. Verifique a URL e sua conexão.") from None
+    for endereco in enderecos:
+        if not ipaddress.ip_address(endereco.split("%", 1)[0]).is_global:
+            raise ErroUsuario("Endereços da rede local não são permitidos.")
+    return url
