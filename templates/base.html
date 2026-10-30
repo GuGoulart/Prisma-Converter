@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Prisma{% endblock %}</title>
+    <meta name="description" content="{% block description %}{% endblock %}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    <link rel="stylesheet" href="{{ asset('fonts.css') }}">
+    <link rel="stylesheet" href="{{ asset('dist/' ~ self.bundle() ~ '.css') }}">
+    <script src="{{ asset('dist/boot.js') }}"></script>
+    <script src="{{ asset('dist/app.js') }}" type="module"></script>
+</head>
+
+<body data-page="{% block pagina %}{% endblock %}" data-retention-policy="{{ retencao_padrao }}" {% block body_attrs %}{% endblock %}>
+{% block conteudo %}{% endblock %}
+</body>
+
+</html>
+{%- if false %}{% block bundle %}main{% endblock %}{% endif %}

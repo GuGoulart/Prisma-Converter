@@ -1,0 +1,14 @@
+@import "./main/vars.css";
+@import "./shared.css";
+@import "./main/animations.css";
+@import "./main/layout.css";
+@import "./main/components.css";
+@import "./pages/home.css";
+@import "./pages/avancadas.css";
+@import "./pages/historico.css";
+@import "./pages/erro.css";
+
+*:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}

@@ -1,0 +1,404 @@
+.pdf-tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 32px;
+}
+
+.pdf-tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.pdf-tool-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border-color: var(--accent);
+}
+
+[data-theme="dark"] .pdf-tool-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.pdf-tool-title {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pdf-tool-title-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tool-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tool-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    box-shadow: none;
+    text-shadow: none;
+    transition: all 0.2s ease;
+}
+
+[data-theme="light"] .tool-badge {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.pdf-tool-card:hover .tool-badge {
+    box-shadow: none !important;
+    border-color: color-mix(in srgb, var(--accent) 50%, transparent) !important;
+    color: var(--accent) !important;
+    background: color-mix(in srgb, var(--accent) 8%, transparent) !important;
+}
+
+.pdf-tool-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.pdf-tool-card input[type="file"],
+.pdf-tool-card input[type="password"],
+.pdf-tool-card input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    padding: 8px;
+    border-radius: 0;
+    color: var(--text);
+    font-family: var(--font);
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: 13px;
+}
+
+/* Oculta visualmente o input de arquivo mantendo foco e validação */
+.hidden-file-input {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+.btn-escolher {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 0;
+    font-size: 13px;
+    font-family: var(--font);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-escolher:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.file-name-display {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.pdf-tool-card input[type="file"]::file-selector-button {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 12px;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.pdf-tool-card input[type="file"]::file-selector-button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(200, 255, 0, 0.05);
+}
+
+.pdf-tool-card button {
+    margin-top: auto;
+}
+
+.pdf-tool-card select {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    padding: 8px;
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font);
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 13px;
+    appearance: none;
+}
+
+@media (max-width: 768px) {
+    .pdf-tool-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.symbol-storm {
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    background: var(--accent);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 50;
+    height: 32px;
+}
+
+@media (max-width: 768px) {
+    .symbol-storm {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 28px;
+        z-index: 91;
+    }
+}
+
+.storm-icon {
+    position: absolute;
+    color: #000;
+    opacity: 0.15;
+    animation: drift linear infinite;
+    left: 0;
+}
+
+@keyframes drift {
+    from {
+        transform: translateX(100vw) rotate(0deg);
+    }
+
+    to {
+        transform: translateX(-60px) rotate(360deg);
+    }
+}
+
+.badge-pdf {
+    color: #f87171 !important;
+    border-color: color-mix(in srgb, #f87171 35%, transparent) !important;
+    background: color-mix(in srgb, #f87171 10%, transparent) !important;
+}
+.badge-mp4 {
+    color: #818cf8 !important;
+    border-color: color-mix(in srgb, #818cf8 35%, transparent) !important;
+    background: color-mix(in srgb, #818cf8 10%, transparent) !important;
+}
+.badge-mp3 {
+    color: #34d399 !important;
+    border-color: color-mix(in srgb, #34d399 35%, transparent) !important;
+    background: color-mix(in srgb, #34d399 10%, transparent) !important;
+}
+.badge-gif {
+    color: #fbbf24 !important;
+    border-color: color-mix(in srgb, #fbbf24 35%, transparent) !important;
+    background: color-mix(in srgb, #fbbf24 10%, transparent) !important;
+}
+.badge-qr {
+    color: #a78bfa !important;
+    border-color: color-mix(in srgb, #a78bfa 35%, transparent) !important;
+    background: color-mix(in srgb, #a78bfa 10%, transparent) !important;
+}
+.badge-png, .badge-jpg, .badge-webp {
+    color: #38bdf8 !important;
+    border-color: color-mix(in srgb, #38bdf8 35%, transparent) !important;
+    background: color-mix(in srgb, #38bdf8 10%, transparent) !important;
+}
+.badge-cor {
+    color: #f472b6 !important;
+    border-color: color-mix(in srgb, #f472b6 35%, transparent) !important;
+    background: color-mix(in srgb, #f472b6 10%, transparent) !important;
+}
+.badge-zip {
+    color: #a78bfa !important;
+    border-color: color-mix(in srgb, #a78bfa 35%, transparent) !important;
+    background: color-mix(in srgb, #a78bfa 10%, transparent) !important;
+}
+.badge-enc {
+    color: #fbbf24 !important;
+    border-color: color-mix(in srgb, #fbbf24 35%, transparent) !important;
+    background: color-mix(in srgb, #fbbf24 10%, transparent) !important;
+}
+.badge-hash {
+    color: #22d3ee !important;
+    border-color: color-mix(in srgb, #22d3ee 35%, transparent) !important;
+    background: color-mix(in srgb, #22d3ee 10%, transparent) !important;
+}
+.badge-all {
+    color: var(--accent) !important;
+    border-color: color-mix(in srgb, var(--accent) 35%, transparent) !important;
+    background: color-mix(in srgb, var(--accent) 10%, transparent) !important;
+}
+.hash-resultado {
+    display: none;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    word-break: break-all;
+    line-height: 1.8;
+}
+.hash-resultado .hash-label {
+    color: var(--accent);
+    font-weight: 700;
+}
+.hash-resultado .hash-value {
+    color: var(--text);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.hash-resultado .hash-value:hover {
+    color: var(--accent);
+}
+
+/* AJAX result containers */
+.ajax-resultado {
+    display: none;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    word-break: break-all;
+    line-height: 1.6;
+}
+.paleta-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+.paleta-swatch {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--border2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.paleta-swatch:hover {
+    transform: scale(1.15);
+}
+.paleta-swatch-label {
+    font-size: 8px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    padding: 1px 3px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Downloader de Vídeo via Link */
+.url-input-field {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.url-input-field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.progress-container {
+    margin-top: 12px;
+    padding: 14px;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.progress-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+    border-radius: 5px;
+    border: 1px solid var(--border2);
+}
+[data-theme="light"] .progress-track {
+    background: rgba(0, 0, 0, 0.06);
+}
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), #00ffaa);
+    box-shadow: 0 0 12px var(--accent);
+    transition: width 0.3s ease;
+    border-radius: 5px;
+}
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+}
+.progress-status-text {
+    color: var(--accent);
+    font-weight: 700;
+}
+    

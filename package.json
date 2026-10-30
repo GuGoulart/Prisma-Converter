@@ -1,0 +1,17 @@
+{
+  "name": "prisma-converter-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node frontend/build.mjs",
+    "watch": "node frontend/build.mjs --watch",
+    "e2e": "playwright test --config frontend/e2e/playwright.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}

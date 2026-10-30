@@ -1,70 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma — Histórico de Arquivos</title>
-    <meta name="description"
-        content="Gerencie seus arquivos convertidos, acompanhe contagens de autodestruição e restaure arquivos retidos.">
-
-    <link rel="manifest" href="/manifest.json">
-    <meta name="csrf-token" content="{{ csrf_token }}">
-    <meta name="theme-color" content="#0a0a0a">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ range(1, 100000)|random }}">
-    <script src="{{ url_for('static', filename='i18n.js') }}?v={{ range(1, 100000)|random }}"></script>
-    <script src="{{ url_for('static', filename='theme_customizer.js') }}?v={{ range(1, 100000)|random }}"></script>
-
-    <style>
-        .historico-full-wrapper {
-            width: 100%;
-            max-width: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        .empty-history-box {
-            text-align: center;
-            padding: 60px 20px;
-            background: var(--surface);
-            border: 1px dashed var(--border2);
-            border-radius: 0;
-            width: 100%;
-        }
-
-        .empty-history-icon {
-            margin-bottom: 16px;
-            color: var(--muted);
-        }
-
-        .empty-history-title {
-            font-family: var(--sans);
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text);
-        }
-
-        .empty-history-sub {
-            color: var(--muted);
-            font-size: 0.9rem;
-            font-family: var(--mono);
-            max-width: 440px;
-            margin: 0 auto 24px auto;
-        }
-    </style>
-</head>
-
-<body data-origem="" data-pasta-uuid="" data-retention-policy="{{ session.get('prisma_retention_policy', '15min') }}"
-    data-secure-wipe="{{ 'true' if session.get('prisma_secure_wipe', True) else 'false' }}">
-
+{% extends "base.html" %}
+{% block title %}Prisma — Histórico de Arquivos{% endblock %}
+{% block description %}Gerencie seus arquivos convertidos, acompanhe contagens de autodestruição e restaure arquivos retidos.{% endblock %}
+{% block pagina %}historico{% endblock %}
+{% block bundle %}main{% endblock %}
+{% block body_attrs %}{% endblock %}
+{% block conteudo %}
     <div class="bg-grid"></div>
 
     <div class="toast" id="toast" role="alert" aria-live="polite">
@@ -99,50 +39,7 @@
     <div class="layout">
 
         <!-- ── SIDEBAR ───────────────────────────────────────── -->
-        <aside class="sidebar" id="sidebar">
-
-            <div class="sidebar-logo">
-                <span class="logo-mark">PRISMA</span>
-            </div>
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info" style="gap: 8px;">
-                <p class="sidebar-label" data-i18n="sidebar.menu">Menu</p>
-                <a href="/" class="nav-link" data-i18n="nav.home">Início</a>
-                <a href="/conversor" class="nav-link" data-i18n="nav.converter">Conversor de arquivos</a>
-                <a href="/ferramentas-avancadas" class="nav-link" data-i18n="nav.advanced">Ferramentas Avançadas</a>
-                <a href="/audio" class="nav-link" data-i18n="nav.audio_tools">Ferramentas de Áudio</a>
-                <a href="/video" class="nav-link" data-i18n="nav.video_tools">Ferramentas de Vídeo</a>
-                <a href="/historico" class="nav-link nav-active" data-i18n="nav.history">Histórico de Arquivos</a>
-            </div>
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info" style="align-items: center; text-align: center;">
-                <p class="sidebar-label" data-i18n="sidebar.limit">Limite</p>
-                <p class="sidebar-valor">{{ 'Sem limite' if max_mb == 0 else (max_mb|string + ' MB') }}</p>
-            </div>
-
-
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
-                <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.theme">Tema</p>
-                <button id="themeToggle" class="btn-tema-icon" aria-label="Personalizar Aparência"
-                    title="Personalizar Aparência" data-i18n-title="customizer.title">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="m18 11-1.5-1.5a2.12 2.12 0 0 0-3 0L3.5 19.5a2.12 2.12 0 0 0 3 3L16.5 13.5a2.12 2.12 0 0 0 0-3Z" />
-                        <path d="m15 5 4 4" />
-                        <path d="m18.5 2.5 3 3" />
-                        <path d="M13 15h.01" />
-                    </svg>
-                </button>
-            </div>
-        </aside>
+        {% set ativo = 'historico' %}{% set mostrar_limite = true %}{% include "_sidebar.html" %}
 
         <!-- ── MAIN ───────────────────────────────────────────── -->
         <main class="main">
@@ -209,24 +106,12 @@
                                             </svg>
                                             <span class="hist-timer-val">--:--</span>
                                         </span>
+                                        <button type="button" class="btn-retention-restore" data-action="renovar"
+                                            data-job="{{ item.job_id }}" data-i18n="conv.history.renew">Renovar ↺</button>
                                         {% elif item.apagado %}
                                         <span class="hist-timer-expired">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                stroke-linejoin="round">
-                                                <circle cx="12" cy="12" r="10"></circle>
-                                                <line x1="12" y1="8" x2="12" y2="12"></line>
-                                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                                            </svg>
-                                            <span>TEMPO ESGOTADO</span>
+                                            <span data-i18n="conv.history.deleted">Conteúdo Apagado</span>
                                         </span>
-                                        {% if item.autodestruicao in ['5min', '15min'] and not item.destruido_manual %}
-                                        <button type="button" class="btn-retention-restore"
-                                            onclick="event.stopPropagation(); window.restaurarArquivo('{{ item.job_id }}')"
-                                            title="Restaurar Retenção">
-                                            Restaurar ↺
-                                        </button>
-                                        {% endif %}
                                         {% endif %}
 
                                         {% if item.restaurado %}
@@ -274,7 +159,7 @@
                                         </span>
                                         {% else %}
                                         <a href="{{ item.download_url }}" class="btn-hist-icon-download"
-                                            title="Baixar arquivo" onclick="event.stopPropagation();">
+                                            title="Baixar arquivo">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                                                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                                 stroke-linejoin="round">
@@ -382,8 +267,4 @@
 
         </main>
     </div>
-
-    <script src="{{ url_for('static', filename='script.js') }}?v={{ range(1, 100000)|random }}"></script>
-</body>
-
-</html>
+{% endblock %}

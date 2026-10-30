@@ -1,33 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma Audio — Ferramentas de Vídeo</title>
-    <meta name="description" content="Utilitários de alto desempenho para converter MP4 em MP3, gerar GIFs animados e baixar vídeos por link (YouTube, Twitter, Instagram).">
-    <meta property="og:title" content="Prisma Audio — Ferramentas de Vídeo">
-    <meta property="og:type" content="website">
-
-    <meta name="csrf-token" content="{{ csrf_token }}">
-    <meta name="theme-color" content="#0a0a0a">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='audio/favicon.svg') }}?v={{ range(100000,999999)|random }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='audio/favicon.svg') }}?v={{ range(100000,999999)|random }}">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/vars.css') }}?v={{ range(1000,99999)|random }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/layout.css') }}?v={{ range(1000,99999)|random }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/components.css') }}?v={{ range(1000,99999)|random }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/animations.css') }}?v={{ range(1000,99999)|random }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/style.css') }}?v={{ range(1000,99999)|random }}">
-    <script src="{{ url_for('static', filename='audio/i18n.js') }}?v={{ range(1, 99999)|random }}"></script>
-    <script src="{{ url_for('static', filename='audio/theme_customizer.js') }}?v={{ range(1, 99999)|random }}"></script>
-</head>
-
-<body>
-
+{% extends "base.html" %}
+{% block title %}Prisma Audio — Ferramentas de Vídeo{% endblock %}
+{% block description %}Utilitários de alto desempenho para converter MP4 em MP3, gerar GIFs animados e baixar vídeos por link (YouTube, Twitter, Instagram).{% endblock %}
+{% block pagina %}video{% endblock %}
+{% block bundle %}media{% endblock %}
+{% block body_attrs %}{% endblock %}
+{% block conteudo %}
     <div class="bg-grid"></div>
 
     <!-- Toast notification -->
@@ -61,41 +38,7 @@
     <div class="layout">
 
         <!-- ── SIDEBAR ─────────────────────────────────────── -->
-        <aside class="sidebar" id="sidebar">
-
-            <div class="sidebar-logo">
-                <a href="/" class="logo-link" style="text-decoration:none;">
-                    <span class="logo-mark">PRISMA</span>
-                </a>
-            </div>
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info" style="gap: 4px;">
-                <p class="sidebar-label" data-i18n="sidebar.menu">NAVEGAÇÃO</p>
-                <a href="/" class="nav-link" data-i18n="nav.home">Início</a>
-                <a href="/conversor" class="nav-link" data-i18n="nav.converter">Conversor de arquivos</a>
-                <a href="/ferramentas-avancadas" class="nav-link" data-i18n="nav.advanced">Ferramentas Avançadas</a>
-                <a href="/audio" class="nav-link" data-i18n="nav.audio_tools">Ferramentas de Áudio</a>
-                <a href="/video" class="nav-link nav-active" data-i18n="nav.video_tools">Ferramentas de Vídeo</a>
-                <a href="/historico" class="nav-link" data-i18n="nav.history">Histórico de Arquivos</a>
-            </div>
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
-                <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.theme">Tema</p>
-                <button id="themeToggle" class="btn-tema-icon" aria-label="Personalizar Aparência" title="Personalizar Aparência" data-i18n-title="customizer.title">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m18 11-1.5-1.5a2.12 2.12 0 0 0-3 0L3.5 19.5a2.12 2.12 0 0 0 3 3L16.5 13.5a2.12 2.12 0 0 0 0-3Z"/>
-                        <path d="m15 5 4 4"/>
-                        <path d="m18.5 2.5 3 3"/>
-                        <path d="M13 15h.01"/>
-                    </svg>
-                </button>
-            </div>
-
-        </aside>
+        {% set ativo = 'video' %}{% set midia = true %}{% include "_sidebar.html" %}
 
         <!-- ── MAIN ───────────────────────────────────────── -->
         <main class="main">
@@ -124,8 +67,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="video.mp3.desc">Extraia a faixa de áudio de arquivos de vídeo MP4, MKV ou WebM em áudio MP3 cristalino.</p>
 
-                    <div class="compact-upload-row" id="upload-v2a" onclick="document.getElementById('input-v2a').click()">
-                        <input type="file" id="input-v2a" accept=".mp4,.mkv,.avi,.mov,.webm,.wmv,.m4v,.3gp" onchange="onVideoSelected(this, 'status-v2a')">
+                    <div class="compact-upload-row" id="upload-v2a" data-click="input-v2a">
+                        <input type="file" id="input-v2a" accept=".mp4,.mkv,.avi,.mov,.webm,.wmv,.m4v,.3gp" data-file-status="status-v2a">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -140,10 +83,10 @@
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="video.mp3.bitrate">QUALIDADE / BITRATE</label>
                             <div class="opcoes-chips" id="chips-bitrate-v2a">
-                                <div class="opcao-chip" onclick="selecionarChip('bitrate-v2a', '128k', this)">128k</div>
-                                <div class="opcao-chip selecionado" onclick="selecionarChip('bitrate-v2a', '192k', this)">192k (Padrão)</div>
-                                <div class="opcao-chip" onclick="selecionarChip('bitrate-v2a', '256k', this)">256k</div>
-                                <div class="opcao-chip" onclick="selecionarChip('bitrate-v2a', '320k', this)">320k (Máximo)</div>
+                                <div class="opcao-chip" data-chip="bitrate-v2a" data-val="128k">128k</div>
+                                <div class="opcao-chip selecionado" data-chip="bitrate-v2a" data-val="192k">192k (Padrão)</div>
+                                <div class="opcao-chip" data-chip="bitrate-v2a" data-val="256k">256k</div>
+                                <div class="opcao-chip" data-chip="bitrate-v2a" data-val="320k">320k (Máximo)</div>
                             </div>
                             <input type="hidden" id="bitrate-v2a" value="192k">
                         </div>
@@ -158,7 +101,7 @@
 
                     <div class="resultado-box" id="resultado-v2a"></div>
 
-                    <button class="botao-acao" id="btn-v2a" onclick="executarMp4ParaMp3()" style="margin-top: auto;">
+                    <button class="botao-acao" id="btn-v2a" data-action="video-run" data-tool="v2a" style="margin-top: auto;">
                         <span data-i18n="video.mp3.btn_exec">Extrair Áudio MP3</span>
                         <span class="botao-arr">→</span>
                     </button>
@@ -178,8 +121,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="video.gif.desc">Transforme vídeos ou trechos específicos em animações GIF otimizadas de alta qualidade.</p>
 
-                    <div class="compact-upload-row" id="upload-v2g" onclick="document.getElementById('input-v2g').click()">
-                        <input type="file" id="input-v2g" accept=".mp4,.mkv,.mov,.webm" onchange="onVideoGifSelected(this)">
+                    <div class="compact-upload-row" id="upload-v2g" data-click="input-v2g">
+                        <input type="file" id="input-v2g" accept=".mp4,.mkv,.mov,.webm" data-file-gif>
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -209,20 +152,20 @@
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="video.gif.fps_label">TAXA DE QUADROS (FPS)</label>
                             <div class="opcoes-chips" id="chips-fps-gif">
-                                <div class="opcao-chip" onclick="selecionarChip('gif-fps', '5', this)">5 FPS</div>
-                                <div class="opcao-chip selecionado" onclick="selecionarChip('gif-fps', '10', this)">10 FPS</div>
-                                <div class="opcao-chip" onclick="selecionarChip('gif-fps', '15', this)">15 FPS</div>
-                                <div class="opcao-chip" onclick="selecionarChip('gif-fps', '20', this)">20 FPS</div>
+                                <div class="opcao-chip" data-chip="gif-fps" data-val="5">5 FPS</div>
+                                <div class="opcao-chip selecionado" data-chip="gif-fps" data-val="10">10 FPS</div>
+                                <div class="opcao-chip" data-chip="gif-fps" data-val="15">15 FPS</div>
+                                <div class="opcao-chip" data-chip="gif-fps" data-val="20">20 FPS</div>
                             </div>
                             <input type="hidden" id="gif-fps" value="10">
                         </div>
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="video.gif.width_label">LARGURA (PX)</label>
                             <div class="opcoes-chips" id="chips-width-gif">
-                                <div class="opcao-chip" onclick="selecionarChip('gif-width', '320', this)">320px</div>
-                                <div class="opcao-chip selecionado" onclick="selecionarChip('gif-width', '480', this)">480px</div>
-                                <div class="opcao-chip" onclick="selecionarChip('gif-width', '640', this)">640px</div>
-                                <div class="opcao-chip" onclick="selecionarChip('gif-width', '800', this)">800px</div>
+                                <div class="opcao-chip" data-chip="gif-width" data-val="320">320px</div>
+                                <div class="opcao-chip selecionado" data-chip="gif-width" data-val="480">480px</div>
+                                <div class="opcao-chip" data-chip="gif-width" data-val="640">640px</div>
+                                <div class="opcao-chip" data-chip="gif-width" data-val="800">800px</div>
                             </div>
                             <input type="hidden" id="gif-width" value="480">
                         </div>
@@ -237,7 +180,7 @@
 
                     <div class="resultado-box" id="resultado-v2g"></div>
 
-                    <button class="botao-acao" id="btn-v2g" onclick="executarMp4ParaGif()" style="margin-top: auto;">
+                    <button class="botao-acao" id="btn-v2g" data-action="video-run" data-tool="v2g" style="margin-top: auto;">
                         <span data-i18n="video.gif.btn_exec">Gerar GIF Animado</span>
                         <span class="botao-arr">→</span>
                     </button>
@@ -258,8 +201,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="video.conv.desc">Converte vídeos entre MP4, WEBM, MOV, AVI e MKV com alta qualidade.</p>
 
-                    <div class="compact-upload-row" id="upload-vconv" onclick="document.getElementById('input-vconv').click()">
-                        <input type="file" id="input-vconv" accept=".mp4,.mkv,.avi,.mov,.webm,.wmv,.flv,.3gp" onchange="onVideoSelected(this, 'status-vconv')">
+                    <div class="compact-upload-row" id="upload-vconv" data-click="input-vconv">
+                        <input type="file" id="input-vconv" accept=".mp4,.mkv,.avi,.mov,.webm,.wmv,.flv,.3gp" data-file-status="status-vconv">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -274,11 +217,11 @@
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="video.conv.fmt_label">FORMATO DE SAÍDA</label>
                             <div class="opcoes-chips" id="chips-formato-vconv">
-                                <div class="opcao-chip selecionado" onclick="selecionarChip('formato-vconv', 'mp4', this)">MP4</div>
-                                <div class="opcao-chip" onclick="selecionarChip('formato-vconv', 'webm', this)">WEBM</div>
-                                <div class="opcao-chip" onclick="selecionarChip('formato-vconv', 'mov', this)">MOV</div>
-                                <div class="opcao-chip" onclick="selecionarChip('formato-vconv', 'avi', this)">AVI</div>
-                                <div class="opcao-chip" onclick="selecionarChip('formato-vconv', 'mkv', this)">MKV</div>
+                                <div class="opcao-chip selecionado" data-chip="formato-vconv" data-val="mp4">MP4</div>
+                                <div class="opcao-chip" data-chip="formato-vconv" data-val="webm">WEBM</div>
+                                <div class="opcao-chip" data-chip="formato-vconv" data-val="mov">MOV</div>
+                                <div class="opcao-chip" data-chip="formato-vconv" data-val="avi">AVI</div>
+                                <div class="opcao-chip" data-chip="formato-vconv" data-val="mkv">MKV</div>
                             </div>
                             <input type="hidden" id="formato-vconv" value="mp4">
                         </div>
@@ -293,7 +236,7 @@
 
                     <div class="resultado-box" id="resultado-vconv"></div>
 
-                    <button class="botao-acao" id="btn-vconv" onclick="executarConverterFormato()" style="margin-top: auto;">
+                    <button class="botao-acao" id="btn-vconv" data-action="video-run" data-tool="vconv" style="margin-top: auto;">
                         <span data-i18n="video.conv.btn_exec">Converter Formato</span>
                         <span class="botao-arr">→</span>
                     </button>
@@ -314,8 +257,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="video.comp.desc">Reduza o tamanho do arquivo mantendo a qualidade de imagem ideal.</p>
 
-                    <div class="compact-upload-row" id="upload-vcomp" onclick="document.getElementById('input-vcomp').click()">
-                        <input type="file" id="input-vcomp" accept=".mp4,.mkv,.avi,.mov,.webm" onchange="onVideoSelected(this, 'status-vcomp')">
+                    <div class="compact-upload-row" id="upload-vcomp" data-click="input-vcomp">
+                        <input type="file" id="input-vcomp" accept=".mp4,.mkv,.avi,.mov,.webm" data-file-status="status-vcomp">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -330,9 +273,9 @@
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="video.comp.level_label">NÍVEL DE COMPRESSÃO</label>
                             <div class="opcoes-chips" id="chips-nivel-vcomp">
-                                <div class="opcao-chip selecionado" onclick="selecionarChip('nivel-vcomp', 'whatsapp', this)" data-i18n="video.comp.l_wa">WhatsApp / Discord (~70%)</div>
-                                <div class="opcao-chip" onclick="selecionarChip('nivel-vcomp', 'medio', this)" data-i18n="video.comp.l_med">Média (~50%)</div>
-                                <div class="opcao-chip" onclick="selecionarChip('nivel-vcomp', 'leve', this)" data-i18n="video.comp.l_light">Leve (~30%)</div>
+                                <div class="opcao-chip selecionado" data-chip="nivel-vcomp" data-val="whatsapp" data-i18n="video.comp.l_wa">WhatsApp / Discord (~70%)</div>
+                                <div class="opcao-chip" data-chip="nivel-vcomp" data-val="medio" data-i18n="video.comp.l_med">Média (~50%)</div>
+                                <div class="opcao-chip" data-chip="nivel-vcomp" data-val="leve" data-i18n="video.comp.l_light">Leve (~30%)</div>
                             </div>
                             <input type="hidden" id="nivel-vcomp" value="whatsapp">
                         </div>
@@ -347,7 +290,7 @@
 
                     <div class="resultado-box" id="resultado-vcomp"></div>
 
-                    <button class="botao-acao" id="btn-vcomp" onclick="executarCompressorVideo()" style="margin-top: auto;">
+                    <button class="botao-acao" id="btn-vcomp" data-action="video-run" data-tool="vcomp" style="margin-top: auto;">
                         <span data-i18n="video.comp.btn_exec">Comprimir Vídeo</span>
                         <span class="botao-arr">→</span>
                     </button>
@@ -369,8 +312,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="video.mute.desc">Remove a faixa de áudio do vídeo sem re-codificar (velocidade máxima).</p>
 
-                    <div class="compact-upload-row" id="upload-vmute" onclick="document.getElementById('input-vmute').click()">
-                        <input type="file" id="input-vmute" accept=".mp4,.mkv,.avi,.mov,.webm" onchange="onVideoSelected(this, 'status-vmute')">
+                    <div class="compact-upload-row" id="upload-vmute" data-click="input-vmute">
+                        <input type="file" id="input-vmute" accept=".mp4,.mkv,.avi,.mov,.webm" data-file-status="status-vmute">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -390,7 +333,7 @@
 
                     <div class="resultado-box" id="resultado-vmute"></div>
 
-                    <button class="botao-acao" id="btn-vmute" onclick="executarRemoverAudio()" style="margin-top: auto;">
+                    <button class="botao-acao" id="btn-vmute" data-action="video-run" data-tool="vmute" style="margin-top: auto;">
                         <span data-i18n="video.mute.btn_exec">Silenciar Vídeo</span>
                         <span class="botao-arr">→</span>
                     </button>
@@ -411,8 +354,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="video.snap.desc">Extraia um frame / foto HD do vídeo em qualquer segundo desejado.</p>
 
-                    <div class="compact-upload-row" id="upload-vsnap" onclick="document.getElementById('input-vsnap').click()">
-                        <input type="file" id="input-vsnap" accept=".mp4,.mkv,.avi,.mov,.webm" onchange="onVideoSelected(this, 'status-vsnap')">
+                    <div class="compact-upload-row" id="upload-vsnap" data-click="input-vsnap">
+                        <input type="file" id="input-vsnap" accept=".mp4,.mkv,.avi,.mov,.webm" data-file-status="status-vsnap">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -431,8 +374,8 @@
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="video.snap.fmt_label">FORMATO DA IMAGEM</label>
                             <div class="opcoes-chips" id="chips-formato-vsnap">
-                                <div class="opcao-chip selecionado" onclick="selecionarChip('formato-vsnap', 'png', this)">PNG (HD)</div>
-                                <div class="opcao-chip" onclick="selecionarChip('formato-vsnap', 'jpg', this)">JPG</div>
+                                <div class="opcao-chip selecionado" data-chip="formato-vsnap" data-val="png">PNG (HD)</div>
+                                <div class="opcao-chip" data-chip="formato-vsnap" data-val="jpg">JPG</div>
                             </div>
                             <input type="hidden" id="formato-vsnap" value="png">
                         </div>
@@ -447,7 +390,7 @@
 
                     <div class="resultado-box" id="resultado-vsnap"></div>
 
-                    <button class="botao-acao" id="btn-vsnap" onclick="executarCapturarFoto()" style="margin-top: auto;">
+                    <button class="botao-acao" id="btn-vsnap" data-action="video-run" data-tool="vsnap" style="margin-top: auto;">
                         <span data-i18n="video.snap.btn_exec">Capturar Imagem</span>
                         <span class="botao-arr">→</span>
                     </button>
@@ -484,8 +427,8 @@
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="video.dl.format">FORMATO DESEJADO</label>
                             <div class="opcoes-chips" id="chips-formato-dl">
-                                <div class="opcao-chip selecionado" data-val="mp4" onclick="selecionarFormatoDl('mp4', this)">MP4 (Vídeo + Áudio)</div>
-                                <div class="opcao-chip" data-val="mp3" onclick="selecionarFormatoDl('mp3', this)">MP3 (Apenas Áudio)</div>
+                                <div class="opcao-chip selecionado" data-action="dl-format" data-val="mp4">MP4 (Vídeo + Áudio)</div>
+                                <div class="opcao-chip" data-action="dl-format" data-val="mp3">MP3 (Apenas Áudio)</div>
                             </div>
                             <input type="hidden" id="formato-dl" value="mp4">
                         </div>
@@ -494,18 +437,18 @@
                             
                             <!-- Opções para MP4 (Vídeo) -->
                             <div class="opcoes-chips" id="chips-qualidade-video-dl">
-                                <div class="opcao-chip selecionado" data-val="best" onclick="selecionarQualidadeDl('best', this)" data-i18n="video.dl.q_best">Melhor Qualidade</div>
-                                <div class="opcao-chip" data-val="1080p" onclick="selecionarQualidadeDl('1080p', this)" data-i18n="video.dl.q_1080p">1080p Full HD</div>
-                                <div class="opcao-chip" data-val="720p" onclick="selecionarQualidadeDl('720p', this)" data-i18n="video.dl.q_720p">720p HD</div>
-                                <div class="opcao-chip" data-val="480p" onclick="selecionarQualidadeDl('480p', this)" data-i18n="video.dl.q_480p">480p SD</div>
+                                <div class="opcao-chip selecionado" data-chip="qualidade-dl" data-val="best" data-i18n="video.dl.q_best">Melhor Qualidade</div>
+                                <div class="opcao-chip" data-chip="qualidade-dl" data-val="1080p" data-i18n="video.dl.q_1080p">1080p Full HD</div>
+                                <div class="opcao-chip" data-chip="qualidade-dl" data-val="720p" data-i18n="video.dl.q_720p">720p HD</div>
+                                <div class="opcao-chip" data-chip="qualidade-dl" data-val="480p" data-i18n="video.dl.q_480p">480p SD</div>
                             </div>
 
                             <!-- Opções para MP3 (Áudio) -->
                             <div class="opcoes-chips" id="chips-qualidade-audio-dl" style="display: none;">
-                                <div class="opcao-chip selecionado" data-val="320k" onclick="selecionarQualidadeDl('320k', this)">320 kbps (Máxima)</div>
-                                <div class="opcao-chip" data-val="256k" onclick="selecionarQualidadeDl('256k', this)">256 kbps</div>
-                                <div class="opcao-chip" data-val="192k" onclick="selecionarQualidadeDl('192k', this)">192 kbps (Padrão)</div>
-                                <div class="opcao-chip" data-val="128k" onclick="selecionarQualidadeDl('128k', this)">128 kbps</div>
+                                <div class="opcao-chip selecionado" data-chip="qualidade-dl" data-val="320k">320 kbps (Máxima)</div>
+                                <div class="opcao-chip" data-chip="qualidade-dl" data-val="256k">256 kbps</div>
+                                <div class="opcao-chip" data-chip="qualidade-dl" data-val="192k">192 kbps (Padrão)</div>
+                                <div class="opcao-chip" data-chip="qualidade-dl" data-val="128k">128 kbps</div>
                             </div>
 
                             <input type="hidden" id="qualidade-dl" value="best">
@@ -522,7 +465,7 @@
 
                     <div class="resultado-box" id="resultado-dl"></div>
 
-                    <button class="botao-acao" id="btn-dl" onclick="executarBaixarLink()" style="margin-top: 12px;">
+                    <button class="botao-acao" id="btn-dl" data-action="video-run" data-tool="dl" style="margin-top: 12px;">
                         <span data-i18n="video.dl.btn_exec">Baixar Mídia por Link</span>
                         <span class="botao-arr">→</span>
                     </button>
@@ -532,22 +475,4 @@
 
         </main>
     </div>
-
-    <style>
-        .badg-plat {
-            background: var(--surface2);
-            border: 1px solid var(--border2);
-            color: var(--accent);
-            font-family: var(--mono);
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 4px;
-        }
-    </style>
-
-    <script src="{{ url_for('static', filename='audio/script.js') }}?v={{ range(10000,99999)|random }}"></script>
-    <script src="{{ url_for('static', filename='audio/video_script.js') }}?v={{ range(10000,99999)|random }}"></script>
-</body>
-
-</html>
+{% endblock %}

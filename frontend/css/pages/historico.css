@@ -1,0 +1,37 @@
+.historico-full-wrapper {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.empty-history-box {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--surface);
+    border: 1px dashed var(--border2);
+    border-radius: 0;
+    width: 100%;
+}
+
+.empty-history-icon {
+    margin-bottom: 16px;
+    color: var(--muted);
+}
+
+.empty-history-title {
+    font-family: var(--sans);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.empty-history-sub {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-family: var(--mono);
+    max-width: 440px;
+    margin: 0 auto 24px auto;
+}
+    

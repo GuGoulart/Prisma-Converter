@@ -1,0 +1,67 @@
+<aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-logo">
+        {% if midia %}<a href="/" class="logo-link" style="text-decoration:none;"><span class="logo-mark">PRISMA</span></a>
+        {% else %}<span class="logo-mark">PRISMA</span>{% endif %}
+    </div>
+
+    <div class="sidebar-linha"></div>
+
+    <div class="sidebar-info" style="gap: {{ '4px' if midia else '8px' }};">
+        <p class="sidebar-label" data-i18n="sidebar.menu">Menu</p>
+        {% for chave, rota, i18n, texto in [
+            ('home', '/', 'nav.home', 'Início'),
+            ('conversor', '/conversor', 'nav.converter', 'Conversor de arquivos'),
+            ('avancadas', '/ferramentas-avancadas', 'nav.advanced', 'Ferramentas Avançadas'),
+            ('audio', '/audio', 'nav.audio_tools', 'Ferramentas de Áudio'),
+            ('video', '/video', 'nav.video_tools', 'Ferramentas de Vídeo'),
+            ('historico', '/historico', 'nav.history', 'Histórico de Arquivos'),
+        ] %}
+        <a href="{{ rota }}" class="nav-link{{ ' nav-active' if chave == ativo }}" data-i18n="{{ i18n }}">{{ texto }}</a>
+        {% endfor %}
+    </div>
+
+    {% if mostrar_limite %}
+    <div class="sidebar-linha"></div>
+
+    <div class="sidebar-info" style="align-items: center; text-align: center;">
+        <p class="sidebar-label" data-i18n="sidebar.limit">Limite</p>
+        <p class="sidebar-valor" data-i18n="sidebar.nolimit">Sem limite</p>
+    </div>
+    {% endif %}
+
+    {% if mostrar_rotas %}
+    <div class="sidebar-linha"></div>
+
+    <div class="sidebar-info">
+        <p class="sidebar-label" data-i18n="sidebar.conversions">Conversões</p>
+        <div class="sidebar-rotas-grid">
+            {% for rota_origem, destinos in todas_conversoes.items() %}
+            <div class="rota-grupo">
+                <span class="rota-origem badge-{{ rota_origem }}">{{ rota_origem | upper }}</span>
+                <span class="rota-seta">→</span>
+                <span class="rota-destinos">
+                    {% for dest in destinos %}
+                    <span class="rota-tag {{ dest }}">{{ dest | upper }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="sidebar-linha"></div>
+
+    <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
+        <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.theme">Tema</p>
+        <button id="themeToggle" class="btn-tema-icon" aria-label="Personalizar Aparência" title="Personalizar Aparência" data-i18n-title="customizer.title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m18 11-1.5-1.5a2.12 2.12 0 0 0-3 0L3.5 19.5a2.12 2.12 0 0 0 3 3L16.5 13.5a2.12 2.12 0 0 0 0-3Z"/>
+                <path d="m15 5 4 4"/>
+                <path d="m18.5 2.5 3 3"/>
+                <path d="M13 15h.01"/>
+            </svg>
+        </button>
+    </div>
+</aside>

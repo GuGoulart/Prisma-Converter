@@ -1,24 +1,11 @@
-<!DOCTYPE html>
-<html lang="pt-BR" data-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <title>Erro Interno — Prisma</title>
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <script src="{{ url_for('static', filename='i18n.js') }}"></script>
-    <script src="{{ url_for('static', filename='theme_customizer.js') }}"></script>
-    <style>
-        body { background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
-        h1 { font-size: 64px; color: var(--accent2); margin-bottom: 16px; font-family: var(--font); }
-        p { font-size: 18px; color: var(--muted); margin-bottom: 32px; font-family: var(--font); }
-        a { color: var(--text); border: 1px solid var(--border2); padding: 12px 24px; text-decoration: none; font-weight: 600; font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
-        a:hover { background: rgba(255,255,255,0.05); }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Erro Interno — Prisma{% endblock %}
+{% block description %}{% endblock %}
+{% block pagina %}erro{% endblock %}
+{% block bundle %}main{% endblock %}
+{% block body_attrs %}{% endblock %}
+{% block conteudo %}
     <h1>500</h1>
     <p data-i18n="err.500">Ops! Ocorreu um erro interno no servidor ao processar sua requisição.</p>
     <a href="/" data-i18n="nav.home">Voltar ao Início</a>
-</body>
-</html>
+{% endblock %}

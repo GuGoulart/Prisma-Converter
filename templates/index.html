@@ -1,41 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma — Conversor de Arquivos</title>
-    <meta name="description" content="Converta PDF, DOCX, XLSX, CSV, PPT, PNG e muito mais. Rápido, seguro e gratuito.">
-    <meta property="og:title" content="Prisma — Conversor de Arquivos">
-    <meta property="og:description"
-        content="Converta PDF, DOCX, XLSX, CSV, PPT, PNG, JSON, WEBP e HEIC. Rápido, seguro e gratuito.">
-    <meta property="og:type" content="website">
-
-    <link rel="manifest" href="/manifest.json">
-    <meta name="csrf-token" content="{{ csrf_token }}">
-    <meta name="theme-color" content="#0a0a0a">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-    <link rel="apple-touch-icon" href="/static/icon-192.png">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ range(1, 100000)|random }}">
-    <script src="{{ url_for('static', filename='i18n.js') }}?v={{ range(1, 100000)|random }}"></script>
-    <script src="{{ url_for('static', filename='theme_customizer.js') }}?v={{ range(1, 100000)|random }}"></script>
-</head>
-
-<body
-    data-origem="{{ origem if origem else '' }}"
-    data-pasta-uuid="{{ session.get('pasta_upload', '') }}"
-    data-preview-inicial="{{ preview_url if preview_url else '' }}"
-    data-preview-tipo="{{ preview_tipo if preview_tipo else '' }}"
-    data-tabela-inicial="{{ 'true' if tabela_html else 'false' }}"
-    data-retention-policy="{{ retencao_padrao or '15min' }}"
->
-
+{% extends "base.html" %}
+{% block title %}Prisma — Conversor de Arquivos{% endblock %}
+{% block description %}Converta PDF, DOCX, XLSX, CSV, PPT, PNG e muito mais. Rápido, seguro e gratuito.{% endblock %}
+{% block pagina %}conversor{% endblock %}
+{% block bundle %}main{% endblock %}
+{% block body_attrs %}data-origem="{{ origem or '' }}" data-pasta-uuid="{{ pasta_uuid or '' }}"{% endblock %}
+{% block conteudo %}
     <div class="bg-grid"></div>
 
     <div class="toast" id="toast" role="alert" aria-live="polite">
@@ -80,66 +49,7 @@
     <div class="layout">
 
         <!-- ── SIDEBAR ───────────────────────────────────────── -->
-        <aside class="sidebar" id="sidebar">
-
-            <div class="sidebar-logo">
-                <span class="logo-mark">PRISMA</span>
-            </div>
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info" style="gap: 8px;">
-                <p class="sidebar-label" data-i18n="sidebar.menu">Menu</p>
-                <a href="/" class="nav-link" data-i18n="nav.home">Início</a>
-                <a href="/conversor" class="nav-link nav-active" data-i18n="nav.converter">Conversor de arquivos</a>
-                <a href="/ferramentas-avancadas" class="nav-link" data-i18n="nav.advanced">Ferramentas Avançadas</a>
-                <a href="/audio" class="nav-link" data-i18n="nav.audio_tools">Ferramentas de Áudio</a>
-                <a href="/video" class="nav-link" data-i18n="nav.video_tools">Ferramentas de Vídeo</a>
-                <a href="/historico" class="nav-link" data-i18n="nav.history">Histórico de Arquivos</a>
-            </div>
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info" style="align-items: center; text-align: center;">
-                <p class="sidebar-label" data-i18n="sidebar.limit">Limite</p>
-                <p class="sidebar-valor">{{ 'Sem limite' if max_mb == 0 else (max_mb|string + ' MB') }}</p>
-            </div>
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info">
-                <p class="sidebar-label" data-i18n="sidebar.conversions">Conversões</p>
-                <div class="sidebar-rotas-grid">
-                    {% for origem, destinos in todas_conversoes.items() %}
-                    <div class="rota-grupo">
-                        <span class="rota-origem badge-{{ origem }}">{{ origem | upper }}</span>
-                        <span class="rota-seta">→</span>
-                        <span class="rota-destinos">
-                            {% for dest in destinos %}
-                            <span class="rota-tag {{ dest }}">{{ dest | upper }}</span>
-                            {% endfor %}
-                        </span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
-                <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.theme">Tema</p>
-                <button id="themeToggle" class="btn-tema-icon" aria-label="Personalizar Aparência" title="Personalizar Aparência" data-i18n-title="customizer.title">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m18 11-1.5-1.5a2.12 2.12 0 0 0-3 0L3.5 19.5a2.12 2.12 0 0 0 3 3L16.5 13.5a2.12 2.12 0 0 0 0-3Z"/>
-                        <path d="m15 5 4 4"/>
-                        <path d="m18.5 2.5 3 3"/>
-                        <path d="M13 15h.01"/>
-                    </svg>
-                </button>
-            </div>
-        </aside>
+        {% set ativo = 'conversor' %}{% set mostrar_limite = true %}{% set mostrar_rotas = true %}{% include "_sidebar.html" %}
 
         <!-- ── MAIN ───────────────────────────────────────────── -->
         <main class="main">
@@ -202,39 +112,34 @@
                             <span class="arquivo-nome-text">{{ nome_original }}</span>
                         </div>
 
-                        <form action="/converter" method="POST" id="converterForm">
+                        <form action="/api/converter/async" method="POST" id="converterForm">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <input type="hidden" name="arquivo" value="{{ arquivo }}">
-                            <input type="hidden" name="origem" value="{{ origem }}">
-                            <input type="hidden" name="nome_original" value="{{ nome_original }}">
                             <input type="hidden" name="orientacao" value="retrato" id="orientacaoHidden">
 
                             <!-- Opções de destino -->
-                            <div class="opcoes-grid" id="opcoesGrid" data-avisos="{{ (avisos_output|tojson|forceescape) if (avisos_output is defined and avisos_output) else '{}' }}">
+                            <div class="opcoes-grid" id="opcoesGrid">
                                 {% for c in conversoes %}
                                 <label class="opcao-card">
                                     <input type="radio" name="destino" value="{{ c }}" {% if loop.first %}checked{%
                                         endif %}>
                                     <span class="opcao-ext badge-text-{{ c }}">{{ c.upper() }}</span>
                                     <span class="opcao-check">✓</span>
-                                    <span class="opcao-aviso-badge" style="display: none;" title="Conversão pesada (output estimado grande)">!</span>
                                 </label>
                                 {% endfor %}
                             </div>
 
-                            <!-- Banner de aviso de output grande -->
-                            <div class="aviso-output-banner" id="avisoOutputBanner" style="display: none;">
-                                <span class="aviso-output-icone">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                                </span>
-                                <div class="aviso-output-texto">
-                                    <strong id="avisoOutputTitulo">Atenção: esta conversão pode gerar um arquivo muito grande.</strong>
-                                    <ul class="aviso-sugestoes" id="avisoOutputLista"></ul>
-                                </div>
-                            </div>
+
+                            {% if indisponiveis %}
+                            <p class="conversoes-indisponiveis">
+                                <span data-i18n="conv.unavailable">Indisponíveis neste computador:</span>
+                                {% for destino, requisito in indisponiveis.items() %}
+                                <span title="{{ requisito }}">{{ destino.upper() }} ({{ requisito }}){{ ", " if not loop.last }}</span>
+                                {% endfor %}
+                            </p>
+                            {% endif %}
 
                             <!-- Orientação (só XLSX/CSV → PDF) -->
-                            {% if origem in ['xlsx','xls','csv'] %}
+                            {% if origem in ['xlsx','xls','csv','json'] %}
                             <div class="orientacao-wrap" id="orientacaoWrap">
                                 <span class="orientacao-titulo" data-i18n="conv.ori.title">ORIENTAÇÃO DO PDF</span>
                                 <div class="orientacao-opcoes">
@@ -345,8 +250,4 @@
             </svg>
         </a>
     </footer>
-
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
-
-</html>
+{% endblock %}

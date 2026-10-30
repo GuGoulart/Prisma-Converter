@@ -1,33 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma Audio — Ferramentas de Áudio</title>
-    <meta name="description" content="Utilitários especializados para conversão, corte, junção, ajuste de volume, velocidade e inversão de áudio.">
-    <meta property="og:title" content="Prisma Audio — Ferramentas de Áudio">
-    <meta property="og:type" content="website">
-
-    <meta name="csrf-token" content="{{ csrf_token }}">
-    <meta name="theme-color" content="#0a0a0a">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='audio/favicon.svg') }}?v={{ range(100000,999999)|random }}">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='audio/favicon.svg') }}?v={{ range(100000,999999)|random }}">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/vars.css') }}?v={{ range(1000,99999)|random }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/layout.css') }}?v={{ range(1000,99999)|random }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/components.css') }}?v={{ range(1000,99999)|random }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/css/animations.css') }}?v={{ range(1000,99999)|random }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='audio/style.css') }}?v={{ range(1000,99999)|random }}">
-    <script src="{{ url_for('static', filename='audio/i18n.js') }}?v={{ range(1, 99999)|random }}"></script>
-    <script src="{{ url_for('static', filename='audio/theme_customizer.js') }}?v={{ range(1, 99999)|random }}"></script>
-</head>
-
-<body>
-
+{% extends "base.html" %}
+{% block title %}Prisma Audio — Ferramentas de Áudio{% endblock %}
+{% block description %}Utilitários especializados para conversão, corte, junção, ajuste de volume, velocidade e inversão de áudio.{% endblock %}
+{% block pagina %}audio{% endblock %}
+{% block bundle %}media{% endblock %}
+{% block body_attrs %}{% endblock %}
+{% block conteudo %}
     <div class="bg-grid"></div>
 
     <!-- Toast notification -->
@@ -63,42 +40,7 @@
     <div class="layout">
 
         <!-- ── SIDEBAR ─────────────────────────────────────── -->
-        <aside class="sidebar" id="sidebar">
-
-            <div class="sidebar-logo">
-                <a href="/" class="logo-link" style="text-decoration:none;">
-                    <span class="logo-mark">PRISMA</span>
-                </a>
-            </div>
-
-            <div class="sidebar-linha"></div>
-
-            <!-- Navegação Principal sem ícones -->
-            <div class="sidebar-info" style="gap: 4px;">
-                <p class="sidebar-label" data-i18n="sidebar.menu">NAVEGAÇÃO</p>
-                <a href="/" class="nav-link" data-i18n="nav.home">Início</a>
-                <a href="/conversor" class="nav-link" data-i18n="nav.converter">Conversor de arquivos</a>
-                <a href="/ferramentas-avancadas" class="nav-link" data-i18n="nav.advanced">Ferramentas Avançadas</a>
-                <a href="/audio" class="nav-link nav-active" data-i18n="nav.audio_tools">Ferramentas de Áudio</a>
-                <a href="/video" class="nav-link" data-i18n="nav.video_tools">Ferramentas de Vídeo</a>
-                <a href="/historico" class="nav-link" data-i18n="nav.history">Histórico de Arquivos</a>
-            </div>
-
-            <div class="sidebar-linha"></div>
-
-            <div class="sidebar-info" style="display: flex; justify-content: space-between; align-items: center;">
-                <p class="sidebar-label" style="margin-bottom: 0;" data-i18n="sidebar.theme">Tema</p>
-                <button id="themeToggle" class="btn-tema-icon" aria-label="Personalizar Aparência" title="Personalizar Aparência" data-i18n-title="customizer.title">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m18 11-1.5-1.5a2.12 2.12 0 0 0-3 0L3.5 19.5a2.12 2.12 0 0 0 3 3L16.5 13.5a2.12 2.12 0 0 0 0-3Z"/>
-                        <path d="m15 5 4 4"/>
-                        <path d="m18.5 2.5 3 3"/>
-                        <path d="M13 15h.01"/>
-                    </svg>
-                </button>
-            </div>
-
-        </aside>
+        {% set ativo = 'audio' %}{% set midia = true %}{% include "_sidebar.html" %}
 
         <!-- ── MAIN ───────────────────────────────────────── -->
         <main class="main">
@@ -143,8 +85,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="audio.conv.desc">Converte entre MP3, WAV, AAC, OGG, FLAC, M4A e OPUS com escolha de taxa de bits.</p>
 
-                    <div class="compact-upload-row" id="upload-conv" onclick="triggerUpload('conv')">
-                        <input type="file" id="arquivo-conv" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" onchange="arquivoSelecionado('conv', this)">
+                    <div class="compact-upload-row" id="upload-conv" data-click="arquivo-conv">
+                        <input type="file" id="arquivo-conv" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" data-file-tool="conv">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -171,10 +113,10 @@
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="audio.conv.bitrate">Taxa de bits</label>
                             <div class="opcoes-chips" id="chips-bitrate-conv">
-                                <div class="opcao-chip" onclick="selecionarChip('bitrate-conv', '128k', this); atualizarHudConv();">128k</div>
-                                <div class="opcao-chip selecionado" onclick="selecionarChip('bitrate-conv', '192k', this); atualizarHudConv();">192k</div>
-                                <div class="opcao-chip" onclick="selecionarChip('bitrate-conv', '256k', this); atualizarHudConv();">256k</div>
-                                <div class="opcao-chip" onclick="selecionarChip('bitrate-conv', '320k', this); atualizarHudConv();">320k</div>
+                                <div class="opcao-chip" data-chip="bitrate-conv" data-val="128k">128k</div>
+                                <div class="opcao-chip selecionado" data-chip="bitrate-conv" data-val="192k">192k</div>
+                                <div class="opcao-chip" data-chip="bitrate-conv" data-val="256k">256k</div>
+                                <div class="opcao-chip" data-chip="bitrate-conv" data-val="320k">320k</div>
                             </div>
                             <input type="hidden" id="bitrate-conv" value="192k">
                         </div>
@@ -184,16 +126,16 @@
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="audio.conv.channels">Canais de Áudio</label>
                             <div class="opcoes-chips" id="chips-channels-conv">
-                                <div class="opcao-chip selecionado" data-i18n="audio.conv.stereo" onclick="selecionarChip('channels-conv', '2', this); atualizarHudConv();">Estéreo (2.0)</div>
-                                <div class="opcao-chip" data-i18n="audio.conv.mono" onclick="selecionarChip('channels-conv', '1', this); atualizarHudConv();">Mono (1.0)</div>
+                                <div class="opcao-chip selecionado" data-i18n="audio.conv.stereo" data-chip="channels-conv" data-val="2">Estéreo (2.0)</div>
+                                <div class="opcao-chip" data-i18n="audio.conv.mono" data-chip="channels-conv" data-val="1">Mono (1.0)</div>
                             </div>
                             <input type="hidden" id="channels-conv" value="2">
                         </div>
                         <div class="controle-grupo">
                             <label class="controle-label" data-i18n="audio.conv.sample_rate">Taxa de Amostragem</label>
                             <div class="opcoes-chips" id="chips-sample-conv">
-                                <div class="opcao-chip selecionado" onclick="selecionarChip('sample-conv', '44100', this); atualizarHudConv();">44.1 kHz</div>
-                                <div class="opcao-chip" onclick="selecionarChip('sample-conv', '48000', this); atualizarHudConv();">48.0 kHz</div>
+                                <div class="opcao-chip selecionado" data-chip="sample-conv" data-val="44100">44.1 kHz</div>
+                                <div class="opcao-chip" data-chip="sample-conv" data-val="48000">48.0 kHz</div>
                             </div>
                             <input type="hidden" id="sample-conv" value="44100">
                         </div>
@@ -241,7 +183,7 @@
                         <span id="erro-msg-conv"></span>
                     </div>
 
-                    <button class="botao-acao" id="btn-conv" onclick="processarFerramenta('conv')" style="margin-top:auto;">
+                    <button class="botao-acao" id="btn-conv" data-action="audio-run" data-tool="conv" style="margin-top:auto;">
                         <span data-i18n="audio.conv.btn">Converter Áudio</span>
                         <span class="botao-arr">↓</span>
                     </button>
@@ -264,8 +206,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="audio.cut.desc">Corta trechos exatos especificando tempo inicial e final (ex: 0:10 a 1:30).</p>
 
-                    <div class="compact-upload-row" id="upload-cut" onclick="triggerUpload('cut')">
-                        <input type="file" id="arquivo-cut" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" onchange="arquivoSelecionado('cut', this)">
+                    <div class="compact-upload-row" id="upload-cut" data-click="arquivo-cut">
+                        <input type="file" id="arquivo-cut" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" data-file-tool="cut">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -289,7 +231,7 @@
                     <div class="cut-interactive-wrap" id="cut-interactive-wrap">
                         <div class="cut-player-box">
                             <audio id="audio-preview-cut" preload="auto"></audio>
-                            <button type="button" class="btn-preview-audio" id="btn-play-preview-cut" onclick="togglePreviewCortador()">
+                            <button type="button" class="btn-preview-audio" id="btn-play-preview-cut" data-action="cut-preview">
                                 <svg id="icon-play-cut" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                     <polygon points="5 3 19 12 5 21 5 3"/>
                                 </svg>
@@ -310,7 +252,7 @@
                                     <span data-i18n="audio.cut.start_slider">Início do corte (arraste a barra):</span>
                                     <span class="slider-time-badge" id="badge-inicio-cut">0:00</span>
                                 </div>
-                                <input type="range" class="range-slider" id="slider-inicio-cut" min="0" max="100" step="0.1" value="0" disabled oninput="onCutSliderInput('inicio')">
+                                <input type="range" class="range-slider" id="slider-inicio-cut" min="0" max="100" step="0.1" value="0" disabled data-cut-slider="inicio">
                             </div>
 
                             <div class="slider-control-group">
@@ -318,7 +260,7 @@
                                     <span data-i18n="audio.cut.end_slider">Fim do corte (arraste a barra):</span>
                                     <span class="slider-time-badge" id="badge-fim-cut">0:00</span>
                                 </div>
-                                <input type="range" class="range-slider" id="slider-fim-cut" min="0" max="100" step="0.1" value="0" disabled oninput="onCutSliderInput('fim')">
+                                <input type="range" class="range-slider" id="slider-fim-cut" min="0" max="100" step="0.1" value="0" disabled data-cut-slider="fim">
                             </div>
                         </div>
                     </div>
@@ -326,11 +268,11 @@
                     <div class="controles-row">
                         <div class="controle-grupo">
                             <label class="controle-label" for="inicio-cut" data-i18n="audio.cut.start_time">Tempo inicial</label>
-                            <input class="controle-input" type="text" id="inicio-cut" placeholder="0:00" value="0:00" oninput="onCutInputChange('inicio')">
+                            <input class="controle-input" type="text" id="inicio-cut" placeholder="0:00" value="0:00" data-cut-text="inicio">
                         </div>
                         <div class="controle-grupo">
                             <label class="controle-label" for="fim-cut" data-i18n="audio.cut.end_time">Tempo final</label>
-                            <input class="controle-input" type="text" id="fim-cut" placeholder="0:00" value="0:00" oninput="onCutInputChange('fim')">
+                            <input class="controle-input" type="text" id="fim-cut" placeholder="0:00" value="0:00" data-cut-text="fim">
                         </div>
                     </div>
 
@@ -352,7 +294,7 @@
                         <span id="erro-msg-cut"></span>
                     </div>
 
-                    <button class="botao-acao" id="btn-cut" onclick="processarFerramenta('cut')" style="margin-top:auto;">
+                    <button class="botao-acao" id="btn-cut" data-action="audio-run" data-tool="cut" style="margin-top:auto;">
                         <span data-i18n="audio.cut.btn">Cortar Áudio</span>
                         <span class="botao-arr">✂</span>
                     </button>
@@ -380,7 +322,7 @@
                                 <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                             </svg>
                             <span>Adicionar arquivos de áudio</span>
-                            <input type="file" id="arquivos-join" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" multiple onchange="adicionarArquivosJoin(this)">
+                            <input type="file" id="arquivos-join" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" multiple data-file-join>
                         </label>
                         <div class="files-list" id="files-list-join">
                             <div class="files-list-empty" id="empty-join">Nenhum arquivo adicionado ainda. Adicione pelo menos 2.</div>
@@ -401,9 +343,9 @@
                         <div class="controle-grupo">
                             <label class="controle-label">Taxa de bits</label>
                             <div class="opcoes-chips" id="chips-bitrate-join">
-                                <div class="opcao-chip" onclick="selecionarChip('bitrate-join', '128k', this)">128k</div>
-                                <div class="opcao-chip selecionado" onclick="selecionarChip('bitrate-join', '192k', this)">192k</div>
-                                <div class="opcao-chip" onclick="selecionarChip('bitrate-join', '320k', this)">320k</div>
+                                <div class="opcao-chip" data-chip="bitrate-join" data-val="128k">128k</div>
+                                <div class="opcao-chip selecionado" data-chip="bitrate-join" data-val="192k">192k</div>
+                                <div class="opcao-chip" data-chip="bitrate-join" data-val="320k">320k</div>
                             </div>
                             <input type="hidden" id="bitrate-join" value="192k">
                         </div>
@@ -427,7 +369,7 @@
                         <span id="erro-msg-join"></span>
                     </div>
 
-                    <button class="botao-acao" id="btn-join" onclick="processarJoiner()" style="margin-top:auto;">
+                    <button class="botao-acao" id="btn-join" data-action="audio-join" style="margin-top:auto;">
                         <span data-i18n="audio.join.btn">Juntar Áudios</span>
                         <span class="botao-arr">+</span>
                     </button>
@@ -449,8 +391,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="audio.vol.desc">Aumenta +3dB, +6dB, +12dB ou normaliza o volume via EBU R128.</p>
 
-                    <div class="compact-upload-row" id="upload-vol" onclick="triggerUpload('vol')">
-                        <input type="file" id="arquivo-vol" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" onchange="arquivoSelecionado('vol', this)">
+                    <div class="compact-upload-row" id="upload-vol" data-click="arquivo-vol">
+                        <input type="file" id="arquivo-vol" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" data-file-tool="vol">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -464,13 +406,13 @@
                     <div class="controle-grupo">
                         <label class="controle-label" data-i18n="audio.vol.boost_label">Ajuste de Volume</label>
                         <div class="opcoes-chips" id="chips-ajuste-vol">
-                            <div class="opcao-chip" onclick="selecionarChip('ajuste-vol', '-6', this)">−6 dB</div>
-                            <div class="opcao-chip" onclick="selecionarChip('ajuste-vol', '-3', this)">−3 dB</div>
-                            <div class="opcao-chip selecionado" onclick="selecionarChip('ajuste-vol', '+3', this)">+3 dB</div>
-                            <div class="opcao-chip" onclick="selecionarChip('ajuste-vol', '+6', this)">+6 dB</div>
-                            <div class="opcao-chip" onclick="selecionarChip('ajuste-vol', '+12', this)">+12 dB</div>
-                            <div class="opcao-chip" onclick="selecionarChip('ajuste-vol', '+18', this)">+18 dB</div>
-                            <div class="opcao-chip" onclick="selecionarChip('ajuste-vol', 'normalizar', this)" style="border-color:rgba(168,85,247,.4);color:#a855f7;">
+                            <div class="opcao-chip" data-chip="ajuste-vol" data-val="-6">−6 dB</div>
+                            <div class="opcao-chip" data-chip="ajuste-vol" data-val="-3">−3 dB</div>
+                            <div class="opcao-chip selecionado" data-chip="ajuste-vol" data-val="+3">+3 dB</div>
+                            <div class="opcao-chip" data-chip="ajuste-vol" data-val="+6">+6 dB</div>
+                            <div class="opcao-chip" data-chip="ajuste-vol" data-val="+12">+12 dB</div>
+                            <div class="opcao-chip" data-chip="ajuste-vol" data-val="+18">+18 dB</div>
+                            <div class="opcao-chip" data-chip="ajuste-vol" data-val="normalizar" style="border-color:rgba(168,85,247,.4);color:#a855f7;">
                                 ✦ Normalizar
                             </div>
                         </div>
@@ -495,7 +437,7 @@
                         <span id="erro-msg-vol"></span>
                     </div>
 
-                    <button class="botao-acao" id="btn-vol" onclick="processarFerramenta('vol')" style="margin-top:auto;">
+                    <button class="botao-acao" id="btn-vol" data-action="audio-run" data-tool="vol" style="margin-top:auto;">
                         <span data-i18n="audio.vol.btn">Ajustar Volume</span>
                         <span class="botao-arr">↑</span>
                     </button>
@@ -516,8 +458,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="audio.speed.desc">Acelera ou desacelera de 0.5× a 2.0× sem alterar o tom da voz (time-stretch).</p>
 
-                    <div class="compact-upload-row" id="upload-spd" onclick="triggerUpload('spd')">
-                        <input type="file" id="arquivo-spd" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" onchange="arquivoSelecionado('spd', this)">
+                    <div class="compact-upload-row" id="upload-spd" data-click="arquivo-spd">
+                        <input type="file" id="arquivo-spd" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" data-file-tool="spd">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -534,7 +476,7 @@
                             <div class="range-row">
                                 <input type="range" class="range-slider" id="fator-spd"
                                     min="0.5" max="2.0" step="0.05" value="1.5"
-                                    oninput="atualizarVelocidade(this.value)">
+                                    data-speed>
                                 <span class="range-valor" id="valor-spd">1.5×</span>
                             </div>
                             <div class="range-labels">
@@ -563,7 +505,7 @@
                         <span id="erro-msg-spd"></span>
                     </div>
 
-                    <button class="botao-acao" id="btn-spd" onclick="processarFerramenta('spd')" style="margin-top:auto;">
+                    <button class="botao-acao" id="btn-spd" data-action="audio-run" data-tool="spd" style="margin-top:auto;">
                         <span data-i18n="audio.speed.btn">Alterar Velocidade</span>
                         <span class="botao-arr">▶▶</span>
                     </button>
@@ -587,8 +529,8 @@
                     </div>
                     <p class="tool-desc" data-i18n="audio.rev.desc">Toca o áudio de trás para frente — ideal para efeitos sonoros e memes.</p>
 
-                    <div class="compact-upload-row" id="upload-rev" onclick="triggerUpload('rev')">
-                        <input type="file" id="arquivo-rev" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" onchange="arquivoSelecionado('rev', this)">
+                    <div class="compact-upload-row" id="upload-rev" data-click="arquivo-rev">
+                        <input type="file" id="arquivo-rev" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" data-file-tool="rev">
                         <button type="button" class="btn-selecionar-arquivo">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -628,7 +570,7 @@
                         <span id="erro-msg-rev"></span>
                     </div>
 
-                    <button class="botao-acao" id="btn-rev" onclick="processarFerramenta('rev')" style="margin-top:auto;">
+                    <button class="botao-acao" id="btn-rev" data-action="audio-run" data-tool="rev" style="margin-top:auto;">
                         <span data-i18n="audio.rev.btn">Inverter Áudio</span>
                         <span class="botao-arr">↩</span>
                     </button>
@@ -654,8 +596,8 @@
                     <div class="trns-split-container">
                         <!-- Coluna da Esquerda: Controles & Upload -->
                         <div class="trns-left-col">
-                            <div class="compact-upload-row" id="upload-trns" onclick="triggerUpload('trns')">
-                                <input type="file" id="arquivo-trns" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" onchange="arquivoSelecionado('trns', this)">
+                            <div class="compact-upload-row" id="upload-trns" data-click="arquivo-trns">
+                                <input type="file" id="arquivo-trns" accept=".mp3,.wav,.aac,.ogg,.flac,.m4a,.opus,.wma" data-file-tool="trns">
                                 <button type="button" class="btn-selecionar-arquivo">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -690,9 +632,9 @@
                                 <div class="controle-grupo" style="width: 100%;">
                                     <label class="controle-label" data-i18n="audio.trns.fmt_label">Formato de saída</label>
                                     <div class="opcoes-chips" id="chips-formato-trns">
-                                        <div class="opcao-chip selecionado" onclick="selecionarChip('formato-trns', 'txt', this)">Texto (.txt)</div>
-                                        <div class="opcao-chip" onclick="selecionarChip('formato-trns', 'srt', this)">Legenda (.srt)</div>
-                                        <div class="opcao-chip" onclick="selecionarChip('formato-trns', 'json', this)">JSON (.json)</div>
+                                        <div class="opcao-chip selecionado" data-chip="formato-trns" data-val="txt">Texto (.txt)</div>
+                                        <div class="opcao-chip" data-chip="formato-trns" data-val="srt">Legenda (.srt)</div>
+                                        <div class="opcao-chip" data-chip="formato-trns" data-val="json">JSON (.json)</div>
                                     </div>
                                     <input type="hidden" id="formato-trns" value="txt">
                                 </div>
@@ -714,7 +656,7 @@
                                 <span id="erro-msg-trns"></span>
                             </div>
 
-                            <button class="botao-acao" id="btn-trns" onclick="processarTranscritor()" style="margin-top:auto;">
+                            <button class="botao-acao" id="btn-trns" data-action="audio-transcrever" style="margin-top:auto;">
                                 <span data-i18n="audio.trns.btn">Transcrever Áudio</span>
                                 <span class="botao-arr">📝</span>
                             </button>
@@ -726,21 +668,21 @@
                                 <div class="transcricao-preview-header">
                                     <span data-i18n="audio.trns.preview_label">TRANSCRIÇÃO EM TEMPO REAL & EDITOR</span>
                                     <div class="transcricao-preview-actions">
-                                        <button type="button" class="btn-copiar-texto" id="btn-copy-trns" onclick="copiarTranscricao()" title="Copiar texto para a área de transferência">
+                                        <button type="button" class="btn-copiar-texto" id="btn-copy-trns" data-action="trns-copiar" title="Copiar texto para a área de transferência">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                             </svg>
                                             <span id="label-btn-copy" data-i18n="audio.trns.btn_copy">Copiar Texto</span>
                                         </button>
-                                        <button type="button" class="btn-copiar-texto btn-colar-texto" onclick="colarTextoTranscricao()" title="Colar texto da área de transferência">
+                                        <button type="button" class="btn-copiar-texto btn-colar-texto" data-action="trns-colar" title="Colar texto da área de transferência">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
                                                 <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                                             </svg>
                                             <span>Colar</span>
                                         </button>
-                                        <button type="button" class="btn-copiar-texto btn-limpar-texto" onclick="limparTextoTranscricao()" title="Limpar caixa de texto">
+                                        <button type="button" class="btn-copiar-texto btn-limpar-texto" data-action="trns-limpar" title="Limpar caixa de texto">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <polyline points="3 6 5 6 21 6"></polyline>
                                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -749,7 +691,7 @@
                                         </button>
                                     </div>
                                 </div>
-                                <textarea class="transcricao-textarea mega-rect-textarea" id="texto-resultado-trns" oninput="atualizarContadorTextoTrns()" placeholder="O texto da transcrição aparecerá aqui em tempo real assim que o áudio for processado. Você também pode digitar, editar ou colar qualquer texto aqui livremente..."></textarea>
+                                <textarea class="transcricao-textarea mega-rect-textarea" id="texto-resultado-trns" data-trns-contador placeholder="O texto da transcrição aparecerá aqui em tempo real assim que o áudio for processado. Você também pode digitar, editar ou colar qualquer texto aqui livremente..."></textarea>
                                 <div class="transcricao-footer-info">
                                     <span id="contador-texto-trns">0 palavras · 0 caracteres</span>
                                 </div>
@@ -773,7 +715,4 @@
             </svg>
         </a>
     </footer>
-
-    <script src="{{ url_for('static', filename='audio/script.js') }}?v={{ range(1,99999)|random }}"></script>
-</body>
-</html>
+{% endblock %}

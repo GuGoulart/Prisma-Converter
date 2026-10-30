@@ -1,9 +1,0 @@
-@import url("css/vars.css");
-@import url("css/animations.css");
-@import url("css/layout.css");
-@import url("css/components.css");
-
-*:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-}
